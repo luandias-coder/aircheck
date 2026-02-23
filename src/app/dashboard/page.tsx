@@ -269,10 +269,10 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       </div>
     </div>
 
-    {/* Inbound emails */}
+    {/* Recebimento automático */}
     <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Emails de encaminhamento</div>
-      <p style={{fontSize:13,color:"#737373",lineHeight:1.5,marginBottom:14}}>Configure quais endereços de email enviam confirmações do Airbnb para a sua conta. Quando um email for encaminhado para <strong style={{color:"#1A1A1A"}}>reservas@aircheck.com.br</strong>, criaremos a reserva automaticamente.</p>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Recebimento automático de reservas</div>
+      <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Cadastre abaixo o email onde você recebe as confirmações de reserva do Airbnb. Ele será usado para identificar que os encaminhamentos são seus.</p>
 
       {(user?.inboundEmails||[]).map(ie=><div key={ie.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0",marginBottom:6}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📧</span><span style={{fontSize:13,color:"#1A1A1A"}}>{ie.email}</span></div>
@@ -280,17 +280,32 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       </div>)}
 
       {error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#DC2626",marginBottom:8}}>{error}</div>}
-      <div style={{display:"flex",gap:8,marginTop:8}}>
-        <input value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="email@exemplo.com" type="email" style={{flex:1,fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
-        <button onClick={addEmail} disabled={!newEmail||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:!newEmail||saving?0.5:1}}>{saving?"...":"+ Adicionar"}</button>
+      <div style={{marginTop:8}}>
+        <label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em",display:"block",marginBottom:6}}>Email onde você recebe reservas do Airbnb</label>
+        <div style={{display:"flex",gap:8}}>
+          <input value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="seuemail@gmail.com" type="email" style={{flex:1,fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
+          <button onClick={addEmail} disabled={!newEmail||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:!newEmail||saving?0.5:1}}>{saving?"...":"+ Adicionar"}</button>
+        </div>
       </div>
     </div>
 
-    {/* Webhook info */}
+    {/* Instruções de encaminhamento */}
     <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:16,padding:"20px"}}>
-      <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>🔗 Webhook para recebimento automático</div>
-      <p style={{fontSize:12,color:B.primary,lineHeight:1.5,marginBottom:10}}>Configure seu provedor de email (SendGrid, Mailgun, etc.) para enviar emails recebidos em <strong>reservas@aircheck.com.br</strong> para o webhook abaixo:</p>
-      <div style={{fontFamily:"'IBM Plex Mono'",fontSize:12,color:B.primary,background:"#fff",padding:"10px 14px",borderRadius:8,wordBreak:"break-all"}}>{webhookUrl}</div>
+      <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Como ativar o recebimento automático</div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>1</div>
+          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>Cadastre acima o email onde você recebe as confirmações do Airbnb <span style={{fontSize:12,color:"rgba(59,95,229,0.6)"}}>(ex: seuemail@gmail.com)</span></div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>2</div>
+          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>No seu provedor de email (Gmail, Outlook, etc.), configure o <strong>encaminhamento automático</strong> de emails do Airbnb para:<br/><span style={{fontFamily:"'IBM Plex Mono'",fontSize:13,fontWeight:500,background:"#fff",padding:"4px 10px",borderRadius:6,display:"inline-block",marginTop:6}}>reservas@aircheck.com.br</span></div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>3</div>
+          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>Pronto! As reservas serão criadas automaticamente no seu painel assim que o Airbnb enviar a confirmação.</div>
+        </div>
+      </div>
     </div>
   </div>
 }
