@@ -5,26 +5,31 @@ import { useRouter } from "next/navigation";
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)" };
 
-// ─── CLIENT-SIDE PARSER v5 ──────────────────────────────────────
-// Handles encoding corruption (Outlook forwarding), abbreviated months
+// ─── CLIENT-SIDE PARSER v5.1 ────────────────────────────────────
 const MONTHS: Record<string,number> = {jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11,janeiro:0,fevereiro:1,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11,january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
 function mm(raw:string):number|null{const c=raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\uFFFD/g,"").replace(/\?/g,"").replace(/\.+$/,"").trim();if(MONTHS[c]!==undefined)return MONTHS[c];if(c.length>=3){for(const[k,v]of Object.entries(MONTHS)){if(k.startsWith(c.slice(0,3)))return v}}return null}
+function fixEnc(t:string):string{return t.replace(/\uFFFD\uFFFDes\b/g,"ções").replace(/\uFFFD\uFFFDo\b/g,"ção").replace(/\uFFFD\uFFFD/g,"çã").replace(/\bEsta\uFFFDo/g,"Estação").replace(/\uFFFD(?=spede)/gi,"ó").replace(/\uFFFD(?=digo)/gi,"ó").replace(/\uFFFD(?=rio)/gi,"á").replace(/\uFFFD(?=vel)/gi,"ó").replace(/anfitri\uFFFDo/gi,"anfitrião").replace(/pre\uFFFDo/gi,"preço").replace(/servi\uFFFDo/gi,"serviço").replace(/informa\uFFFDes/gi,"informações").replace(/\uFFFD/g,"")}
 function parsePreview(raw:string){const r:Record<string,any>={};let ey=new Date().getFullYear(),em:number|null=null;const h=raw.match(/Enviado:\s*\w+,\s*(\w+)\s+(\d{1,2}),\s*(\d{4})/i);if(h){ey=parseInt(h[3]);em=mm(h[1])}
+// Room ID, Thread
+const rm=raw.match(/airbnb\.com(?:\.br)?\/rooms\/(\d+)/);if(rm)r.airbnbRoomId=rm[1];
+const tm=raw.match(/(https:\/\/www\.airbnb\.com(?:\.br)?\/hosting\/thread\/(\d+))/);if(tm){r.airbnbThreadUrl=tm[1];r.airbnbThreadId=tm[2]}
+// Guest photo
+const ph=raw.match(/https:\/\/a0\.muscache\.com\/im\/pictures\/user\/[^\s\]\[>]+/);if(ph)r.guestPhotoUrl=ph[0].replace(/\]$/,"");
 // Guest name
 const s=raw.match(/Reserva confirmada\s*[-–—]\s*(.+?)\s+chega\s+em/i);if(s)r.guestFullName=s[1].trim();else{const n=raw.match(/Nova reserva confirmada!\s+(\w[\w\s]*?)\s+chega\s+em/i);if(n)r.guestFullName=n[1].trim();else{const b=raw.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+)+)\s*\n[^\n]*?Identifica/m);if(b)r.guestFullName=b[1].trim()}}
-// Property - pre-Casa first, then inline, then brackets
-const pc=raw.match(/\n\s*(.{5,80}?)\s*\n\s*Casa[\/\w\s]*inteiro/i);if(pc&&!pc[1].match(/^(Envie|Nova|Ident|Check|Imagem|http|\[)/i)&&pc[1].trim().length>3)r.propertyName=pc[1].trim();
-if(!r.propertyName){const pi=raw.match(/(?:\]|^)\s*([^[\]\n]{5,80}?)\s+Casa[\/\w\s]*inteiro/im);if(pi&&pi[1].trim().length>3&&!pi[1].match(/^(http|Envie|Nova|<)/i))r.propertyName=pi[1].trim()}
-if(!r.propertyName){const br=/\[([^\]]{5,80}?)\]/g;let bm;while((bm=br.exec(raw))!==null){const n=bm[1].trim();if(!n.match(/^(Airbnb|AirCover|App Store|Google Play|http|image)/i)&&n.length>3){r.propertyName=n;break}}}
-// Check-in (flexible day abbrev: any non-digit chars before day number)
+// Property (with encoding cleanup)
+const pc=raw.match(/\n\s*(.{5,80}?)\s*\n\s*Casa[\/\w\s]*inteiro/i);if(pc){const n=fixEnc(pc[1].trim());if(!n.match(/^(Envie|Nova|Ident|Check|Imagem|http|\[)/i)&&n.length>3)r.propertyName=n}
+if(!r.propertyName){const pi=raw.match(/(?:\]|^)\s*([^[\]\n]{5,80}?)\s+Casa[\/\w\s]*inteiro/im);if(pi){const n=fixEnc(pi[1].trim());if(n.length>3&&!n.match(/^(http|Envie|Nova|<)/i))r.propertyName=n}}
+if(!r.propertyName){const br=/\[([^\]]{5,80}?)\]/g;let bm;while((bm=br.exec(raw))!==null){const n=fixEnc(bm[1].trim());if(!n.match(/^(Airbnb$|AirCover|App Store|Google Play|http|image)/i)&&n.length>3){r.propertyName=n;break}}}
+// Check-in
 const ci=raw.match(/Check[\s-]?in[\s\n]+(?:[^\d\n]{0,12}[.,]\s*)?(\d{1,2})\s+de\s+(\w{3,9})\.?[\s\n]+(\d{1,2}:\d{2})/i);if(ci){const mo=mm(ci[2]);if(mo!==null){let y=ey;if(em!==null&&mo<em)y++;r.checkInDate=`${ci[1].padStart(2,"0")}/${String(mo+1).padStart(2,"0")}/${y}`;r.checkInTime=ci[3];r._cm=mo;r._cy=y}}
 // Check-out
 const co=raw.match(/Check[\s-]?out[\s\n]+(?:[^\d\n]{0,12}[.,]\s*)?(\d{1,2})\s+de\s+(\w{3,9})\.?[\s\n]+(\d{1,2}:\d{2})/i);if(co){const mo=mm(co[2]);if(mo!==null){let y=r._cy||ey;if(r._cm!==undefined&&mo<r._cm)y++;r.checkOutDate=`${co[1].padStart(2,"0")}/${String(mo+1).padStart(2,"0")}/${y}`;r.checkOutTime=co[3]}}
-// Guests (handles corrupted H�spedes)
+// Guests
 const gp=[/H.spedes[\s\n]+(\d+)\s+(?:adultos?|h.spedes?|pessoas?)/i,/(\d+)\s+adultos?/i];for(const p of gp){const m=raw.match(p);if(m){r.numGuests=parseInt(m[1]);break}}if(!r.numGuests)r.numGuests=1;
-// Code (handles corrupted C�digo de confirma��o)
+// Code
 const cp=[/C.digo\s+de\s+confirma..o[\s\n]+([A-Z0-9]{8,12})/i,/confirma(?:ção|..o|cao)[\s\S]{0,30}?([A-Z0-9]{10})/i];for(const p of cp){const m=raw.match(p);if(m){r.confirmationCode=m[1];break}}
-// Payment (handles corrupted Voc�)
+// Payment
 const pm=raw.match(/Voc.\s+recebe[\s\n]+R\$\s*([\d.,]+)/i)||raw.match(/recebe[\s\n]+R\$\s*([\d.,]+)/i);if(pm)r.hostPayment=`R$ ${pm[1]}`;
 // Nights
 const nm=raw.match(/(\d+)\s+noites?/i);if(nm)r.nights=parseInt(nm[1]);
@@ -35,7 +40,7 @@ const has=(k:string)=>!!r[k];r.confidence=has("guestFullName")&&has("propertyNam
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
 interface Property { id:string; name:string; doormanPhones:DoormanPhone[]; reservationCount:number }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; guestMessage:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -49,6 +54,7 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
   pending_form:{l:"Aguardando formulário",c:"#D97706",bg:"#FFFBEB",dot:"#D97706"},
   form_filled:{l:"Formulário preenchido",c:"#059669",bg:"#ECFDF5",dot:"#059669"},
   sent_to_doorman:{l:"Enviado à portaria",c:"#2563EB",bg:"#EFF6FF",dot:"#2563EB"},
+  archived:{l:"Arquivada",c:"#737373",bg:"#F5F5F5",dot:"#A3A3A3"},
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
@@ -68,7 +74,23 @@ export default function Dashboard(){
   const fetchData=useCallback(async()=>{
     try{
       const[rr,pr,ur]=await Promise.all([fetch("/api/reservations"),fetch("/api/properties"),fetch("/api/auth/me")]);
-      if(rr.ok)setReservations(await rr.json());
+      if(rr.ok){
+        const data:Reservation[]=await rr.json();
+        // Auto-archive past reservations
+        const now=new Date();now.setHours(0,0,0,0);
+        const toArchive=data.filter(r=>{
+          if(r.status==="archived")return false;
+          if(!r.checkOutDate)return false;
+          const[dd,mm,yy]=r.checkOutDate.split("/").map(Number);
+          const co=new Date(yy,mm-1,dd);
+          return co<now;
+        });
+        if(toArchive.length>0){
+          await Promise.all(toArchive.map(r=>fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"archived"})})));
+          toArchive.forEach(r=>r.status="archived");
+        }
+        setReservations(data);
+      }
       if(pr.ok)setProperties(await pr.json());
       if(ur.ok)setUser(await ur.json());
       else router.push("/login");
@@ -79,9 +101,11 @@ export default function Dashboard(){
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
 
   const selected=reservations.find(r=>r.id===selectedId);
-  const pending=reservations.filter(r=>r.status==="pending_form").length;
-  const filled=reservations.filter(r=>r.status==="form_filled").length;
-  const upcoming=reservations.filter(r=>daysUntil(r.checkInDate)>=0).length;
+  const active=reservations.filter(r=>r.status!=="archived");
+  const archived=reservations.filter(r=>r.status==="archived");
+  const pending=active.filter(r=>r.status==="pending_form").length;
+  const filled=active.filter(r=>r.status==="form_filled").length;
+  const upcoming=active.filter(r=>daysUntil(r.checkInDate)>=0).length;
 
   return(
     <div style={{minHeight:"100vh",background:"#FAFAF9",fontFamily:"Outfit,sans-serif"}}>
@@ -118,7 +142,7 @@ export default function Dashboard(){
         {!loading&&view==="list"&&<>
           {/* Stats */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
-            {[{l:"Reservas",v:reservations.length,s:`${upcoming} próxima${upcoming!==1?"s":""}`,i:"📋"},{l:"Pendentes",v:pending,s:"aguardando form",i:"⏳",a:pending>0?"#D97706":undefined},{l:"Prontas",v:filled,s:"para enviar",i:"✅",a:filled>0?"#059669":undefined}].map((c,i)=>(
+            {[{l:"Ativas",v:active.length,s:`${upcoming} próxima${upcoming!==1?"s":""}`,i:"📋"},{l:"Pendentes",v:pending,s:"aguardando form",i:"⏳",a:pending>0?"#D97706":undefined},{l:"Prontas",v:filled,s:"para enviar",i:"✅",a:filled>0?"#059669":undefined}].map((c,i)=>(
               <div key={i} className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
                 <div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>{c.l}</div><div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:c.a||"#1A1A1A",marginTop:4,lineHeight:1}}>{c.v}</div>{c.s&&<div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>{c.s}</div>}</div><span style={{fontSize:20,opacity:0.5}}>{c.i}</span></div>
               </div>
@@ -127,14 +151,14 @@ export default function Dashboard(){
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
-            {([["reservations","Reservas",reservations.length],["properties","Imóveis",properties.length],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
+            {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
               <button key={id} onClick={()=>setTab(id as any)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
                 {l} {n!==null&&<span style={{marginLeft:4,fontSize:11,fontWeight:700,color:tab===id?B.primary:"#A3A3A3",background:tab===id?B.light:"#F5F5F5",padding:"2px 6px",borderRadius:10}}>{n}</span>}
               </button>
             ))}
           </div>
 
-          {tab==="reservations"?<ReservationsList reservations={reservations} onNew={()=>setView("new")} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+          {tab==="reservations"?<ReservationsList active={active} archived={archived} onNew={()=>setView("new")} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
           :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
@@ -145,24 +169,35 @@ export default function Dashboard(){
 }
 
 // ─── RESERVATIONS LIST ──────────────────────────────────────────
-function ReservationsList({reservations,onNew,onSelect}:{reservations:Reservation[];onNew:()=>void;onSelect:(id:string)=>void}){
-  if(reservations.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",marginBottom:16}}>Cole o email do Airbnb para criar a primeira</div><button onClick={onNew} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:B.primary,color:"#fff",border:"none",borderRadius:20,cursor:"pointer"}}>+ Nova reserva</button></div>;
-  return<div style={{display:"flex",flexDirection:"column",gap:8}}>
-    {reservations.map((r)=>{const du=daysUntil(r.checkInDate);return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s"}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontSize:15,fontWeight:600,color:"#1A1A1A"}}>{r.guestFullName}</span>
-            {du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du<=1?"#DC2626":"#D97706",background:du<=1?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du<=1?"Hoje!":"Em "+du+" dias"}</span>}
-          </div>
-          <div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
+function ReservationsList({active,archived,onNew,onSelect}:{active:Reservation[];archived:Reservation[];onNew:()=>void;onSelect:(id:string)=>void}){
+  const[showArchived,setShowArchived]=useState(false);
+  const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:isArch?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12}}>
+      {/* Guest photo */}
+      {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:42,height:42,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"2px solid #F0F0F0"}}/>:<div style={{width:42,height:42,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:15,fontWeight:600,color:"#1A1A1A"}}>{r.guestFullName}</span>
+          {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du<=1?"#DC2626":"#D97706",background:du<=1?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du<=1?"Hoje!":"Em "+du+" dias"}</span>}
         </div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
-          <Badge status={r.status}/>
-          {r.confirmationCode&&<span style={{fontFamily:"'IBM Plex Mono'",fontSize:11,color:"#A3A3A3"}}>{r.confirmationCode}</span>}
-        </div>
+        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
       </div>
-    </button>})}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+        <Badge status={r.status}/>
+        {r.confirmationCode&&<span style={{fontFamily:"'IBM Plex Mono'",fontSize:11,color:"#A3A3A3"}}>{r.confirmationCode}</span>}
+      </div>
+    </div>
+  </button>};
+  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",marginBottom:16}}>Cole o email do Airbnb para criar a primeira</div><button onClick={onNew} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:B.primary,color:"#fff",border:"none",borderRadius:20,cursor:"pointer"}}>+ Nova reserva</button></div>;
+  return<div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {active.map(r=><RCard key={r.id} r={r}/>)}
+    {archived.length>0&&<>
+      <button onClick={()=>setShowArchived(!showArchived)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:"12px 0 4px",display:"flex",alignItems:"center",gap:6}}>
+        <span style={{transform:showArchived?"rotate(90deg)":"",transition:"transform 0.2s",fontSize:10}}>▶</span>
+        Arquivadas ({archived.length})
+      </button>
+      {showArchived&&archived.map(r=><RCard key={r.id} r={r}/>)}
+    </>}
   </div>
 }
 
@@ -210,6 +245,7 @@ function NewFlow({onDone,onCancel}:{onDone:()=>void;onCancel:()=>void}){
 // ─── DETAIL VIEW ────────────────────────────────────────────────
 function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;onRefresh:()=>void}){
   const[copied,setCopied]=useState(false);
+  const[copiedMsg,setCopiedMsg]=useState(false);
   const[waData,setWaData]=useState<{message:string;links:Array<{phone:string;name:string|null;label:string|null;link:string}>}|null>(null);
   const[showWa,setShowWa]=useState(false);
   const[deleting,setDeleting]=useState(false);
@@ -222,18 +258,42 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
   const markSent=async()=>{await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"sent_to_doorman"})});onRefresh()};
   const handleDelete=async()=>{if(!confirm("Tem certeza que deseja excluir esta reserva?"))return;setDeleting(true);await fetch(`/api/reservations/${r.id}`,{method:"DELETE"});onBack()};
 
+  const checkinMsg=`Olá ${r.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É obrigatório para liberação na portaria do prédio.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
+  const copyCheckinMsg=()=>{navigator.clipboard.writeText(checkinMsg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),2500)};
+
   return<div style={{display:"flex",flexDirection:"column",gap:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><button onClick={onBack} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"none",color:"#737373",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>← Voltar</button><button onClick={handleDelete} disabled={deleting} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:8,cursor:"pointer",opacity:deleting?0.5:1}}>{deleting?"...":"🗑 Excluir"}</button></div>
 
     <div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px 22px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:4}}>📍 {r.property.name}</div></div><Badge status={r.status}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{display:"flex",gap:14,alignItems:"center"}}>
+          {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"3px solid #F0F0F0"}}/>:<div style={{width:56,height:56,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
+          <div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:2}}>📍 {r.property.name}</div></div>
+        </div>
+        <Badge status={r.status}/>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginTop:18,paddingTop:14,borderTop:"1px solid #F0F0F0"}}>
         {[{l:"Check-in",v:r.checkInDate,s:r.checkInTime},{l:"Check-out",v:r.checkOutDate,s:r.checkOutTime},{l:"Hóspedes",v:String(r.numGuests)},{l:"Código",v:r.confirmationCode,m:true}].map((x,i)=><div key={i}><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>{x.l}</div><div style={{fontFamily:x.m?"'IBM Plex Mono'":"Outfit",fontSize:14,fontWeight:600,color:"#1A1A1A",marginTop:3}}>{x.v||"—"}</div>{x.s&&<div style={{fontSize:12,color:"#A3A3A3"}}>{x.s}</div>}</div>)}
       </div>
-      {r.guestPhone&&<div style={{marginTop:14,fontSize:13,color:"#737373"}}>📱 Contato: <strong style={{color:"#1A1A1A"}}>{r.guestPhone}</strong></div>}
-      {r.guestMessage&&<div style={{marginTop:14,background:B.light,borderRadius:10,padding:"12px 14px"}}><div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}}>Mensagem do hóspede</div><div style={{fontSize:13,color:B.primary,fontStyle:"italic",lineHeight:1.5}}>"{r.guestMessage}"</div></div>}
+      {r.hostPayment&&<div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #F0F0F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:"#A3A3A3"}}>Pagamento do anfitrião</span><span style={{fontSize:16,fontWeight:700,color:"#059669"}}>{r.hostPayment}</span></div>}
+      {r.guestPhone&&<div style={{marginTop:12,fontSize:13,color:"#737373"}}>📱 Contato: <strong style={{color:"#1A1A1A"}}>{r.guestPhone}</strong></div>}
     </div>
 
+    {/* Send form link to guest via Airbnb chat */}
+    <div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Enviar formulário ao hóspede</div>
+      {/* Preview of message */}
+      <div style={{background:"#FAFAF9",border:"1px solid #F0F0F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+        <pre style={{fontFamily:"Outfit",fontSize:12,color:"#374151",whiteSpace:"pre-wrap",lineHeight:1.6,margin:0}}>{checkinMsg}</pre>
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {r.airbnbThreadUrl&&<a href={r.airbnbThreadUrl} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:"#FF5A5F",color:"#fff",border:"none",borderRadius:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}>💬 Enviar link ao hóspede</a>}
+        <button onClick={copyCheckinMsg} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:copiedMsg?"#059669":"#fff",color:copiedMsg?"#fff":"#1A1A1A",border:`1px solid ${copiedMsg?"#059669":"#E5E5E5"}`,borderRadius:10,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>{copiedMsg?"✓ Copiado":"📋 Copiar mensagem"}</button>
+      </div>
+      {!r.airbnbThreadUrl&&<div style={{fontSize:11,color:"#A3A3A3",marginTop:8}}>⚠️ Link do chat Airbnb não disponível — copie a mensagem e envie manualmente.</div>}
+    </div>
+
+    {/* Form URL (simple copy) */}
     <div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Link do formulário</div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{flex:1,fontFamily:"'IBM Plex Mono'",fontSize:12,color:B.primary,background:B.light,padding:"10px 14px",borderRadius:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{formUrl}</div><button onClick={copy} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 16px",background:copied?"#059669":"#fff",color:copied?"#fff":"#1A1A1A",border:`1px solid ${copied?"#059669":"#E5E5E5"}`,borderRadius:8,cursor:"pointer",minWidth:90,textAlign:"center"}}>{copied?"✓ Copiado":"Copiar"}</button></div>
