@@ -153,17 +153,24 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 1 ═══════════════════ */}
         {step===1&&<div style={cardStyle}>
-          <StepBadge n={1}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Qual email você usa no Airbnb?</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:24}}>Precisamos saber para identificar que os emails encaminhados são seus.</p>
-          <div style={{marginBottom:20}}>
-            <label style={labelStyle}>Email da sua conta Airbnb</label>
-            <input value={airbnbEmail} onChange={e=>setAirbnbEmail(e.target.value)} placeholder="seuemail@gmail.com" type="email" onKeyDown={e=>e.key==="Enter"&&saveEmail()} style={{...inputStyle,borderColor:emailError?"#DC2626":"#E5E5E5"}}/>
-            {emailError&&<div style={{fontSize:12,color:"#DC2626",marginTop:6}}>{emailError}</div>}
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:32,marginBottom:12}}>👋</div>
+            <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Bem-vindo ao AirCheck!</h2>
+            <p style={{fontSize:14,color:"#737373",lineHeight:1.6}}>Vamos guiar você em poucos passos até sua primeira experiência com a ferramenta. Depois de configurado, o dia a dia é ainda mais simples.</p>
           </div>
-          <button onClick={saveEmail} disabled={emailSaving||!airbnbEmail} style={{...btnStyle(),opacity:emailSaving||!airbnbEmail?0.5:1,cursor:emailSaving||!airbnbEmail?"not-allowed":"pointer"}}>
-            {emailSaving?"Salvando...":"Continuar →"}
-          </button>
+          <div style={{borderTop:"1px solid #F0F0F0",paddingTop:20}}>
+            <StepBadge n={1}/>
+            <h3 style={{fontSize:18,fontWeight:800,letterSpacing:"-0.02em",marginBottom:6}}>Qual email você usa no Airbnb?</h3>
+            <p style={{fontSize:13,color:"#A3A3A3",lineHeight:1.5,marginBottom:16}}>Precisamos saber para identificar que os emails encaminhados são seus.</p>
+            <div style={{marginBottom:20}}>
+              <label style={labelStyle}>Email da sua conta Airbnb</label>
+              <input value={airbnbEmail} onChange={e=>setAirbnbEmail(e.target.value)} placeholder="seuemail@gmail.com" type="email" onKeyDown={e=>e.key==="Enter"&&saveEmail()} style={{...inputStyle,borderColor:emailError?"#DC2626":"#E5E5E5"}}/>
+              {emailError&&<div style={{fontSize:12,color:"#DC2626",marginTop:6}}>{emailError}</div>}
+            </div>
+            <button onClick={saveEmail} disabled={emailSaving||!airbnbEmail} style={{...btnStyle(),opacity:emailSaving||!airbnbEmail?0.5:1,cursor:emailSaving||!airbnbEmail?"not-allowed":"pointer"}}>
+              {emailSaving?"Salvando...":"Começar →"}
+            </button>
+          </div>
         </div>}
 
         {/* ═══════════════════ STEP 2 ═══════════════════ */}
@@ -287,7 +294,7 @@ export default function OnboardingPage(){
           {/* Pre-formatted message */}
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Mensagem para o hóspede</div>
-            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>{guestMsg}</div>
+            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>{guestMsg}</div>
             <button onClick={copyMsg} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:copiedMsg?B.accent:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",transition:"background 0.2s",width:"100%"}}>{copiedMsg?"✓ Mensagem copiada!":"Copiar mensagem"}</button>
           </div>
 
