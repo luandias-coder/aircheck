@@ -60,13 +60,16 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const carModel = formData.get("carModel") as string | null;
     const guestPhone = formData.get("guestPhone") as string | null;
 
-    // Delete existing guests if re-editing
+    // Fetch existing guests to preserve document URLs
+    const existingGuests = await prisma.guest.findMany({ where: { reservationId: r.id }, orderBy: { createdAt: "asc" } });
+
+    // Delete existing guests for re-creation
     await prisma.guest.deleteMany({ where: { reservationId: r.id } });
 
     // Create guests with documents
     for (let i = 0; i < guests.length; i++) {
       const g = guests[i];
-      let documentUrl: string | null = null;
+      let documentUrl: string | null = existingGuests[i]?.documentUrl || null;
       const file = formData.get(`document_${i}`) as File | null;
       if (file && file.size > 0) {
         try {
@@ -74,7 +77,6 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
           documentUrl = blob.url;
         } catch (err) {
           console.error(`Upload error guest ${i}:`, err);
-          // Continue without document rather than failing completely
         }
       }
       await prisma.guest.create({
