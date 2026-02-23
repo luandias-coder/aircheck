@@ -319,7 +319,7 @@ function GuestsTab({o}:{o:any}){
 
   // Revenue simulation
   const pricePerGuest=3;
-  const pricePerReservation=3;
+  const pricePerReservation=5;
   const revenueByGuest=o.guests.totalExpected*pricePerGuest;
   const revenueByReservation=o.reservations.total*pricePerReservation;
 
