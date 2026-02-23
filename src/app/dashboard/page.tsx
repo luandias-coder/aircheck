@@ -36,7 +36,7 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
   const router=useRouter();
-  const[tab,setTab]=useState<"reservations"|"properties"|"settings">("reservations");
+  const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
   const[user,setUser]=useState<User|null>(null);
@@ -107,7 +107,7 @@ export default function Dashboard(){
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
-            {([["reservations","Reservas",reservations.length],["properties","Imóveis",properties.length],["settings","Configurações",null]] as const).map(([id,l,n])=>(
+            {([["reservations","Reservas",reservations.length],["properties","Imóveis",properties.length],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
               <button key={id} onClick={()=>setTab(id as any)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
                 {l} {n!==null&&<span style={{marginLeft:4,fontSize:11,fontWeight:700,color:tab===id?B.primary:"#A3A3A3",background:tab===id?B.light:"#F5F5F5",padding:"2px 6px",borderRadius:10}}>{n}</span>}
               </button>
@@ -116,6 +116,7 @@ export default function Dashboard(){
 
           {tab==="reservations"?<ReservationsList reservations={reservations} onNew={()=>setView("new")} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
+          :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
@@ -307,6 +308,179 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
         </div>
       </div>
     </div>
+
+    {/* Email logs */}
+    <EmailLogs />
+  </div>}
+
+// ─── EMAIL LOGS ─────────────────────────────────────────────────
+function EmailLogs(){
+  const[logs,setLogs]=useState<any[]>([]);
+  const[loading,setLoading]=useState(false);
+  const[expanded,setExpanded]=useState<string|null>(null);
+  const[detail,setDetail]=useState<any>(null);
+
+  const fetchLogs=async()=>{setLoading(true);const res=await fetch("/api/settings/email-logs");if(res.ok)setLogs(await res.json());setLoading(false)};
+  const fetchDetail=async(id:string)=>{if(expanded===id){setExpanded(null);setDetail(null);return}setExpanded(id);const res=await fetch(`/api/settings/email-logs?id=${id}`);if(res.ok)setDetail(await res.json())};
+
+  const statusMap:Record<string,{l:string;c:string;bg:string}>={
+    received:{l:"Recebido",c:"#D97706",bg:"#FFFBEB"},
+    success:{l:"Reserva criada",c:"#059669",bg:"#ECFDF5"},
+    parse_failed:{l:"Parse falhou",c:"#DC2626",bg:"#FEF2F2"},
+    duplicate:{l:"Duplicata",c:"#6B7280",bg:"#F5F5F5"},
+    error:{l:"Erro",c:"#DC2626",bg:"#FEF2F2"},
+  };
+
+  return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Log de emails recebidos</div>
+      <button onClick={fetchLogs} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"6px 14px",background:B.light,color:B.primary,border:"none",borderRadius:6,cursor:"pointer"}}>{loading?"...":"Carregar logs"}</button>
+    </div>
+
+    {logs.length===0&&!loading&&<div style={{fontSize:13,color:"#A3A3A3",textAlign:"center",padding:"20px 0"}}>Clique em "Carregar logs" para ver os emails recebidos</div>}
+
+    {logs.map(log=>{
+      const s=statusMap[log.status]||statusMap.error;
+      const date=new Date(log.createdAt);
+      const isOpen=expanded===log.id;
+      let parsed:any=null;
+      try{parsed=log.parsedData?JSON.parse(log.parsedData):null}catch{}
+
+      return<div key={log.id} style={{border:"1px solid #F0F0F0",borderRadius:10,marginBottom:6,overflow:"hidden"}}>
+        <button onClick={()=>fetchDetail(log.id)} style={{width:"100%",padding:"10px 14px",background:isOpen?"#FAFAF9":"#fff",border:"none",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{log.subject||"(sem assunto)"}</span>
+              <span style={{fontSize:10,fontWeight:600,color:s.c,background:s.bg,padding:"2px 8px",borderRadius:10}}>{s.l}</span>
+            </div>
+            <div style={{fontSize:11,color:"#A3A3A3",marginTop:3}}>
+              De: {log.fromEmail} · {date.toLocaleDateString("pt-BR")} {date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}
+            </div>
+          </div>
+          <span style={{fontSize:12,color:"#A3A3A3",transform:isOpen?"rotate(180deg)":"",transition:"transform 0.2s"}}>▼</span>
+        </button>
+
+        {isOpen&&detail&&<div style={{padding:"0 14px 14px",borderTop:"1px solid #F0F0F0"}}>
+          {/* Parsed data */}
+          {parsed?.results&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",marginBottom:6}}>Dados parseados</div>
+            <div style={{background:B.light,borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"'IBM Plex Mono'",lineHeight:1.8,color:B.primary}}>
+              {Object.entries(parsed.results).filter(([k])=>k!=="confidence").map(([k,v])=>
+                <div key={k}><span style={{color:"rgba(59,95,229,0.5)"}}>{k}:</span> <strong>{String(v)||"—"}</strong></div>
+              )}
+              {parsed.errors?.length>0&&<div style={{color:"#DC2626",marginTop:4}}>Erros: {parsed.errors.join(", ")}</div>}
+            </div>
+          </div>}
+
+          {/* Error */}
+          {detail.error&&<div style={{marginTop:10,background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#DC2626"}}>{detail.error}</div>}
+
+          {/* Text body */}
+          {detail.textBody&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Corpo do email (texto)</div>
+            <pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:"12px",borderRadius:8,maxHeight:300,overflowY:"auto",whiteSpace:"pre-wrap",wordBreak:"break-all",lineHeight:1.6}}>{detail.textBody}</pre>
+          </div>}
+
+          {/* HTML body */}
+          {detail.htmlBody&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Corpo do email (HTML) · {detail.htmlBody.length.toLocaleString()} chars</div>
+            <div style={{maxHeight:300,overflowY:"auto",border:"1px solid #E5E5E5",borderRadius:8,padding:"10px",background:"#fff",fontSize:12}} dangerouslySetInnerHTML={{__html:detail.htmlBody.slice(0,20000)}}/>
+          </div>}
+
+          {/* Raw payload keys */}
+          {detail.rawPayload&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Payload bruto (campos)</div>
+            <pre style={{fontFamily:"'IBM Plex Mono'",fontSize:10,background:"#FAFAF9",color:"#737373",padding:"10px",borderRadius:8,maxHeight:200,overflowY:"auto",whiteSpace:"pre-wrap",lineHeight:1.5}}>{(() => {try{const p=JSON.parse(detail.rawPayload);return Object.keys(p).map(k=>`${k}: ${String(p[k]).slice(0,200)}${String(p[k]).length>200?"...":""}`).join("\n")}catch{return detail.rawPayload.slice(0,2000)}})()}</pre>
+          </div>}
+        </div>}
+      </div>
+    })}
+  </div>
+}
+
+// ─── LOGS TAB ───────────────────────────────────────────────────
+interface EmailLog { id:string; fromEmail:string; toEmail:string|null; subject:string|null; textBody:string|null; htmlBody:string|null; rawPayload:string|null; parsedData:string|null; reservationId:string|null; status:string; error:string|null; createdAt:string }
+
+function LogsTab(){
+  const[logs,setLogs]=useState<EmailLog[]>([]);
+  const[loading,setLoading]=useState(true);
+  const[expandedId,setExpandedId]=useState<string|null>(null);
+  const[viewMode,setViewMode]=useState<Record<string,string>>({});
+
+  useEffect(()=>{fetch("/api/logs").then(r=>r.json()).then(setLogs).finally(()=>setLoading(false))},[]);
+
+  const statusColors:Record<string,{c:string;bg:string;l:string}>={
+    received:{c:"#D97706",bg:"#FFFBEB",l:"Recebido"},
+    success:{c:"#059669",bg:"#ECFDF5",l:"Sucesso"},
+    error:{c:"#DC2626",bg:"#FEF2F2",l:"Erro"},
+    parse_failed:{c:"#DC2626",bg:"#FEF2F2",l:"Parse falhou"},
+    duplicate:{c:"#737373",bg:"#F5F5F5",l:"Duplicata"},
+  };
+
+  const toggleView=(id:string,mode:string)=>setViewMode(v=>({...v,[id]:v[id]===mode?"":mode}));
+
+  if(loading)return<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando logs...</div>;
+  if(logs.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📧</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhum email recebido</div><div style={{fontSize:13,color:"#A3A3A3"}}>Quando um email chegar via webhook, aparecerá aqui.</div></div>;
+
+  return<div style={{display:"flex",flexDirection:"column",gap:8}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>📧</span>Últimos {logs.length} emails recebidos via webhook. Clique para expandir.</div>
+    {logs.map(log=>{
+      const st=statusColors[log.status]||statusColors.received;
+      const expanded=expandedId===log.id;
+      const mode=viewMode[log.id]||"";
+      const date=new Date(log.createdAt);
+      const timeStr=`${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
+      let parsed:any=null;
+      try{if(log.parsedData)parsed=JSON.parse(log.parsedData)}catch{}
+
+      return<div key={log.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
+        <button onClick={()=>setExpandedId(expanded?null:log.id)} style={{width:"100%",textAlign:"left",padding:"14px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"Outfit"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{log.subject||"(sem assunto)"}</span>
+                <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:10,color:st.c,background:st.bg}}>{st.l}</span>
+              </div>
+              <div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>
+                De: {log.fromEmail} · {timeStr}
+              </div>
+            </div>
+            <span style={{fontSize:12,color:"#A3A3A3",transform:expanded?"rotate(180deg)":"",transition:"transform 0.2s"}}>▼</span>
+          </div>
+        </button>
+
+        {expanded&&<div style={{padding:"0 16px 16px",borderTop:"1px solid #F0F0F0"}}>
+          {log.error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",marginTop:10,fontSize:12,color:"#DC2626"}}>{log.error}</div>}
+
+          {/* Parsed data summary */}
+          {parsed?.results&&<div style={{background:"#FAFAF9",borderRadius:10,padding:"12px 14px",marginTop:10,border:"1px solid #F0F0F0"}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Dados extraídos pelo parser</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {Object.entries(parsed.results).filter(([k])=>k!=="confidence").map(([k,v])=><div key={k}>
+                <span style={{fontSize:10,fontWeight:600,color:"#A3A3A3"}}>{k}: </span>
+                <span style={{fontSize:12,fontWeight:500,color:v?"#1A1A1A":"#DC2626"}}>{String(v)||"✗ não encontrado"}</span>
+              </div>)}
+            </div>
+            {parsed.errors?.length>0&&<div style={{marginTop:8,fontSize:11,color:"#D97706"}}>⚠️ Erros: {parsed.errors.join(", ")}</div>}
+          </div>}
+
+          {/* Action buttons */}
+          <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
+            {[{id:"text",l:"📄 Texto",d:!!log.textBody},{id:"html",l:"🌐 HTML",d:!!log.htmlBody},{id:"raw",l:"📦 Payload",d:!!log.rawPayload},{id:"parsed",l:"🔍 Parsed",d:!!log.parsedData}].map(b=>
+              <button key={b.id} onClick={()=>toggleView(log.id,b.id)} disabled={!b.d} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:mode===b.id?B.primary:b.d?"#fff":"#F5F5F5",color:mode===b.id?"#fff":b.d?"#1A1A1A":"#A3A3A3",border:`1px solid ${mode===b.id?B.primary:"#E5E5E5"}`,borderRadius:8,cursor:b.d?"pointer":"not-allowed"}}>{b.l}</button>
+            )}
+          </div>
+
+          {/* Content viewer */}
+          {mode&&<div style={{marginTop:10}}>
+            {mode==="text"&&log.textBody&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.textBody}</pre>}
+            {mode==="html"&&log.htmlBody&&<div style={{border:"1px solid #E5E5E5",borderRadius:10,overflow:"hidden"}}><div style={{background:"#FAFAF9",padding:"6px 12px",fontSize:10,fontWeight:600,color:"#A3A3A3",borderBottom:"1px solid #E5E5E5"}}>HTML Preview</div><div style={{maxHeight:500,overflow:"auto",padding:12}} dangerouslySetInnerHTML={{__html:log.htmlBody}}/></div>}
+            {mode==="raw"&&log.rawPayload&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.rawPayload}</pre>}
+            {mode==="parsed"&&log.parsedData&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.parsedData}</pre>}
+          </div>}
+        </div>}
+      </div>
+    })}
   </div>
 }
 
