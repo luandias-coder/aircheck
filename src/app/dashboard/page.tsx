@@ -5,42 +5,11 @@ import { useRouter } from "next/navigation";
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)" };
 
-// ─── CLIENT-SIDE PARSER v5.1 ────────────────────────────────────
-const MONTHS: Record<string,number> = {jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11,janeiro:0,fevereiro:1,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11,january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
-function mm(raw:string):number|null{const c=raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\uFFFD/g,"").replace(/\?/g,"").replace(/\.+$/,"").trim();if(MONTHS[c]!==undefined)return MONTHS[c];if(c.length>=3){for(const[k,v]of Object.entries(MONTHS)){if(k.startsWith(c.slice(0,3)))return v}}return null}
-function fixEnc(t:string):string{return t.replace(/\uFFFD\uFFFDes\b/g,"ções").replace(/\uFFFD\uFFFDo\b/g,"ção").replace(/\uFFFD\uFFFD/g,"çã").replace(/\bEsta\uFFFDo/g,"Estação").replace(/anfitri\uFFFDo/gi,"anfitrião").replace(/pre\uFFFDo/gi,"preço").replace(/servi\uFFFDo/gi,"serviço").replace(/informa\uFFFDes/gi,"informações").replace(/\uFFFD(?=spede)/gi,"ó").replace(/\uFFFD(?=digo)/gi,"ó").replace(/\uFFFD(?=vel\b)/gi,"ó").replace(/L\uFFFD(?=cia\b)/g,"Lú").replace(/l\uFFFD(?=cia\b)/g,"lú").replace(/M\uFFFD(?=rci)/g,"Má").replace(/m\uFFFD(?=rci)/g,"má").replace(/S\uFFFD(?=rgio)/g,"Sé").replace(/s\uFFFD(?=rgio)/g,"sé").replace(/R\uFFFD(?=gis\b)/g,"Ré").replace(/\uFFFD(?=cio\b)/gi,"í").replace(/\uFFFD(?=cia\b)/gi,"í").replace(/\uFFFD(?=nior\b)/gi,"ú").replace(/\uFFFD(?=lio\b)/gi,"ú").replace(/\uFFFD(?=lia\b)/gi,"ú").replace(/\uFFFD(?=nio\b)/gi,"ô").replace(/\uFFFD(?=nia\b)/gi,"ô").replace(/\uFFFD(?=rio\b)/gi,"á").replace(/\uFFFD(?=ria\b)/gi,"á").replace(/\uFFFD(?=rica?\b)/gi,"é").replace(/\uFFFD(?=der\b)/gi,"é").replace(/([A-Za-z])\uFFFD/g,(_,p)=>p).replace(/\uFFFD([A-Za-z])/g,(_,n)=>n).replace(/\uFFFD/g,"")}
-function parsePreview(raw:string){const r:Record<string,any>={};let ey=new Date().getFullYear(),em:number|null=null;const h=raw.match(/Enviado:\s*\w+,\s*(\w+)\s+(\d{1,2}),\s*(\d{4})/i);if(h){ey=parseInt(h[3]);em=mm(h[1])}
-// Room ID, Thread
-const rm=raw.match(/airbnb\.com(?:\.br)?\/rooms\/(\d+)/);if(rm)r.airbnbRoomId=rm[1];
-const tm=raw.match(/(https:\/\/www\.airbnb\.com(?:\.br)?\/hosting\/thread\/(\d+))/);if(tm){r.airbnbThreadUrl=tm[1];r.airbnbThreadId=tm[2]}
-// Guest photo
-const ph=raw.match(/https:\/\/a0\.muscache\.com\/im\/pictures\/user\/[^\s\]\[>]+/);if(ph)r.guestPhotoUrl=ph[0].replace(/\]$/,"");
-// Guest name
-const s=raw.match(/Reserva confirmada\s*[-–—]\s*(.+?)\s+chega\s+em/i);if(s)r.guestFullName=fixEnc(s[1].trim());else{const n=raw.match(/Nova reserva confirmada!\s+(\w[\w\s]*?)\s+chega\s+em/i);if(n)r.guestFullName=fixEnc(n[1].trim());else{const b=raw.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+)+)\s*\n[^\n]*?Identifica/m);if(b)r.guestFullName=fixEnc(b[1].trim())}}
-// Property (with encoding cleanup)
-const pc=raw.match(/\n\s*(.{5,80}?)\s*\n\s*Casa[\/\w\s]*inteiro/i);if(pc){const n=fixEnc(pc[1].trim());if(!n.match(/^(Envie|Nova|Ident|Check|Imagem|http|\[)/i)&&n.length>3)r.propertyName=n}
-if(!r.propertyName){const pi=raw.match(/(?:\]|^)\s*([^[\]\n]{5,80}?)\s+Casa[\/\w\s]*inteiro/im);if(pi){const n=fixEnc(pi[1].trim());if(n.length>3&&!n.match(/^(http|Envie|Nova|<)/i))r.propertyName=n}}
-if(!r.propertyName){const br=/\[([^\]]{5,80}?)\]/g;let bm;while((bm=br.exec(raw))!==null){const n=fixEnc(bm[1].trim());if(!n.match(/^(Airbnb$|AirCover|App Store|Google Play|http|image)/i)&&n.length>3){r.propertyName=n;break}}}
-// Check-in
-const ci=raw.match(/Check[\s-]?in[\s\n]+(?:[^\d\n]{0,12}[.,]\s*)?(\d{1,2})\s+de\s+(\w{3,9})\.?[\s\n]+(\d{1,2}:\d{2})/i);if(ci){const mo=mm(ci[2]);if(mo!==null){let y=ey;if(em!==null&&mo<em)y++;r.checkInDate=`${ci[1].padStart(2,"0")}/${String(mo+1).padStart(2,"0")}/${y}`;r.checkInTime=ci[3];r._cm=mo;r._cy=y}}
-// Check-out
-const co=raw.match(/Check[\s-]?out[\s\n]+(?:[^\d\n]{0,12}[.,]\s*)?(\d{1,2})\s+de\s+(\w{3,9})\.?[\s\n]+(\d{1,2}:\d{2})/i);if(co){const mo=mm(co[2]);if(mo!==null){let y=r._cy||ey;if(r._cm!==undefined&&mo<r._cm)y++;r.checkOutDate=`${co[1].padStart(2,"0")}/${String(mo+1).padStart(2,"0")}/${y}`;r.checkOutTime=co[3]}}
-// Guests
-const gp=[/H.spedes[\s\n]+(\d+)\s+(?:adultos?|h.spedes?|pessoas?)/i,/(\d+)\s+adultos?/i];for(const p of gp){const m=raw.match(p);if(m){r.numGuests=parseInt(m[1]);break}}if(!r.numGuests)r.numGuests=1;
-// Code
-const cp=[/C.digo\s+de\s+confirma..o[\s\n]+([A-Z0-9]{8,12})/i,/confirma(?:ção|..o|cao)[\s\S]{0,30}?([A-Z0-9]{10})/i];for(const p of cp){const m=raw.match(p);if(m){r.confirmationCode=m[1];break}}
-// Payment
-const pm=raw.match(/Voc.\s+recebe[\s\n]+R\$\s*([\d.,]+)/i)||raw.match(/recebe[\s\n]+R\$\s*([\d.,]+)/i);if(pm)r.hostPayment=`R$ ${pm[1]}`;
-// Nights
-const nm=raw.match(/(\d+)\s+noites?/i);if(nm)r.nights=parseInt(nm[1]);
-// Confidence
-const has=(k:string)=>!!r[k];r.confidence=has("guestFullName")&&has("propertyName")&&has("checkInDate")&&has("checkOutDate")&&has("confirmationCode")?"high":has("guestFullName")&&has("checkInDate")?"medium":"low";delete r._cm;delete r._cy;return r}
-
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; photoUrl:string|null; doormanPhones:DoormanPhone[]; reservationCount:number }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;photoUrl:string|null;doormanPhones:DoormanPhone[]}; guests:Guest[] }
+interface Property { id:string; name:string; doormanPhones:DoormanPhone[]; reservationCount:number }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -67,7 +36,7 @@ export default function Dashboard(){
   const[properties,setProperties]=useState<Property[]>([]);
   const[user,setUser]=useState<User|null>(null);
   const[loading,setLoading]=useState(true);
-  const[view,setView]=useState<"list"|"new"|"detail">("list");
+  const[view,setView]=useState<"list"|"detail">("list");
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
 
@@ -114,7 +83,7 @@ export default function Dashboard(){
         <div style={{maxWidth:700,margin:"0 auto",padding:"18px 20px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <Logo/>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            {view==="list"&&tab==="reservations"&&<button onClick={()=>setView("new")} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:20,cursor:"pointer",boxShadow:`0 4px 14px ${B.shadow}`}}>+ Nova reserva</button>}
+            {view==="list"&&tab==="reservations"&&<div/>}
             {/* User avatar */}
             <div style={{position:"relative"}}>
               <button onClick={()=>setShowUserMenu(!showUserMenu)} style={{width:34,height:34,borderRadius:"50%",background:B.light,border:`2px solid ${showUserMenu?B.primary:"transparent"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontFamily:"Outfit",fontSize:13,fontWeight:700,color:B.primary}}>
@@ -136,7 +105,6 @@ export default function Dashboard(){
       <div style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
         {loading&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando...</div>}
 
-        {!loading&&view==="new"&&<NewFlow onDone={()=>{setView("list");fetchData()}} onCancel={()=>setView("list")}/>}
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
 
         {!loading&&view==="list"&&<>
@@ -158,7 +126,7 @@ export default function Dashboard(){
             ))}
           </div>
 
-          {tab==="reservations"?<ReservationsList active={active} archived={archived} onNew={()=>setView("new")} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+          {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
           :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
@@ -169,7 +137,7 @@ export default function Dashboard(){
 }
 
 // ─── RESERVATIONS LIST ──────────────────────────────────────────
-function ReservationsList({active,archived,onNew,onSelect}:{active:Reservation[];archived:Reservation[];onNew:()=>void;onSelect:(id:string)=>void}){
+function ReservationsList({active,archived,onSelect}:{active:Reservation[];archived:Reservation[];onSelect:(id:string)=>void}){
   const[showArchived,setShowArchived]=useState(false);
   const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:isArch?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -188,7 +156,7 @@ function ReservationsList({active,archived,onNew,onSelect}:{active:Reservation[]
       </div>
     </div>
   </button>};
-  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",marginBottom:16}}>Cole o email do Airbnb para criar a primeira</div><button onClick={onNew} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:B.primary,color:"#fff",border:"none",borderRadius:20,cursor:"pointer"}}>+ Nova reserva</button></div>;
+  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3"}}>Encaminhe um email de confirmação do Airbnb para <strong style={{color:"#1A1A1A"}}>reservas@aircheck.com.br</strong> e a reserva aparecerá aqui automaticamente.</div></div>;
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
     {active.map(r=><RCard key={r.id} r={r}/>)}
     {archived.length>0&&<>
@@ -202,46 +170,6 @@ function ReservationsList({active,archived,onNew,onSelect}:{active:Reservation[]
 }
 
 // ─── NEW RESERVATION ────────────────────────────────────────────
-function NewFlow({onDone,onCancel}:{onDone:()=>void;onCancel:()=>void}){
-  const[step,setStep]=useState<"paste"|"preview">("paste");
-  const[email,setEmail]=useState("");
-  const[preview,setPreview]=useState<any>(null);
-  const[saving,setSaving]=useState(false);
-  const[error,setError]=useState("");
-
-  const parse=()=>{if(!email.trim())return;setPreview(parsePreview(email));setStep("preview")};
-  const confirm=async()=>{setSaving(true);setError("");try{const res=await fetch("/api/reservations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({emailText:email})});if(!res.ok){setError((await res.json()).error||"Erro");setSaving(false);return}onDone()}catch{setError("Erro de conexão");setSaving(false)}};
-
-  if(step==="preview"&&preview){
-    const cf=preview.confidence;
-    return<div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h3 style={{fontSize:16,fontWeight:700,color:"#1A1A1A",margin:0}}>Confirmar dados</h3><span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,color:cf==="high"?"#059669":cf==="medium"?"#D97706":"#DC2626",background:cf==="high"?"#ECFDF5":cf==="medium"?"#FFFBEB":"#FEF2F2"}}>{cf==="high"?"✓ Tudo certo":cf==="medium"?"⚠ Parcial":"✗ Revisar"}</span></div>
-      <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"18px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-        <div style={{fontSize:20,fontWeight:800,color:"#1A1A1A"}}>{preview.guestFullName||"—"}</div>
-        <div style={{fontSize:13,color:"#737373",marginTop:4}}>📍 {preview.propertyName||"—"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginTop:16,paddingTop:14,borderTop:"1px solid #F0F0F0"}}>
-          {[{l:"Check-in",v:preview.checkInDate,s:preview.checkInTime},{l:"Check-out",v:preview.checkOutDate,s:preview.checkOutTime},{l:"Hóspedes",v:preview.numGuests}].map((x,i)=><div key={i}><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>{x.l}</div><div style={{fontSize:14,fontWeight:600,color:"#1A1A1A",marginTop:3}}>{x.v||"—"}</div>{x.s&&<div style={{fontSize:11,color:"#A3A3A3"}}>{x.s}</div>}</div>)}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:12}}>
-          <div><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Código</div><div style={{fontFamily:"'IBM Plex Mono'",fontSize:14,fontWeight:600,color:"#1A1A1A",marginTop:3}}>{preview.confirmationCode||"—"}</div></div>
-          <div><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Pagamento</div><div style={{fontSize:14,fontWeight:600,color:"#059669",marginTop:3}}>{preview.hostPayment||"—"}</div></div>
-        </div>
-      </div>
-      {error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#DC2626"}}>{error}</div>}
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={confirm} disabled={saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:B.primary,color:"#fff",border:"none",borderRadius:10,cursor:"pointer",opacity:saving?0.5:1}}>{saving?"Criando...":"✓ Criar reserva"}</button>
-        <button onClick={()=>setStep("paste")} style={{fontFamily:"Outfit",fontSize:13,padding:"10px 16px",background:"#fff",color:"#737373",border:"1px solid #E5E5E5",borderRadius:10,cursor:"pointer"}}>← Voltar</button>
-        <button onClick={onCancel} style={{fontFamily:"Outfit",fontSize:13,padding:"10px 16px",background:"none",color:"#A3A3A3",border:"none",cursor:"pointer",marginLeft:"auto"}}>Cancelar</button>
-      </div>
-    </div>
-  }
-  return<div style={{display:"flex",flexDirection:"column",gap:12}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h3 style={{fontSize:16,fontWeight:700,color:"#1A1A1A",margin:0}}>Nova reserva</h3><button onClick={onCancel} style={{fontSize:18,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>✕</button></div>
-    <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"16px 18px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em"}}>Cole o email de confirmação do Airbnb</label><textarea value={email} onChange={e=>setEmail(e.target.value)} placeholder="Abra o email do Airbnb → Selecione tudo (Ctrl+A) → Copie → Cole aqui" style={{width:"100%",marginTop:8,padding:12,border:"1px solid #E5E5E5",borderRadius:10,fontSize:12,fontFamily:"'IBM Plex Mono'",minHeight:150,resize:"vertical",lineHeight:1.6,boxSizing:"border-box",background:"#FAFAF9"}} autoFocus/></div>
-    <button onClick={parse} disabled={!email.trim()} style={{width:"100%",padding:13,fontFamily:"Outfit",fontSize:14,fontWeight:600,background:email.trim()?B.primary:"#D4D4D4",color:email.trim()?"#fff":"#A3A3A3",border:"none",borderRadius:12,cursor:email.trim()?"pointer":"not-allowed"}}>Extrair dados do email →</button>
-  </div>
-}
-
 // ─── DETAIL VIEW ────────────────────────────────────────────────
 function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;onRefresh:()=>void}){
   const[copied,setCopied]=useState(false);
@@ -268,7 +196,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div style={{display:"flex",gap:14,alignItems:"center"}}>
           {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"3px solid #F0F0F0"}}/>:<div style={{width:56,height:56,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
-          <div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:2,display:"flex",alignItems:"center",gap:6}}>{r.property.photoUrl&&<img src={r.property.photoUrl} alt="" style={{width:20,height:20,borderRadius:4,objectFit:"cover"}}/>}📍 {r.property.name}</div></div>
+          <div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:2}}>📍 {r.property.name}</div></div>
         </div>
         <Badge status={r.status}/>
       </div>
@@ -308,6 +236,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
         </div>)}
       </div>
       {(r.carPlate||r.carModel)&&<div style={{fontSize:13,color:"#737373",marginTop:10}}>🚗 {[r.carModel,r.carPlate].filter(Boolean).join(" · ")}</div>}
+      {r.status==="form_filled"&&<button onClick={async()=>{if(!confirm("Reabrir o formulário? O hóspede poderá preencher novamente e os dados atuais serão substituídos."))return;await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"pending_form"})});onRefresh()}} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"8px 14px",background:"none",color:"#D97706",border:"1px solid #FDE68A",borderRadius:8,cursor:"pointer",marginTop:12}}>🔓 Reabrir formulário para o hóspede</button>}
     </div>
     :<div className="fade-up" style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:16,padding:"16px 20px",display:"flex",alignItems:"center",gap:12}}><div style={{width:40,height:40,borderRadius:"50%",background:"#FEF3C7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>⏳</div><div><div style={{fontSize:14,fontWeight:600,color:"#D97706"}}>Aguardando preenchimento</div><div style={{fontSize:12,color:"#D97706",marginTop:2}}>O hóspede ainda não preencheu o formulário.</div></div></div>}
 
