@@ -49,6 +49,9 @@ export default function OnboardingPage(){
   // Step 5
   const[copied,setCopied]=useState(false);
 
+  // Step 6
+  const[copiedMsg,setCopiedMsg]=useState(false);
+
   // Step 7
   const[whatsappData,setWhatsappData]=useState<{message:string;links:any[]}|null>(null);
 
@@ -272,44 +275,49 @@ export default function OnboardingPage(){
         </div>}
 
         {/* ═══════════════════ STEP 6 ═══════════════════ */}
-        {step===6&&reservation&&<div style={cardStyle}>
+        {step===6&&reservation&&(()=>{
+          const formUrl=typeof window!=="undefined"?`${window.location.origin}/checkin/${reservation.formToken}`:`/checkin/${reservation.formToken}`;
+          const guestMsg=`Olá ${reservation.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
+          const copyMsg=()=>{navigator.clipboard.writeText(guestMsg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),3000)};
+          return<div style={cardStyle}>
           <StepBadge n={6}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Envie o link ao hóspede</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Agora é só enviar o link do formulário ao hóspede pela <strong style={{color:"#1A1A1A"}}>conversa do Airbnb</strong>.</p>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Envie ao hóspede pelo Airbnb</h2>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Copie a mensagem abaixo e cole na conversa do Airbnb com <strong style={{color:"#1A1A1A"}}>{reservation.guestFullName}</strong>.</p>
 
-          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"20px",marginBottom:16}}>
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff",flexShrink:0}}>1</div>
-                <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.6}}>Abra a conversa com <strong>{reservation.guestFullName}</strong> no Airbnb</div>
+          {/* Pre-formatted message */}
+          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Mensagem para o hóspede</div>
+            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>{guestMsg}</div>
+            <button onClick={copyMsg} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:copiedMsg?B.accent:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",transition:"background 0.2s",width:"100%"}}>{copiedMsg?"✓ Mensagem copiada!":"Copiar mensagem"}</button>
+          </div>
+
+          {/* Steps */}
+          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"16px 20px",marginBottom:16}}>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{width:24,height:24,borderRadius:"50%",background:copiedMsg?B.accent:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>{copiedMsg?"✓":"1"}</div>
+                <span style={{fontSize:13,color:copiedMsg?"#059669":"#1A1A1A",fontWeight:copiedMsg?600:400}}>Copie a mensagem acima</span>
               </div>
-              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff",flexShrink:0}}>2</div>
-                <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.6}}>Cole o link do formulário e envie ao hóspede</div>
-              </div>
-              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff",flexShrink:0}}>3</div>
-                <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.6}}>Aguarde o hóspede preencher o formulário</div>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>2</div>
+                <span style={{fontSize:13,color:"#1A1A1A"}}>Abra a conversa no Airbnb e cole a mensagem</span>
               </div>
             </div>
           </div>
 
-          {reservation.airbnbThreadUrl&&<a href={reservation.airbnbThreadUrl} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
-            <span style={{fontSize:18}}>💬</span>
-            Abrir conversa com {reservation.guestFullName} no Airbnb ↗
+          {/* Airbnb button */}
+          {reservation.airbnbThreadUrl?<a href={reservation.airbnbThreadUrl} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
+            💬 Abrir conversa com {reservation.guestFullName.split(" ")[0]} no Airbnb ↗
+          </a>:<a href="https://www.airbnb.com.br/hosting/messages" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
+            💬 Abrir mensagens do Airbnb ↗
           </a>}
 
-          {!reservation.airbnbThreadUrl&&<a href="https://www.airbnb.com.br/hosting/messages" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
-            <span style={{fontSize:18}}>💬</span>
-            Abrir mensagens do Airbnb ↗
-          </a>}
-
-          <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"12px 16px",fontSize:12,color:B.primary,lineHeight:1.6,marginBottom:20}}>
+          <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary,lineHeight:1.6,marginBottom:20}}>
             ⚠️ Você precisa estar logado na sua <strong>conta de anfitrião</strong> do Airbnb para acessar a conversa.
           </div>
 
           <button onClick={()=>{loadWhatsapp();setStep(7)}} style={btnStyle()}>Continuar →</button>
-        </div>}
+        </div>})()
 
         {/* ═══════════════════ STEP 7 ═══════════════════ */}
         {step===7&&reservation&&<div style={cardStyle}>
