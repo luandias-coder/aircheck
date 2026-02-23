@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AirCheck — Check-in Digital",
   description: "Check-in digital automatizado para anfitriões de Airbnb",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
