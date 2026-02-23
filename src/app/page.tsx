@@ -85,6 +85,7 @@ function PhoneMockup() {
 }
 
 function WhatsAppMockup() {
+  const sep = "--------------------------------------";
   return (
     <div style={{ maxWidth: 320, margin: "0 auto" }}>
       <div style={{ background: "#E7DCCF", borderRadius: 16, padding: 16, boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
@@ -92,27 +93,37 @@ function WhatsAppMockup() {
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff", fontWeight: 700 }}>P</div>
           <div><div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Portaria Central</div><div style={{ fontSize: 10, color: "#ffffff90" }}>online</div></div>
         </div>
-        <div style={{ background: "#DCF8C6", borderRadius: "0 12px 12px 12px", padding: "10px 12px", fontSize: 12, color: "#303030", lineHeight: 1.7, maxWidth: "90%", boxShadow: "0 1px 2px rgba(0,0,0,0.08)", fontFamily: "system-ui, sans-serif" }}>
+        <div style={{ background: "#DCF8C6", borderRadius: "0 12px 12px 12px", padding: "10px 12px", fontSize: 11, color: "#303030", lineHeight: 1.65, maxWidth: "90%", boxShadow: "0 1px 2px rgba(0,0,0,0.08)", fontFamily: "system-ui, sans-serif", whiteSpace: "pre-wrap" }}>
+          <div style={{ fontSize: 9, color: "#667781", letterSpacing: "0.02em" }}>{sep}</div>
           <div>🏠 <strong>CHECK-IN</strong></div>
-          <div>📍 <strong>Studio Estação Curitiba</strong></div>
-          <div style={{ height: 6 }} />
-          <div>📅 Entrada: 28/02/2026 às 15:00</div>
-          <div>📅 Saída: 02/03/2026 às 12:00</div>
-          <div>🌙 Noites: 2</div>
-          <div style={{ height: 6 }} />
+          <div>📍 <strong>Apartamento Centro</strong></div>
+          <div style={{ fontSize: 9, color: "#667781", letterSpacing: "0.02em" }}>{sep}</div>
+          <div style={{ height: 4 }} />
+          <div>🏢 <strong>Unidade:</strong> 501</div>
+          <div>🅿️ <strong>Vaga:</strong> G1-25</div>
+          <div>📅 <strong>Entrada:</strong> 28/02/2026 às 15:00</div>
+          <div>📅 <strong>Saída:</strong> 02/03/2026 às 12:00</div>
+          <div>🌙 <strong>Noites:</strong> 2</div>
+          <div>📋 <strong>Código:</strong> HM5T5WBX</div>
+          <div>📱 <strong>Contato:</strong> +5541999990000</div>
+          <div style={{ height: 4 }} />
+          <div style={{ fontSize: 9, color: "#667781", letterSpacing: "0.02em" }}>{sep}</div>
           <div>👥 <strong>HÓSPEDES (2)</strong></div>
-          <div style={{ height: 4 }} />
+          <div style={{ fontSize: 9, color: "#667781", letterSpacing: "0.02em" }}>{sep}</div>
+          <div style={{ height: 3 }} />
           <div>👤 <strong>João da Silva</strong></div>
-          <div>&nbsp;&nbsp;&nbsp;🎂 01/01/1990</div>
-          <div>&nbsp;&nbsp;&nbsp;📄 CPF: 000.000.000-00</div>
-          <div style={{ height: 4 }} />
+          <div>&nbsp;&nbsp;&nbsp;🎂 12/05/1990</div>
+          <div>&nbsp;&nbsp;&nbsp;🪪 CPF: 000.000.000-00</div>
+          <div>&nbsp;&nbsp;&nbsp;🪪 RG: 00000000</div>
+          <div style={{ height: 3 }} />
           <div>👤 <strong>Maria Souza</strong></div>
-          <div>&nbsp;&nbsp;&nbsp;🎂 01/01/1990</div>
-          <div>&nbsp;&nbsp;&nbsp;📄 CPF: 000.000.000-00</div>
-          <div style={{ height: 6 }} />
-          <div>🚗 Veículo: Onix Preto - XYZ0A00</div>
+          <div>&nbsp;&nbsp;&nbsp;🎂 08/11/1993</div>
+          <div>&nbsp;&nbsp;&nbsp;🪪 CPF: 000.000.000-00</div>
           <div style={{ height: 4 }} />
-          <div style={{ fontStyle: "italic", color: "#667781", fontSize: 11 }}>✅ Enviado via AirCheck</div>
+          <div>🚗 <strong>Veículo:</strong> Onix Preto • XYZ0A00</div>
+          <div style={{ height: 4 }} />
+          <div style={{ fontSize: 9, color: "#667781", letterSpacing: "0.02em" }}>{sep}</div>
+          <div style={{ fontStyle: "italic", color: "#667781", fontSize: 10 }}>✅ <em>Enviado via AirCheck</em></div>
           <div style={{ textAlign: "right", fontSize: 10, color: "#667781", marginTop: 4 }}>14:32 ✓✓</div>
         </div>
       </div>
@@ -253,7 +264,7 @@ export default function LandingPage() {
                 <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>A portaria recebe<br /><span className="grad-text">tudo organizado.</span></h2>
                 <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, marginBottom: 24 }}>Mensagem formatada, com todos os dados dos hóspedes, documentos, veículo. Direto no WhatsApp da portaria, pronto para liberar a entrada.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {["Dados de todos os hóspedes", "Documentos e CPF inclusos", "Informações do veículo", "Um clique para enviar"].map((t, i) => (
+                  {["Dados de todos os hóspedes", "CPF, RG e foto do documento", "Unidade e vaga de garagem", "Um clique para enviar"].map((t, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: B.accent, fontWeight: 700, flexShrink: 0 }}>✓</div>
                       <span style={{ fontSize: 14, fontWeight: 500, color: B.dark }}>{t}</span>
