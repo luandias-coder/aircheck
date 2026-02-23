@@ -135,13 +135,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não foi possível extrair dados suficientes", errors, logId }, { status: 422 });
     }
 
-    // Find or create property
+    // Find or create property (try airbnbRoomId first, then name)
     const propName = results.propertyName || "Imóvel não identificado";
-    let property = await prisma.property.findUnique({
-      where: { userId_name: { userId, name: propName } },
-    });
+    let property = null;
+    if (results.airbnbRoomId) {
+      property = await prisma.property.findFirst({
+        where: { userId, airbnbRoomId: results.airbnbRoomId },
+      });
+      // Update name if we have a better one
+      if (property && results.propertyName && property.name !== results.propertyName) {
+        property = await prisma.property.update({
+          where: { id: property.id },
+          data: { name: results.propertyName },
+        });
+      }
+    }
     if (!property) {
-      property = await prisma.property.create({ data: { userId, name: propName } });
+      property = await prisma.property.findUnique({
+        where: { userId_name: { userId, name: propName } },
+      });
+    }
+    if (!property) {
+      property = await prisma.property.create({
+        data: { userId, name: propName, airbnbRoomId: results.airbnbRoomId || null },
+      });
+    } else if (results.airbnbRoomId && !property.airbnbRoomId) {
+      property = await prisma.property.update({
+        where: { id: property.id },
+        data: { airbnbRoomId: results.airbnbRoomId },
+      });
     }
 
     // Check duplicate
@@ -164,6 +186,7 @@ export async function POST(req: NextRequest) {
         userId,
         propertyId: property.id,
         guestFullName: results.guestFullName || "Hóspede",
+        guestPhotoUrl: results.guestPhotoUrl || null,
         checkInDate: results.checkInDate || "",
         checkInTime: results.checkInTime || "15:00",
         checkOutDate: results.checkOutDate || "",
@@ -172,7 +195,8 @@ export async function POST(req: NextRequest) {
         nights: results.nights,
         confirmationCode: results.confirmationCode,
         hostPayment: results.hostPayment,
-        guestMessage: results.guestMessage,
+        airbnbThreadId: results.airbnbThreadId || null,
+        airbnbThreadUrl: results.airbnbThreadUrl || null,
         status: "pending_form",
       },
     });
