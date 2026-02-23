@@ -62,9 +62,9 @@ export default function CheckInPage({params}:{params:{token:string}}){
     guests.forEach((g,i)=>{if(g.file)fd.append(`document_${i}`,g.file)});
     try{
       const res=await fetch(`/api/checkin/${params.token}`,{method:"POST",body:fd});
-      if(!res.ok)throw new Error();
+      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Erro ${res.status}`)}
       setSubmitted(true);setIsEdit(false);
-    }catch{alert("Erro ao enviar. Tente novamente.")}finally{setSubmitting(false)}
+    }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false)}
   };
 
   if(loading)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#FAFAF9"}}><div style={{fontFamily:"Outfit",fontSize:14,color:"#A3A3A3"}}>Carregando...</div></div>;
