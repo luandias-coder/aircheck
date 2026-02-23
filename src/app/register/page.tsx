@@ -20,23 +20,33 @@ function HouseLogo({ size = 48 }: { size?: number }) {
   );
 }
 
+function maskPhone(v:string){const d=v.replace(/\D/g,"").slice(0,11);if(d.length<=2)return d;if(d.length<=7)return`(${d.slice(0,2)}) ${d.slice(2)}`;return`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`}
+
+const fieldLbl:React.CSSProperties = { fontSize: 10, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 };
+const fieldInput:React.CSSProperties = { width: "100%", fontFamily: "Outfit", fontSize: 16, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" };
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (password !== confirmPassword) { setError("As senhas não coincidem"); return; }
+    if (password.length < 6) { setError("A senha deve ter no mínimo 6 caracteres"); return; }
     setLoading(true);
     try {
+      const rawPhone = phone.replace(/\D/g,"");
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, phone: rawPhone || undefined }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -53,6 +63,7 @@ export default function RegisterPage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAF9", fontFamily: "Outfit, sans-serif", padding: 20 }}>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       <div style={{ width: "100%", maxWidth: 380 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "inline-block", marginBottom: 16 }}><HouseLogo size={52} /></div>
@@ -66,21 +77,34 @@ export default function RegisterPage() {
           {error && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#DC2626" }}>{error}</div>}
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 10, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Nome</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" required
-              style={{ width: "100%", fontFamily: "Outfit", fontSize: 14, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" }} />
+            <label style={fieldLbl}>Nome</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" required enterKeyHint="next"
+              style={fieldInput} />
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 10, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required
-              style={{ width: "100%", fontFamily: "Outfit", fontSize: 14, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" }} />
+            <label style={fieldLbl}>WhatsApp / Telefone</label>
+            <input type="tel" value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(41) 99999-0000" inputMode="tel" enterKeyHint="next"
+              style={fieldInput} />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={fieldLbl}>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required enterKeyHint="next"
+              style={fieldInput} />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={fieldLbl}>Senha</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required minLength={6} enterKeyHint="next"
+              style={fieldInput} />
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 10, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>Senha</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required minLength={6}
-              style={{ width: "100%", fontFamily: "Outfit", fontSize: 14, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" }} />
+            <label style={fieldLbl}>Confirmar senha</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" required minLength={6} enterKeyHint="done"
+              style={{ ...fieldInput, borderColor: confirmPassword && confirmPassword !== password ? "#FCA5A5" : "#E5E5E5" }} />
+            {confirmPassword && confirmPassword !== password && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4 }}>As senhas não coincidem</div>}
           </div>
 
           <button type="submit" disabled={loading} style={{
