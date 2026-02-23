@@ -187,7 +187,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
   const markSent=async()=>{await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"sent_to_doorman"})});onRefresh()};
   const handleDelete=async()=>{if(!confirm("Tem certeza que deseja excluir esta reserva?"))return;setDeleting(true);await fetch(`/api/reservations/${r.id}`,{method:"DELETE"});onBack()};
 
-  const checkinMsg=`Olá ${r.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É obrigatório para liberação na portaria do prédio.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
+  const checkinMsg=`Olá ${r.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
   const copyCheckinMsg=()=>{navigator.clipboard.writeText(checkinMsg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),2500)};
 
   return<div style={{display:"flex",flexDirection:"column",gap:12}}>
