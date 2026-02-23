@@ -8,7 +8,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── CLIENT-SIDE PARSER v5.1 ────────────────────────────────────
 const MONTHS: Record<string,number> = {jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11,janeiro:0,fevereiro:1,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11,january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
 function mm(raw:string):number|null{const c=raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\uFFFD/g,"").replace(/\?/g,"").replace(/\.+$/,"").trim();if(MONTHS[c]!==undefined)return MONTHS[c];if(c.length>=3){for(const[k,v]of Object.entries(MONTHS)){if(k.startsWith(c.slice(0,3)))return v}}return null}
-function fixEnc(t:string):string{return t.replace(/\uFFFD\uFFFDes\b/g,"ções").replace(/\uFFFD\uFFFDo\b/g,"ção").replace(/\uFFFD\uFFFD/g,"çã").replace(/\bEsta\uFFFDo/g,"Estação").replace(/\uFFFD(?=spede)/gi,"ó").replace(/\uFFFD(?=digo)/gi,"ó").replace(/\uFFFD(?=rio)/gi,"á").replace(/\uFFFD(?=vel)/gi,"ó").replace(/anfitri\uFFFDo/gi,"anfitrião").replace(/pre\uFFFDo/gi,"preço").replace(/servi\uFFFDo/gi,"serviço").replace(/informa\uFFFDes/gi,"informações").replace(/\uFFFD/g,"")}
+function fixEnc(t:string):string{return t.replace(/\uFFFD\uFFFDes\b/g,"ções").replace(/\uFFFD\uFFFDo\b/g,"ção").replace(/\uFFFD\uFFFD/g,"çã").replace(/\bEsta\uFFFDo/g,"Estação").replace(/anfitri\uFFFDo/gi,"anfitrião").replace(/pre\uFFFDo/gi,"preço").replace(/servi\uFFFDo/gi,"serviço").replace(/informa\uFFFDes/gi,"informações").replace(/\uFFFD(?=spede)/gi,"ó").replace(/\uFFFD(?=digo)/gi,"ó").replace(/\uFFFD(?=vel\b)/gi,"ó").replace(/L\uFFFD(?=cia\b)/g,"Lú").replace(/l\uFFFD(?=cia\b)/g,"lú").replace(/M\uFFFD(?=rci)/g,"Má").replace(/m\uFFFD(?=rci)/g,"má").replace(/S\uFFFD(?=rgio)/g,"Sé").replace(/s\uFFFD(?=rgio)/g,"sé").replace(/R\uFFFD(?=gis\b)/g,"Ré").replace(/\uFFFD(?=cio\b)/gi,"í").replace(/\uFFFD(?=cia\b)/gi,"í").replace(/\uFFFD(?=nior\b)/gi,"ú").replace(/\uFFFD(?=lio\b)/gi,"ú").replace(/\uFFFD(?=lia\b)/gi,"ú").replace(/\uFFFD(?=nio\b)/gi,"ô").replace(/\uFFFD(?=nia\b)/gi,"ô").replace(/\uFFFD(?=rio\b)/gi,"á").replace(/\uFFFD(?=ria\b)/gi,"á").replace(/\uFFFD(?=rica?\b)/gi,"é").replace(/\uFFFD(?=der\b)/gi,"é").replace(/([A-Za-z])\uFFFD/g,(_,p)=>p).replace(/\uFFFD([A-Za-z])/g,(_,n)=>n).replace(/\uFFFD/g,"")}
 function parsePreview(raw:string){const r:Record<string,any>={};let ey=new Date().getFullYear(),em:number|null=null;const h=raw.match(/Enviado:\s*\w+,\s*(\w+)\s+(\d{1,2}),\s*(\d{4})/i);if(h){ey=parseInt(h[3]);em=mm(h[1])}
 // Room ID, Thread
 const rm=raw.match(/airbnb\.com(?:\.br)?\/rooms\/(\d+)/);if(rm)r.airbnbRoomId=rm[1];
@@ -16,7 +16,7 @@ const tm=raw.match(/(https:\/\/www\.airbnb\.com(?:\.br)?\/hosting\/thread\/(\d+)
 // Guest photo
 const ph=raw.match(/https:\/\/a0\.muscache\.com\/im\/pictures\/user\/[^\s\]\[>]+/);if(ph)r.guestPhotoUrl=ph[0].replace(/\]$/,"");
 // Guest name
-const s=raw.match(/Reserva confirmada\s*[-–—]\s*(.+?)\s+chega\s+em/i);if(s)r.guestFullName=s[1].trim();else{const n=raw.match(/Nova reserva confirmada!\s+(\w[\w\s]*?)\s+chega\s+em/i);if(n)r.guestFullName=n[1].trim();else{const b=raw.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+)+)\s*\n[^\n]*?Identifica/m);if(b)r.guestFullName=b[1].trim()}}
+const s=raw.match(/Reserva confirmada\s*[-–—]\s*(.+?)\s+chega\s+em/i);if(s)r.guestFullName=fixEnc(s[1].trim());else{const n=raw.match(/Nova reserva confirmada!\s+(\w[\w\s]*?)\s+chega\s+em/i);if(n)r.guestFullName=fixEnc(n[1].trim());else{const b=raw.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+)+)\s*\n[^\n]*?Identifica/m);if(b)r.guestFullName=fixEnc(b[1].trim())}}
 // Property (with encoding cleanup)
 const pc=raw.match(/\n\s*(.{5,80}?)\s*\n\s*Casa[\/\w\s]*inteiro/i);if(pc){const n=fixEnc(pc[1].trim());if(!n.match(/^(Envie|Nova|Ident|Check|Imagem|http|\[)/i)&&n.length>3)r.propertyName=n}
 if(!r.propertyName){const pi=raw.match(/(?:\]|^)\s*([^[\]\n]{5,80}?)\s+Casa[\/\w\s]*inteiro/im);if(pi){const n=fixEnc(pi[1].trim());if(n.length>3&&!n.match(/^(http|Envie|Nova|<)/i))r.propertyName=n}}
@@ -39,8 +39,8 @@ const has=(k:string)=>!!r[k];r.confidence=has("guestFullName")&&has("propertyNam
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; doormanPhones:DoormanPhone[]; reservationCount:number }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
+interface Property { id:string; name:string; photoUrl:string|null; doormanPhones:DoormanPhone[]; reservationCount:number }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;photoUrl:string|null;doormanPhones:DoormanPhone[]}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div style={{display:"flex",gap:14,alignItems:"center"}}>
           {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"3px solid #F0F0F0"}}/>:<div style={{width:56,height:56,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
-          <div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:2}}>📍 {r.property.name}</div></div>
+          <div><div style={{fontSize:22,fontWeight:800,color:"#1A1A1A"}}>{r.guestFullName}</div><div style={{fontSize:13,color:"#A3A3A3",marginTop:2,display:"flex",alignItems:"center",gap:6}}>{r.property.photoUrl&&<img src={r.property.photoUrl} alt="" style={{width:20,height:20,borderRadius:4,objectFit:"cover"}}/>}📍 {r.property.name}</div></div>
         </div>
         <Badge status={r.status}/>
       </div>
@@ -334,11 +334,26 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
   const[newEmail,setNewEmail]=useState("");
   const[saving,setSaving]=useState(false);
   const[error,setError]=useState("");
+  // Password change
+  const[curPw,setCurPw]=useState("");
+  const[newPw,setNewPw]=useState("");
+  const[confirmPw,setConfirmPw]=useState("");
+  const[pwSaving,setPwSaving]=useState(false);
+  const[pwMsg,setPwMsg]=useState<{t:"ok"|"err";m:string}|null>(null);
 
   const addEmail=async()=>{if(!newEmail)return;setSaving(true);setError("");const res=await fetch("/api/settings/inbound-emails",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:newEmail})});if(!res.ok){setError((await res.json()).error||"Erro");setSaving(false);return}setNewEmail("");setSaving(false);onRefresh()};
   const removeEmail=async(id:string)=>{await fetch("/api/settings/inbound-emails",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});onRefresh()};
-
-  const webhookUrl=typeof window!=="undefined"?`${window.location.origin}/api/inbound-email`:"";
+  const changePw=async()=>{
+    setPwMsg(null);
+    if(!curPw||!newPw)return setPwMsg({t:"err",m:"Preencha todos os campos"});
+    if(newPw.length<6)return setPwMsg({t:"err",m:"Mínimo 6 caracteres"});
+    if(newPw!==confirmPw)return setPwMsg({t:"err",m:"As senhas não coincidem"});
+    setPwSaving(true);
+    const res=await fetch("/api/auth/password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({currentPassword:curPw,newPassword:newPw})});
+    if(res.ok){setPwMsg({t:"ok",m:"Senha alterada com sucesso!"});setCurPw("");setNewPw("");setConfirmPw("")}
+    else{const d=await res.json().catch(()=>({}));setPwMsg({t:"err",m:d.error||"Erro ao alterar senha"})}
+    setPwSaving(false);
+  };
 
   return<div style={{display:"flex",flexDirection:"column",gap:16}}>
     {/* Profile */}
@@ -347,6 +362,20 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       <div style={{display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:48,height:48,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:700,color:B.primary}}>{(user?.name||user?.email||"U")[0].toUpperCase()}</div>
         <div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{user?.name||"Anfitrião"}</div><div style={{fontSize:13,color:"#A3A3A3"}}>{user?.email}</div></div>
+      </div>
+    </div>
+
+    {/* Password change */}
+    <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Alterar senha</div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Senha atual</label><input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,boxSizing:"border-box"}}/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Nova senha</label><input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Mín. 6 caracteres" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:`1px solid ${newPw&&newPw.length<6?"#DC2626":"#E5E5E5"}`,borderRadius:8,boxSizing:"border-box"}}/></div>
+          <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Confirmar nova senha</label><input type="password" value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:`1px solid ${confirmPw&&confirmPw!==newPw?"#DC2626":"#E5E5E5"}`,borderRadius:8,boxSizing:"border-box"}}/></div>
+        </div>
+        {pwMsg&&<div style={{background:pwMsg.t==="ok"?"#ECFDF5":"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:pwMsg.t==="ok"?"#059669":"#DC2626"}}>{pwMsg.m}</div>}
+        <button onClick={changePw} disabled={pwSaving||!curPw||!newPw||!confirmPw} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:pwSaving||!curPw||!newPw||!confirmPw?0.5:1,alignSelf:"flex-start"}}>{pwSaving?"Alterando...":"Alterar senha"}</button>
       </div>
     </div>
 
@@ -388,104 +417,15 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
         </div>
       </div>
     </div>
-
-    {/* Email logs */}
-    <EmailLogs />
   </div>}
 
-// ─── EMAIL LOGS ─────────────────────────────────────────────────
-function EmailLogs(){
-  const[logs,setLogs]=useState<any[]>([]);
-  const[loading,setLoading]=useState(false);
-  const[expanded,setExpanded]=useState<string|null>(null);
-  const[detail,setDetail]=useState<any>(null);
-
-  const fetchLogs=async()=>{setLoading(true);const res=await fetch("/api/settings/email-logs");if(res.ok)setLogs(await res.json());setLoading(false)};
-  const fetchDetail=async(id:string)=>{if(expanded===id){setExpanded(null);setDetail(null);return}setExpanded(id);const res=await fetch(`/api/settings/email-logs?id=${id}`);if(res.ok)setDetail(await res.json())};
-
-  const statusMap:Record<string,{l:string;c:string;bg:string}>={
-    received:{l:"Recebido",c:"#D97706",bg:"#FFFBEB"},
-    success:{l:"Reserva criada",c:"#059669",bg:"#ECFDF5"},
-    parse_failed:{l:"Parse falhou",c:"#DC2626",bg:"#FEF2F2"},
-    duplicate:{l:"Duplicata",c:"#6B7280",bg:"#F5F5F5"},
-    error:{l:"Erro",c:"#DC2626",bg:"#FEF2F2"},
-  };
-
-  return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Log de emails recebidos</div>
-      <button onClick={fetchLogs} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"6px 14px",background:B.light,color:B.primary,border:"none",borderRadius:6,cursor:"pointer"}}>{loading?"...":"Carregar logs"}</button>
-    </div>
-
-    {logs.length===0&&!loading&&<div style={{fontSize:13,color:"#A3A3A3",textAlign:"center",padding:"20px 0"}}>Clique em "Carregar logs" para ver os emails recebidos</div>}
-
-    {logs.map(log=>{
-      const s=statusMap[log.status]||statusMap.error;
-      const date=new Date(log.createdAt);
-      const isOpen=expanded===log.id;
-      let parsed:any=null;
-      try{parsed=log.parsedData?JSON.parse(log.parsedData):null}catch{}
-
-      return<div key={log.id} style={{border:"1px solid #F0F0F0",borderRadius:10,marginBottom:6,overflow:"hidden"}}>
-        <button onClick={()=>fetchDetail(log.id)} style={{width:"100%",padding:"10px 14px",background:isOpen?"#FAFAF9":"#fff",border:"none",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{log.subject||"(sem assunto)"}</span>
-              <span style={{fontSize:10,fontWeight:600,color:s.c,background:s.bg,padding:"2px 8px",borderRadius:10}}>{s.l}</span>
-            </div>
-            <div style={{fontSize:11,color:"#A3A3A3",marginTop:3}}>
-              De: {log.fromEmail} · {date.toLocaleDateString("pt-BR")} {date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}
-            </div>
-          </div>
-          <span style={{fontSize:12,color:"#A3A3A3",transform:isOpen?"rotate(180deg)":"",transition:"transform 0.2s"}}>▼</span>
-        </button>
-
-        {isOpen&&detail&&<div style={{padding:"0 14px 14px",borderTop:"1px solid #F0F0F0"}}>
-          {/* Parsed data */}
-          {parsed?.results&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",marginBottom:6}}>Dados parseados</div>
-            <div style={{background:B.light,borderRadius:8,padding:"10px 12px",fontSize:12,fontFamily:"'IBM Plex Mono'",lineHeight:1.8,color:B.primary}}>
-              {Object.entries(parsed.results).filter(([k])=>k!=="confidence").map(([k,v])=>
-                <div key={k}><span style={{color:"rgba(59,95,229,0.5)"}}>{k}:</span> <strong>{String(v)||"—"}</strong></div>
-              )}
-              {parsed.errors?.length>0&&<div style={{color:"#DC2626",marginTop:4}}>Erros: {parsed.errors.join(", ")}</div>}
-            </div>
-          </div>}
-
-          {/* Error */}
-          {detail.error&&<div style={{marginTop:10,background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#DC2626"}}>{detail.error}</div>}
-
-          {/* Text body */}
-          {detail.textBody&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Corpo do email (texto)</div>
-            <pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:"12px",borderRadius:8,maxHeight:300,overflowY:"auto",whiteSpace:"pre-wrap",wordBreak:"break-all",lineHeight:1.6}}>{detail.textBody}</pre>
-          </div>}
-
-          {/* HTML body */}
-          {detail.htmlBody&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Corpo do email (HTML) · {detail.htmlBody.length.toLocaleString()} chars</div>
-            <div style={{maxHeight:300,overflowY:"auto",border:"1px solid #E5E5E5",borderRadius:8,padding:"10px",background:"#fff",fontSize:12}} dangerouslySetInnerHTML={{__html:detail.htmlBody.slice(0,20000)}}/>
-          </div>}
-
-          {/* Raw payload keys */}
-          {detail.rawPayload&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",marginBottom:6}}>Payload bruto (campos)</div>
-            <pre style={{fontFamily:"'IBM Plex Mono'",fontSize:10,background:"#FAFAF9",color:"#737373",padding:"10px",borderRadius:8,maxHeight:200,overflowY:"auto",whiteSpace:"pre-wrap",lineHeight:1.5}}>{(() => {try{const p=JSON.parse(detail.rawPayload);return Object.keys(p).map(k=>`${k}: ${String(p[k]).slice(0,200)}${String(p[k]).length>200?"...":""}`).join("\n")}catch{return detail.rawPayload.slice(0,2000)}})()}</pre>
-          </div>}
-        </div>}
-      </div>
-    })}
-  </div>
-}
-
 // ─── LOGS TAB ───────────────────────────────────────────────────
-interface EmailLog { id:string; fromEmail:string; toEmail:string|null; subject:string|null; textBody:string|null; htmlBody:string|null; rawPayload:string|null; parsedData:string|null; reservationId:string|null; status:string; error:string|null; createdAt:string }
+interface EmailLog { id:string; fromEmail:string; toEmail:string|null; subject:string|null; htmlBody:string|null; status:string; error:string|null; createdAt:string }
 
 function LogsTab(){
   const[logs,setLogs]=useState<EmailLog[]>([]);
   const[loading,setLoading]=useState(true);
   const[expandedId,setExpandedId]=useState<string|null>(null);
-  const[viewMode,setViewMode]=useState<Record<string,string>>({});
 
   useEffect(()=>{fetch("/api/logs").then(r=>r.json()).then(setLogs).finally(()=>setLoading(false))},[]);
 
@@ -497,21 +437,16 @@ function LogsTab(){
     duplicate:{c:"#737373",bg:"#F5F5F5",l:"Duplicata"},
   };
 
-  const toggleView=(id:string,mode:string)=>setViewMode(v=>({...v,[id]:v[id]===mode?"":mode}));
-
   if(loading)return<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando logs...</div>;
   if(logs.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📧</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhum email recebido</div><div style={{fontSize:13,color:"#A3A3A3"}}>Quando um email chegar via webhook, aparecerá aqui.</div></div>;
 
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>📧</span>Últimos {logs.length} emails recebidos via webhook. Clique para expandir.</div>
+    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>📧</span>Últimos {logs.length} emails recebidos. Clique para ver o email original.</div>
     {logs.map(log=>{
       const st=statusColors[log.status]||statusColors.received;
       const expanded=expandedId===log.id;
-      const mode=viewMode[log.id]||"";
       const date=new Date(log.createdAt);
       const timeStr=`${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
-      let parsed:any=null;
-      try{if(log.parsedData)parsed=JSON.parse(log.parsedData)}catch{}
 
       return<div key={log.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
         <button onClick={()=>setExpandedId(expanded?null:log.id)} style={{width:"100%",textAlign:"left",padding:"14px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"Outfit"}}>
@@ -521,9 +456,7 @@ function LogsTab(){
                 <span style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{log.subject||"(sem assunto)"}</span>
                 <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:10,color:st.c,background:st.bg}}>{st.l}</span>
               </div>
-              <div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>
-                De: {log.fromEmail} · {timeStr}
-              </div>
+              <div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>De: {log.fromEmail} · {timeStr}</div>
             </div>
             <span style={{fontSize:12,color:"#A3A3A3",transform:expanded?"rotate(180deg)":"",transition:"transform 0.2s"}}>▼</span>
           </div>
@@ -531,33 +464,8 @@ function LogsTab(){
 
         {expanded&&<div style={{padding:"0 16px 16px",borderTop:"1px solid #F0F0F0"}}>
           {log.error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",marginTop:10,fontSize:12,color:"#DC2626"}}>{log.error}</div>}
-
-          {/* Parsed data summary */}
-          {parsed?.results&&<div style={{background:"#FAFAF9",borderRadius:10,padding:"12px 14px",marginTop:10,border:"1px solid #F0F0F0"}}>
-            <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Dados extraídos pelo parser</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {Object.entries(parsed.results).filter(([k])=>k!=="confidence").map(([k,v])=><div key={k}>
-                <span style={{fontSize:10,fontWeight:600,color:"#A3A3A3"}}>{k}: </span>
-                <span style={{fontSize:12,fontWeight:500,color:v?"#1A1A1A":"#DC2626"}}>{String(v)||"✗ não encontrado"}</span>
-              </div>)}
-            </div>
-            {parsed.errors?.length>0&&<div style={{marginTop:8,fontSize:11,color:"#D97706"}}>⚠️ Erros: {parsed.errors.join(", ")}</div>}
-          </div>}
-
-          {/* Action buttons */}
-          <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
-            {[{id:"text",l:"📄 Texto",d:!!log.textBody},{id:"html",l:"🌐 HTML",d:!!log.htmlBody},{id:"raw",l:"📦 Payload",d:!!log.rawPayload},{id:"parsed",l:"🔍 Parsed",d:!!log.parsedData}].map(b=>
-              <button key={b.id} onClick={()=>toggleView(log.id,b.id)} disabled={!b.d} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:mode===b.id?B.primary:b.d?"#fff":"#F5F5F5",color:mode===b.id?"#fff":b.d?"#1A1A1A":"#A3A3A3",border:`1px solid ${mode===b.id?B.primary:"#E5E5E5"}`,borderRadius:8,cursor:b.d?"pointer":"not-allowed"}}>{b.l}</button>
-            )}
-          </div>
-
-          {/* Content viewer */}
-          {mode&&<div style={{marginTop:10}}>
-            {mode==="text"&&log.textBody&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.textBody}</pre>}
-            {mode==="html"&&log.htmlBody&&<div style={{border:"1px solid #E5E5E5",borderRadius:10,overflow:"hidden"}}><div style={{background:"#FAFAF9",padding:"6px 12px",fontSize:10,fontWeight:600,color:"#A3A3A3",borderBottom:"1px solid #E5E5E5"}}>HTML Preview</div><div style={{maxHeight:500,overflow:"auto",padding:12}} dangerouslySetInnerHTML={{__html:log.htmlBody}}/></div>}
-            {mode==="raw"&&log.rawPayload&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.rawPayload}</pre>}
-            {mode==="parsed"&&log.parsedData&&<pre style={{fontFamily:"'IBM Plex Mono'",fontSize:11,background:"#1A1A1A",color:"#E8E0D4",padding:14,borderRadius:10,maxHeight:400,overflow:"auto",whiteSpace:"pre-wrap",lineHeight:1.6}}>{log.parsedData}</pre>}
-          </div>}
+          {log.htmlBody?<div style={{border:"1px solid #E5E5E5",borderRadius:10,overflow:"hidden",marginTop:10}}><div style={{maxHeight:500,overflow:"auto",padding:12}} dangerouslySetInnerHTML={{__html:log.htmlBody}}/></div>
+          :<div style={{marginTop:10,fontSize:13,color:"#A3A3A3",fontStyle:"italic"}}>Email sem conteúdo HTML.</div>}
         </div>}
       </div>
     })}
