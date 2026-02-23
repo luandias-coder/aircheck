@@ -14,35 +14,43 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     if (r.property.doormanPhones.length === 0) return NextResponse.json({ error: "Nenhuma portaria configurada" }, { status: 400 });
     if (r.guests.length === 0) return NextResponse.json({ error: "Aguardando formulário" }, { status: 400 });
 
+    const sep = "--------------------------------------";
     const l: string[] = [];
+    l.push(sep);
     l.push(`🏠 *CHECK-IN*`);
     l.push(`📍 *${r.property.name}*`);
+    l.push(sep);
     l.push(``);
-    l.push(`📅 Entrada: ${r.checkInDate} às ${r.checkInTime}`);
-    l.push(`📅 Saída: ${r.checkOutDate} às ${r.checkOutTime}`);
-    l.push(`🌙 Noites: ${r.nights || "?"}`);
-    l.push(`📋 Código: ${r.confirmationCode || "?"}`);
-    if (r.guestPhone) l.push(`📱 Contato hóspede: ${r.guestPhone}`);
+    if (r.property.unitNumber) l.push(`🏢 *Unidade:* ${r.property.unitNumber}`);
+    if (r.property.parkingSpot) l.push(`🅿️ *Vaga:* ${r.property.parkingSpot}`);
+    l.push(`📅 *Entrada:* ${r.checkInDate} às ${r.checkInTime}`);
+    l.push(`📅 *Saída:* ${r.checkOutDate} às ${r.checkOutTime}`);
+    l.push(`🌙 *Noites:* ${r.nights || "?"}`);
+    l.push(`📋 *Código:* ${r.confirmationCode || "?"}`);
+    if (r.guestPhone) l.push(`📱 *Contato hóspede:* ${r.guestPhone}`);
     l.push(``);
+    l.push(sep);
     l.push(`👥 *HÓSPEDES (${r.guests.length})*`);
+    l.push(sep);
     r.guests.forEach((g) => {
       l.push(``);
       l.push(`👤 *${g.fullName}*`);
       if (g.birthDate) l.push(`   🎂 ${g.birthDate}`);
       if (g.foreign) {
-        if (g.passport) l.push(`   📄 Passaporte: ${g.passport}`);
-        if (g.rne) l.push(`   📄 RNE: ${g.rne}`);
+        if (g.passport) l.push(`   🪪 Passaporte: ${g.passport}`);
+        if (g.rne) l.push(`   🪪 RNE: ${g.rne}`);
         l.push(`   🌍 Estrangeiro`);
       } else {
-        if (g.cpf) l.push(`   📄 CPF: ${g.cpf}`);
-        if (g.rg) l.push(`   📄 RG: ${g.rg}`);
+        if (g.cpf) l.push(`   🪪 CPF: ${g.cpf}`);
+        if (g.rg) l.push(`   🪪 RG: ${g.rg}`);
       }
     });
     if (r.carPlate || r.carModel) {
       l.push(``);
-      l.push(`🚗 Veículo: ${[r.carModel, r.carPlate].filter(Boolean).join(" - ")}`);
+      l.push(`🚗 *Veículo:* ${[r.carModel, r.carPlate].filter(Boolean).join(" • ")}`);
     }
     l.push(``);
+    l.push(sep);
     l.push(`✅ _Enviado via AirCheck_`);
 
     const message = l.join("\n");
