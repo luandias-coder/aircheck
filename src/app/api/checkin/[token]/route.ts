@@ -42,17 +42,19 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const r = await prisma.reservation.findUnique({ where: { formToken: params.token } });
     if (!r) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
 
-    // Allow re-editing: accept POST if pending_form OR form_filled
     if (r.status !== "pending_form" && r.status !== "form_filled") {
       return NextResponse.json({ error: "Formulário não pode mais ser editado" }, { status: 400 });
     }
 
     const formData = await req.formData();
     const guestsRaw = formData.get("guests") as string;
-    const guests: Array<{
+    if (!guestsRaw) return NextResponse.json({ error: "Dados dos hóspedes ausentes" }, { status: 400 });
+    
+    let guests: Array<{
       fullName: string; birthDate: string; cpf?: string; rg?: string;
       foreign?: boolean; passport?: string; rne?: string;
-    }> = JSON.parse(guestsRaw);
+    }>;
+    try { guests = JSON.parse(guestsRaw); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
 
     const carPlate = formData.get("carPlate") as string | null;
     const carModel = formData.get("carModel") as string | null;
@@ -62,16 +64,20 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     await prisma.guest.deleteMany({ where: { reservationId: r.id } });
 
     // Create guests with documents
-    await Promise.all(guests.map(async (g, i) => {
+    for (let i = 0; i < guests.length; i++) {
+      const g = guests[i];
       let documentUrl: string | null = null;
       const file = formData.get(`document_${i}`) as File | null;
       if (file && file.size > 0) {
         try {
           const blob = await put(`docs/${r.id}/${i}-${Date.now()}-${file.name}`, file, { access: "public" });
           documentUrl = blob.url;
-        } catch (err) { console.error(`Upload error ${i}:`, err); }
+        } catch (err) {
+          console.error(`Upload error guest ${i}:`, err);
+          // Continue without document rather than failing completely
+        }
       }
-      return prisma.guest.create({
+      await prisma.guest.create({
         data: {
           reservationId: r.id,
           fullName: g.fullName,
@@ -84,7 +90,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
           documentUrl,
         },
       });
-    }));
+    }
 
     await prisma.reservation.update({
       where: { id: r.id },
@@ -97,5 +103,8 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     });
 
     return NextResponse.json({ success: true });
-  } catch (e) { console.error(e); return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 }); }
+  } catch (e: any) {
+    console.error("Checkin POST error:", e);
+    return NextResponse.json({ error: e?.message || "Erro ao salvar" }, { status: 500 });
+  }
 }
