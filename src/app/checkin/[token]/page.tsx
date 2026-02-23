@@ -62,7 +62,22 @@ export default function CheckInPage({params}:{params:{token:string}}){
       const d=await res.json();
       setData(d);
       if(d.status==="pending_form"){
-        setGuests(Array.from({length:d.numGuests},emptyGuest));
+        // Pre-fill existing guests (e.g. when host reopened form to add more)
+        const prefilled=d.guests.map((g:any):GuestForm=>({
+          fullName:g.fullName||"",birthDate:g.birthDate||"",cpf:g.cpf||"",rg:g.rg||"",
+          foreign:g.foreign||false,passport:g.passport||"",rne:g.rne||"",
+          file:null,preview:null,fileName:g.hasDocument?"documento_anterior":null
+        }));
+        const extra=Math.max(0,d.numGuests-prefilled.length);
+        setGuests([...prefilled,...Array.from({length:extra},emptyGuest)]);
+        if(d.carPlate)setCarPlate(d.carPlate);
+        if(d.carModel)setCarModel(d.carModel);
+        if(d.carPlate||d.carModel)setShowCar(true);
+        if(d.guestPhone){
+          const raw=d.guestPhone.replace(/\D/g,"");
+          if(raw.startsWith("55")&&raw.length>2){setGuestPhone(raw.slice(2))}
+          else{setGuestPhone(raw)}
+        }
       }else{setSubmitted(true)}
     }).catch(()=>setError("not_found")).finally(()=>setLoading(false));
   },[params.token]);
@@ -84,7 +99,12 @@ export default function CheckInPage({params}:{params:{token:string}}){
     }
   };
 
-  const canSubmit=guests.length>0&&guests.every(g=>g.fullName&&g.birthDate&&g.file)&&(guests.every(g=>!g.foreign||(g.passport||g.rne)));
+  const canSubmit=guests.length>0&&guests.every((g,i)=>{
+    const hasName=!!g.fullName&&!!g.birthDate;
+    const hasDoc=!!g.file||(data?.guests[i]?.hasDocument===true);
+    const hasForeignDocs=!g.foreign||(!!g.passport||!!g.rne);
+    return hasName&&hasDoc&&hasForeignDocs;
+  });
 
   const handleSubmit=async(e:React.FormEvent)=>{
     e.preventDefault();
@@ -155,7 +175,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
 
       {/* Guest cards */}
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} total={guests.length} onChange={updateGuest} onFile={handleFile}/>)}
+        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} total={guests.length} hasExistingDoc={data?.guests[i]?.hasDocument===true&&!g.file} onChange={updateGuest} onFile={handleFile}/>)}
       </div>
 
       {/* Vehicle */}
@@ -185,7 +205,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
 }
 
 // ─── GUEST CARD ─────────────────────────────────────────────────
-function GuestCard({index:i,guest:g,total,onChange,onFile}:{index:number;guest:GuestForm;total:number;onChange:(i:number,f:keyof GuestForm,v:any)=>void;onFile:(i:number,f:File)=>void}){
+function GuestCard({index:i,guest:g,total,hasExistingDoc,onChange,onFile}:{index:number;guest:GuestForm;total:number;hasExistingDoc:boolean;onChange:(i:number,f:keyof GuestForm,v:any)=>void;onFile:(i:number,f:File)=>void}){
   const fileRef=useRef<HTMLInputElement>(null);
   const[uploading,setUploading]=useState(false);
 
@@ -252,7 +272,7 @@ function GuestCard({index:i,guest:g,total,onChange,onFile}:{index:number;guest:G
     {/* Document upload */}
     <div>
       <label style={lblStyle}>Documento com foto <span style={{color:B.primary}}>*</span></label>
-      <div onClick={()=>!uploading&&fileRef.current?.click()} style={{border:`2px dashed ${g.file?"transparent":"#D4D4D4"}`,borderRadius:12,cursor:uploading?"wait":"pointer",overflow:"hidden",background:g.file?"transparent":"#FAFAF9",WebkitTapHighlightColor:"transparent"}}>
+      <div onClick={()=>!uploading&&fileRef.current?.click()} style={{border:`2px dashed ${(g.file||hasExistingDoc)?"transparent":"#D4D4D4"}`,borderRadius:12,cursor:uploading?"wait":"pointer",overflow:"hidden",background:(g.file||hasExistingDoc)?"transparent":"#FAFAF9",WebkitTapHighlightColor:"transparent"}}>
         {uploading
           ?<div style={{padding:"28px 16px",textAlign:"center"}}>
             <div style={{fontSize:14,fontWeight:500,color:"#737373"}}>Comprimindo imagem...</div>
@@ -270,6 +290,14 @@ function GuestCard({index:i,guest:g,total,onChange,onFile}:{index:number;guest:G
               <div style={{fontSize:12,color:"#737373",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.fileName}</div>
             </div>
             <span style={{fontSize:14,color:"#059669",fontWeight:700}}>✓</span>
+          </div>
+          :hasExistingDoc
+          ?<div style={{padding:"18px 16px",display:"flex",alignItems:"center",gap:12,background:"#ECFDF5",borderRadius:10,border:"1px solid #BBF7D0"}}>
+            <span style={{fontSize:24}}>✅</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:600,color:"#059669",marginBottom:2}}>Documento já enviado</div>
+              <div style={{fontSize:12,color:"#737373"}}>Toque para substituir (opcional)</div>
+            </div>
           </div>
           :<div style={{padding:"28px 16px",textAlign:"center"}}>
             <div style={{fontSize:28,marginBottom:6,opacity:0.4}}>📄</div>
