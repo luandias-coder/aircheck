@@ -157,17 +157,15 @@ export default function LandingPage() {
           </div>
           <div className="nav-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
             <a href="#como-funciona" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Como funciona</a>
-            <a href="#preco" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Preço</a>
             <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-            <Link href="/login" className="cta-btn" style={{ padding: "10px 22px", fontSize: 14 }}>Começar grátis</Link>
+            <Link href="/login" className="cta-btn" style={{ padding: "10px 22px", fontSize: 14 }}>Criar conta grátis</Link>
           </div>
           <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>{mobileMenu ? "✕" : "☰"}</button>
         </div>
         {mobileMenu && <div style={{ padding: "0 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
           <a href="#como-funciona" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Como funciona</a>
-          <a href="#preco" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Preço</a>
           <Link href="/login" style={{ fontSize: 16, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-          <Link href="/login" className="cta-btn" style={{ justifyContent: "center" }}>Começar grátis</Link>
+          <Link href="/login" className="cta-btn" style={{ justifyContent: "center" }}>Criar conta grátis</Link>
         </div>}
       </nav>
 
@@ -179,7 +177,7 @@ export default function LandingPage() {
               <FadeIn>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#ECFDF5", border: "1px solid #BBF7D0", borderRadius: 100, padding: "6px 16px", marginBottom: 24 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: B.accent }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: B.accent }}>10 reservas grátis para começar</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: B.accent }}>100% gratuito durante o lançamento</span>
                 </div>
               </FadeIn>
               <FadeIn delay={0.1}>
@@ -194,11 +192,11 @@ export default function LandingPage() {
               </FadeIn>
               <FadeIn delay={0.3}>
                 <div className="hero-ctas" style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <Link href="/login" className="cta-btn">Começar grátis →</Link>
+                  <Link href="/login" className="cta-btn">Criar conta grátis →</Link>
                   <a href="#como-funciona" className="cta-outline" style={{ padding: "14px 28px" }}>Ver como funciona</a>
                 </div>
               </FadeIn>
-              <FadeIn delay={0.4}><p style={{ fontSize: 13, color: "#A3A3A3", marginTop: 16 }}>Comece agora. Suas 10 primeiras reservas são grátis.</p></FadeIn>
+              <FadeIn delay={0.4}><p style={{ fontSize: 13, color: "#A3A3A3", marginTop: 16 }}>Crie sua conta em 30 segundos. Gratuito enquanto estivermos em lançamento.</p></FadeIn>
             </div>
             <FadeIn delay={0.3}><PhoneMockup /></FadeIn>
           </div>
@@ -299,30 +297,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PREÇO */}
+      {/* GRATUITO */}
       <section id="preco" style={{ padding: "80px 24px", background: "radial-gradient(ellipse at 50% 30%, rgba(59,95,229,0.05) 0%, transparent 60%)" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <FadeIn>
             <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>Preço simples</div>
-              <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-0.03em" }}>Pague por <span className="grad-text">reserva.</span></h2>
-              <p style={{ fontSize: 16, color: B.muted, marginTop: 12 }}>Sem mensalidade. Sem plano. Sem surpresas.</p>
+              <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>Lançamento</div>
+              <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-0.03em" }}>Totalmente <span className="grad-text">gratuito.</span></h2>
+              <p style={{ fontSize: 16, color: B.muted, marginTop: 12 }}>Estamos em fase de lançamento. Use tudo sem pagar nada.</p>
             </div>
           </FadeIn>
           <FadeIn delay={0.15}>
             <div style={{ background: "#fff", borderRadius: 24, padding: "40px 36px", border: "2px solid #E5E5E5", position: "relative", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.06)" }}>
-              <div style={{ position: "absolute", top: 20, right: -30, background: B.accent, color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 40px", transform: "rotate(45deg)", letterSpacing: "0.04em" }}>LANÇAMENTO</div>
+              <div style={{ position: "absolute", top: 20, right: -30, background: B.accent, color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 40px", transform: "rotate(45deg)", letterSpacing: "0.04em" }}>GRÁTIS</div>
               <div style={{ textAlign: "center", marginBottom: 32 }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4 }}>
                   <span style={{ fontSize: 18, fontWeight: 600, color: B.muted }}>R$</span>
-                  <span style={{ fontSize: 64, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1 }}>3</span>
-                  <span style={{ fontSize: 16, fontWeight: 600, color: B.muted, alignSelf: "flex-end", marginBottom: 8 }}>,00</span>
+                  <span style={{ fontSize: 64, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1 }}>0</span>
                 </div>
-                <div style={{ fontSize: 15, color: B.muted, fontWeight: 500, marginTop: 4 }}>por check-in realizado</div>
+                <div style={{ fontSize: 15, color: B.muted, fontWeight: 500, marginTop: 4 }}>durante o lançamento</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 32 }}>
                 {[
-                  { t: "10 primeiras reservas grátis", bold: true },
+                  { t: "Reservas ilimitadas", bold: true },
                   { t: "Imóveis ilimitados" },
                   { t: "Hóspedes ilimitados" },
                   { t: "WhatsApp para portaria" },
@@ -336,8 +333,8 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/login" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "18px 32px", fontSize: 17 }}>Começar grátis →</Link>
-              <p style={{ textAlign: "center", fontSize: 12, color: "#A3A3A3", marginTop: 12 }}>Suas 10 primeiras reservas são por nossa conta.</p>
+              <Link href="/login" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "18px 32px", fontSize: 17 }}>Criar conta grátis →</Link>
+              <p style={{ textAlign: "center", fontSize: 12, color: "#A3A3A3", marginTop: 12 }}>Sem cartão de crédito. Sem compromisso.</p>
             </div>
           </FadeIn>
         </div>
@@ -348,7 +345,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <FadeIn><h2 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 40 }}>Perguntas frequentes</h2></FadeIn>
           {[
-            { q: "Como funciona a cobrança?", a: "Você paga R$ 3,00 por cada check-in realizado (quando o hóspede preenche o formulário). As 10 primeiras são grátis. Cobrança via cartão de crédito." },
+            { q: "O AirCheck é gratuito mesmo?", a: "Sim. Estamos em fase de lançamento e a ferramenta é 100% gratuita. No futuro, podemos implementar planos pagos, mas quem entrar agora será avisado com antecedência de qualquer mudança." },
             { q: "Preciso instalar algum app?", a: "Não. O AirCheck é 100% web. Você acessa pelo navegador, e o hóspede também." },
             { q: "Funciona com quantos imóveis?", a: "Ilimitados. Cadastre quantos apartamentos quiser, cada um com sua portaria." },
             { q: "E se o hóspede errar os dados?", a: "Após o envio, só você (anfitrião) pode reabrir o formulário. Isso garante que os dados enviados à portaria estejam corretos." },
@@ -371,7 +368,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <FadeIn>
             <h2 style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>Chega de digitar dados<br />de hóspede na mão.</h2>
-            <p style={{ fontSize: 16, color: "#A3A3A3", lineHeight: 1.7, marginBottom: 32 }}>Crie sua conta em 30 segundos. Suas 10 primeiras reservas são grátis.</p>
+            <p style={{ fontSize: 16, color: "#A3A3A3", lineHeight: 1.7, marginBottom: 32 }}>Crie sua conta em 30 segundos. 100% gratuito durante o lançamento.</p>
             <Link href="/login" className="cta-btn" style={{ fontSize: 18, padding: "18px 40px" }}>Criar conta grátis →</Link>
           </FadeIn>
         </div>
@@ -392,7 +389,6 @@ export default function LandingPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Produto</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <a href="#como-funciona" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Como funciona</a>
-                <a href="#preco" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Preço</a>
                 <Link href="/login" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Criar conta</Link>
               </div>
             </div>
