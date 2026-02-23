@@ -8,7 +8,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; doormanPhones:DoormanPhone[]; reservationCount:number }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; doormanPhones:DoormanPhone[]; reservationCount:number }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
@@ -405,19 +405,31 @@ function LogsTab(){
 function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:()=>void}){
   const[editingId,setEditingId]=useState<string|null>(null);
   const[form,setForm]=useState({phone:"",name:"",label:""});
+  const[details,setDetails]=useState({unitNumber:"",parkingSpot:""});
   const[saving,setSaving]=useState(false);
+  const[savingDetails,setSavingDetails]=useState(false);
 
+  const startEdit=(p:Property)=>{if(editingId===p.id){setEditingId(null)}else{setEditingId(p.id);setDetails({unitNumber:p.unitNumber||"",parkingSpot:p.parkingSpot||""})}};
   const maskPhone=(v:string)=>{const d=v.replace(/\D/g,"").slice(0,11);if(d.length<=2)return d;if(d.length<=7)return`(${d.slice(0,2)}) ${d.slice(2)}`;return`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`};
   const addPhone=async(propId:string)=>{if(!form.phone)return;setSaving(true);await fetch(`/api/properties/${propId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add_phone",...form})});setForm({phone:"",name:"",label:""});setSaving(false);onRefresh()};
   const removePhone=async(propId:string,phoneId:string)=>{await fetch(`/api/properties/${propId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_phone",phoneId})});onRefresh()};
+  const saveDetails=async(propId:string)=>{if(!details.unitNumber.trim()){alert("Nº da Unidade é obrigatório");return}setSavingDetails(true);await fetch(`/api/properties/${propId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update_details",unitNumber:details.unitNumber.trim(),parkingSpot:details.parkingSpot.trim()})});setSavingDetails(false);onRefresh()};
 
   if(properties.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:48,textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>🏠</div><div style={{fontSize:16,fontWeight:600,marginBottom:4}}>Nenhum imóvel ainda</div><div style={{fontSize:13,color:"#A3A3A3"}}>Crie uma reserva e o imóvel aparece automaticamente.</div></div>;
 
   return<div style={{display:"flex",flexDirection:"column",gap:10}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui os telefones das portarias.</div>
+    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem e portarias.</div>
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.reservationCount} reserva(s) · {p.doormanPhones.length} portaria(s)</div></div><button onClick={()=>setEditingId(editingId===p.id?null:p.id)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s) · {p.doormanPhones.length} portaria(s)</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>
+        {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,marginBottom:4}}>
+          <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados do imóvel</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div><label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase"}}>Nº Unidade *</label><input placeholder="Ex: 501, Casa 3" value={details.unitNumber} onChange={e=>setDetails({...details,unitNumber:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",width:"100%",marginTop:4,boxSizing:"border-box"}}/></div>
+            <div><label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase"}}>Vaga de garagem</label><input placeholder="Ex: G1-25, Livre" value={details.parkingSpot} onChange={e=>setDetails({...details,parkingSpot:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",width:"100%",marginTop:4,boxSizing:"border-box"}}/></div>
+          </div>
+          <button onClick={()=>saveDetails(p.id)} disabled={savingDetails} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:savingDetails?0.5:1}}>{savingDetails?"Salvando...":"Salvar dados"}</button>
+        </div>}
         {p.doormanPhones.map(dp=><div key={dp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>📞</div><div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>{dp.name||"Portaria"}</div><div style={{fontSize:11,color:"#A3A3A3"}}>{dp.label&&`${dp.label} · `}{dp.phone}</div></div></div>
           {editingId===p.id&&<button onClick={()=>removePhone(p.id,dp.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Remover</button>}
@@ -432,6 +444,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
           <button onClick={()=>addPhone(p.id)} disabled={!form.phone||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:!form.phone||saving?0.5:1}}>{saving?"Salvando...":"+ Adicionar"}</button>
         </div>}
         {p.doormanPhones.length===0&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nenhuma portaria configurada</div>}
+        {!p.unitNumber&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nº da Unidade não configurado — clique em Editar</div>}
       </div>
     </div>)}
   </div>
