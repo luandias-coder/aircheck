@@ -169,14 +169,14 @@ export default function LandingPage() {
           <div className="nav-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
             <a href="#como-funciona" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Como funciona</a>
             <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-            <Link href="/login" className="cta-btn" style={{ padding: "10px 22px", fontSize: 14 }}>Criar conta grátis</Link>
+            <Link href="/register" className="cta-btn" style={{ padding: "10px 22px", fontSize: 14 }}>Criar conta grátis</Link>
           </div>
           <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>{mobileMenu ? "✕" : "☰"}</button>
         </div>
         {mobileMenu && <div style={{ padding: "0 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
           <a href="#como-funciona" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Como funciona</a>
           <Link href="/login" style={{ fontSize: 16, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-          <Link href="/login" className="cta-btn" style={{ justifyContent: "center" }}>Criar conta grátis</Link>
+          <Link href="/register" className="cta-btn" style={{ justifyContent: "center" }}>Criar conta grátis</Link>
         </div>}
       </nav>
 
@@ -203,7 +203,7 @@ export default function LandingPage() {
               </FadeIn>
               <FadeIn delay={0.3}>
                 <div className="hero-ctas" style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <Link href="/login" className="cta-btn">Criar conta grátis →</Link>
+                  <Link href="/register" className="cta-btn">Criar conta grátis →</Link>
                   <a href="#como-funciona" className="cta-outline" style={{ padding: "14px 28px" }}>Ver como funciona</a>
                 </div>
               </FadeIn>
@@ -344,7 +344,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/login" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "18px 32px", fontSize: 17 }}>Criar conta grátis →</Link>
+              <Link href="/register" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "18px 32px", fontSize: 17 }}>Criar conta grátis →</Link>
               <p style={{ textAlign: "center", fontSize: 12, color: "#A3A3A3", marginTop: 12 }}>Sem cartão de crédito. Sem compromisso.</p>
             </div>
           </FadeIn>
@@ -380,7 +380,7 @@ export default function LandingPage() {
           <FadeIn>
             <h2 style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>Chega de digitar dados<br />de hóspede na mão.</h2>
             <p style={{ fontSize: 16, color: "#A3A3A3", lineHeight: 1.7, marginBottom: 32 }}>Crie sua conta em 30 segundos. 100% gratuito durante o lançamento.</p>
-            <Link href="/login" className="cta-btn" style={{ fontSize: 18, padding: "18px 40px" }}>Criar conta grátis →</Link>
+            <Link href="/register" className="cta-btn" style={{ fontSize: 18, padding: "18px 40px" }}>Criar conta grátis →</Link>
           </FadeIn>
         </div>
       </section>
@@ -400,7 +400,7 @@ export default function LandingPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Produto</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <a href="#como-funciona" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Como funciona</a>
-                <Link href="/login" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Criar conta</Link>
+                <Link href="/register" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Criar conta</Link>
               </div>
             </div>
             <div>
