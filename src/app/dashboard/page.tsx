@@ -62,7 +62,7 @@ export default function Dashboard(){
         setReservations(data);
       }
       if(pr.ok)setProperties(await pr.json());
-      if(ur.ok)setUser(await ur.json());
+      if(ur.ok){const ud=await ur.json();setUser(ud);if(!ud.onboardingCompleted)router.push("/onboarding")}
       else router.push("/login");
     }catch(e){console.error(e)}finally{setLoading(false)}
   },[router]);
