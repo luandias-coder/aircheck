@@ -213,7 +213,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Enviar formulário ao hóspede</div>
       {/* Preview of message */}
       <div style={{background:"#FAFAF9",border:"1px solid #F0F0F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
-        <pre style={{fontFamily:"Outfit",fontSize:12,color:"#374151",whiteSpace:"pre-wrap",lineHeight:1.6,margin:0}}>{checkinMsg}</pre>
+        <pre style={{fontFamily:"Outfit",fontSize:12,color:"#374151",whiteSpace:"pre-wrap",wordBreak:"break-all",lineHeight:1.6,margin:0}}>{checkinMsg}</pre>
       </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {r.airbnbThreadUrl&&<a href={r.airbnbThreadUrl} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:"#FF5A5F",color:"#fff",border:"none",borderRadius:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}>💬 Enviar link ao hóspede</a>}
