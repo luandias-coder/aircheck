@@ -110,3 +110,21 @@ model Guest {
 
   @@index([reservationId])
 }
+model InboundEmailLog {
+  id            String   @id @default(cuid())
+  fromEmail     String
+  toEmail       String?
+  subject       String?
+  textBody      String?
+  htmlBody      String?
+  rawPayload    String?
+  parsedData    String?
+  reservationId String?
+  status        String   @default("received")
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@index([fromEmail])
+  @@index([createdAt])
+  @@index([status])
+}
