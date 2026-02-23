@@ -24,7 +24,6 @@ export default function CheckInPage({params}:{params:{token:string}}){
   const[phoneCountry,setPhoneCountry]=useState("+55");
   const[submitting,setSubmitting]=useState(false);
   const[submitted,setSubmitted]=useState(false);
-  const[isEdit,setIsEdit]=useState(false);
 
   useEffect(()=>{
     fetch(`/api/checkin/${params.token}`).then(async res=>{
@@ -33,22 +32,14 @@ export default function CheckInPage({params}:{params:{token:string}}){
       setData(d);
       if(d.status==="pending_form"){
         setGuests(Array.from({length:d.numGuests},emptyGuest));
-      }else if(d.status==="form_filled"){
-        setGuests(d.guests.map((g:any)=>({fullName:g.fullName,birthDate:g.birthDate,cpf:g.cpf||"",rg:g.rg||"",foreign:g.foreign,passport:g.passport||"",rne:g.rne||"",file:null,preview:null})));
-        setCarPlate(d.carPlate||"");
-        setCarModel(d.carModel||"");
-        if(d.guestPhone){const ph=d.guestPhone;if(ph.startsWith("+")){setPhoneCountry(ph.slice(0,3));setGuestPhone(ph.slice(3))}else setGuestPhone(ph)}
-        setSubmitted(true);
       }else{setSubmitted(true)}
     }).catch(()=>setError("not_found")).finally(()=>setLoading(false));
   },[params.token]);
 
   const updateGuest=(i:number,field:keyof GuestForm,val:any)=>{setGuests(p=>{const n=[...p];n[i]={...n[i],[field]:val};return n})};
   const handleFile=(i:number,file:File)=>{updateGuest(i,"file",file);const r=new FileReader();r.onload=e=>updateGuest(i,"preview",e.target?.result as string);r.readAsDataURL(file)};
-  const addGuest=()=>setGuests([...guests,emptyGuest()]);
-  const removeGuest=(i:number)=>setGuests(guests.filter((_,idx)=>idx!==i));
 
-  const canSubmit=guests.length>0&&guests.every(g=>g.fullName&&g.birthDate&&(g.file||isEdit))&&(guests.every(g=>!g.foreign||(g.passport||g.rne)));
+  const canSubmit=guests.length>0&&guests.every(g=>g.fullName&&g.birthDate&&g.file)&&(guests.every(g=>!g.foreign||(g.passport||g.rne)));
 
   const handleSubmit=async()=>{
     if(!canSubmit)return;
@@ -63,14 +54,14 @@ export default function CheckInPage({params}:{params:{token:string}}){
     try{
       const res=await fetch(`/api/checkin/${params.token}`,{method:"POST",body:fd});
       if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Erro ${res.status}`)}
-      setSubmitted(true);setIsEdit(false);
+      setSubmitted(true);
     }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false)}
   };
 
   if(loading)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#FAFAF9"}}><div style={{fontFamily:"Outfit",fontSize:14,color:"#A3A3A3"}}>Carregando...</div></div>;
   if(error)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"#FAFAF9"}}><div style={{textAlign:"center",maxWidth:360}}><div style={{fontSize:40,marginBottom:8,opacity:0.3}}>🔍</div><h2 style={{fontFamily:"Outfit",fontSize:18,fontWeight:600,color:"#1A1A1A",marginBottom:8}}>Reserva não encontrada</h2><p style={{fontFamily:"Outfit",fontSize:13,color:"#A3A3A3"}}>Este link pode estar expirado ou incorreto.</p></div></div>;
 
-  if(submitted&&!isEdit)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"linear-gradient(170deg,#FAFAF9,#F0F0EE)"}}><div style={{textAlign:"center",maxWidth:380}}>
+  if(submitted)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"linear-gradient(170deg,#FAFAF9,#F0F0EE)"}}><div style={{textAlign:"center",maxWidth:380}}>
     <div style={{width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,color:"#fff",margin:"0 auto 20px",boxShadow:`0 8px 32px ${B.primary}40`}}>✓</div>
     <h2 style={{fontFamily:"Outfit",fontSize:22,fontWeight:800,color:"#1A1A1A",marginBottom:8}}>Tudo certo!</h2>
     <p style={{fontFamily:"Outfit",fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Seus dados foram enviados. A equipe do <strong style={{color:"#1A1A1A"}}>{data?.propertyName}</strong> está preparando tudo.</p>
@@ -78,7 +69,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
       <div style={{fontFamily:"Outfit",fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Check-in</div>
       <div style={{fontFamily:"Outfit",fontSize:16,fontWeight:600,color:"#1A1A1A",marginTop:4}}>{data?.checkInDate} a partir das {data?.checkInTime}</div>
     </div>
-    <button onClick={()=>setIsEdit(true)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:500,color:B.primary,background:"none",border:`1px solid ${B.muted}`,borderRadius:10,padding:"10px 20px",cursor:"pointer"}}>✏️ Editar informações</button>
+    <p style={{fontFamily:"Outfit",fontSize:12,color:"#A3A3A3",lineHeight:1.5}}>Precisa corrigir alguma informação? Entre em contato com o anfitrião para solicitar a reabertura do formulário.</p>
   </div></div>;
 
   return<div style={{minHeight:"100vh",background:"linear-gradient(170deg,#FAFAF9,#F0F0EE)",fontFamily:"Outfit,sans-serif"}}>
@@ -100,7 +91,6 @@ export default function CheckInPage({params}:{params:{token:string}}){
     </div>
 
     <div style={{maxWidth:440,margin:"0 auto",padding:"24px 16px 100px"}}>
-      {isEdit&&<div style={{background:B.light,borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:B.primary,display:"flex",alignItems:"center",gap:8}}>✏️ Editando informações. Preencha o que deseja alterar e envie novamente.</div>}
 
       <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>
         Olá, <strong style={{color:"#1A1A1A"}}>{data?.guestName}</strong>! Preencha os dados {(data?.numGuests||1)>1?"de todos os hóspedes":"de identificação"} para agilizar o check-in.
@@ -121,10 +111,8 @@ export default function CheckInPage({params}:{params:{token:string}}){
 
       {/* Guest cards */}
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} onChange={updateGuest} onFile={handleFile} onRemove={removeGuest} canRemove={guests.length>1} isEdit={isEdit}/>)}
+        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} onChange={updateGuest} onFile={handleFile}/>)}
       </div>
-
-      {guests.length<10&&<button onClick={addGuest} style={{width:"100%",padding:14,marginTop:10,border:"2px dashed #D4D4D4",borderRadius:14,background:"none",fontFamily:"Outfit",fontSize:13,fontWeight:500,color:"#737373",cursor:"pointer"}}>+ Adicionar hóspede</button>}
 
       {/* Vehicle */}
       <div style={{marginTop:12,background:"#fff",border:"1px solid #E5E5E5",borderRadius:14,overflow:"hidden"}}>
@@ -145,7 +133,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
         color:canSubmit?"#fff":"#A3A3A3",border:"none",borderRadius:14,cursor:canSubmit?"pointer":"not-allowed",
         boxShadow:canSubmit?"0 4px 20px rgba(0,0,0,0.15)":"none",
       }}>
-        {submitting?"Enviando...":(isEdit?"Atualizar dados":"Enviar dados para check-in")}
+        {submitting?"Enviando...":"Enviar dados para check-in"}
       </button>
       <p style={{textAlign:"center",fontSize:11,color:"#A3A3A3",marginTop:14,lineHeight:1.5}}>Seus dados são utilizados exclusivamente para registro na portaria.</p>
     </div>
@@ -153,12 +141,11 @@ export default function CheckInPage({params}:{params:{token:string}}){
 }
 
 // ─── GUEST CARD ─────────────────────────────────────────────────
-function GuestCard({index:i,guest:g,onChange,onFile,onRemove,canRemove,isEdit}:{index:number;guest:GuestForm;onChange:(i:number,f:keyof GuestForm,v:any)=>void;onFile:(i:number,f:File)=>void;onRemove:(i:number)=>void;canRemove:boolean;isEdit:boolean}){
+function GuestCard({index:i,guest:g,onChange,onFile}:{index:number;guest:GuestForm;onChange:(i:number,f:keyof GuestForm,v:any)=>void;onFile:(i:number,f:File)=>void}){
   const fileRef=useRef<HTMLInputElement>(null);
   return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+    <div style={{marginBottom:14}}>
       <span style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Hóspede {i+1}</span>
-      {canRemove&&<button onClick={()=>onRemove(i)} style={{fontSize:16,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:"2px 6px"}}>✕</button>}
     </div>
 
     {/* Foreign toggle */}
@@ -200,7 +187,6 @@ function GuestCard({index:i,guest:g,onChange,onFile,onRemove,canRemove,isEdit}:{
             </div>
           }
         </div>
-        {isEdit&&!g.file&&<div style={{fontSize:11,color:B.primary,marginTop:4}}>ℹ️ Documento anterior mantido. Envie novo apenas se quiser substituir.</div>}
         <input ref={fileRef} type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)onFile(i,f)}}/>
       </div>
     </div>
