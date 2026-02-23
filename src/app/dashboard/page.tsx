@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
-const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)" };
+const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)", accent:"#059669", dark:"#0F0F0F" };
 
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
@@ -32,6 +32,7 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 export default function Dashboard(){
   const router=useRouter();
   const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs">("reservations");
+  const[dismissedOnboarding,setDismissedOnboarding]=useState(false);
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
   const[user,setUser]=useState<User|null>(null);
@@ -108,7 +109,9 @@ export default function Dashboard(){
 
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
 
-        {!loading&&view==="list"&&<>
+        {!loading&&view==="list"&&reservations.length===0&&!dismissedOnboarding&&<OnboardingGuide user={user} properties={properties} onGoToTab={(t:any)=>{setDismissedOnboarding(true);setTab(t)}} onDismiss={()=>setDismissedOnboarding(true)}/>}
+
+        {!loading&&view==="list"&&(reservations.length>0||dismissedOnboarding)&&<>
           {/* Stats */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
             {[{l:"Ativas",v:active.length,s:`${upcoming} próxima${upcoming!==1?"s":""}`,i:"📋"},{l:"Pendentes",v:pending,s:"aguardando form",i:"⏳",a:pending>0?"#D97706":undefined},{l:"Prontas",v:filled,s:"para enviar",i:"✅",a:filled>0?"#059669":undefined}].map((c,i)=>(
@@ -135,6 +138,95 @@ export default function Dashboard(){
       </div>
     </div>
   );
+}
+
+// ─── ONBOARDING GUIDE ───────────────────────────────────────────
+function OnboardingGuide({user,properties,onGoToTab,onDismiss}:{user:any;properties:Property[];onGoToTab:(t:string)=>void;onDismiss:()=>void}){
+  const hasEmail=(user?.inboundEmails||[]).length>0;
+  const hasProperty=properties.length>0;
+  const hasDoorman=properties.some(p=>p.doormanPhones.length>0);
+  const hasUnit=properties.some(p=>!!p.unitNumber);
+
+  const Step=({n,done,title,children,action,actionLabel}:{n:number;done:boolean;title:string;children:React.ReactNode;action?:()=>void;actionLabel?:string})=>(
+    <div style={{background:"#fff",border:`1px solid ${done?"#BBF7D0":"#E5E5E5"}`,borderRadius:16,padding:"20px 22px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",position:"relative",overflow:"hidden"}}>
+      {done&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:B.accent}}/>}
+      <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+        <div style={{width:32,height:32,borderRadius:"50%",background:done?"#ECFDF5":`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:done?14:13,fontWeight:700,color:done?B.accent:"#fff",flexShrink:0}}>{done?"✓":n}</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:700,color:done?"#059669":"#1A1A1A",marginBottom:6}}>{title} {done&&<span style={{fontSize:11,fontWeight:600,color:"#059669",background:"#ECFDF5",padding:"2px 8px",borderRadius:8,marginLeft:6}}>Feito</span>}</div>
+          <div style={{fontSize:13,color:"#737373",lineHeight:1.7}}>{children}</div>
+          {action&&!done&&<button onClick={action} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",marginTop:12}}>{actionLabel||"Configurar"}</button>}
+        </div>
+      </div>
+    </div>
+  );
+
+  return<div style={{display:"flex",flexDirection:"column",gap:14}}>
+    {/* Welcome header */}
+    <div style={{background:`linear-gradient(135deg,${B.dark},#1a1a2e)`,borderRadius:20,padding:"32px 28px",color:"#fff"}}>
+      <div style={{fontSize:11,fontWeight:700,color:B.muted,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:8}}>Bem-vindo ao AirCheck</div>
+      <div style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.2,marginBottom:10}}>Vamos configurar tudo<br/>para receber seus hóspedes.</div>
+      <p style={{fontSize:14,color:"#A3A3A3",lineHeight:1.6,maxWidth:480}}>Siga os passos abaixo e em poucos minutos suas reservas do Airbnb estarão chegando automaticamente.</p>
+    </div>
+
+    {/* Progress */}
+    <div style={{display:"flex",gap:6}}>
+      {[hasEmail,true,hasProperty&&hasDoorman&&hasUnit,true].map((done,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:done?"#059669":"#E5E5E5",transition:"background 0.3s"}}/>)}
+    </div>
+
+    {/* Steps */}
+    <Step n={1} done={hasEmail} title="Cadastre seu email do Airbnb" action={()=>onGoToTab("settings")} actionLabel="Ir para Configurações">
+      Nas <strong>Configurações</strong>, cadastre o email onde você recebe as confirmações de reserva do Airbnb (ex: seuemail@gmail.com). Assim sabemos que os encaminhamentos são seus.
+    </Step>
+
+    <Step n={2} done={hasEmail} title="Configure o encaminhamento automático">
+      <div>No seu provedor de email, configure o encaminhamento automático dos emails do Airbnb para:</div>
+      <div style={{fontFamily:"'IBM Plex Mono'",fontSize:14,fontWeight:600,background:B.light,padding:"10px 14px",borderRadius:8,marginTop:8,marginBottom:8,color:B.primary,display:"inline-block"}}>reservas@aircheck.com.br</div>
+      <div style={{marginTop:4}}>
+        <details style={{cursor:"pointer"}}>
+          <summary style={{fontSize:12,fontWeight:600,color:B.primary}}>Como fazer no Gmail?</summary>
+          <div style={{fontSize:12,color:"#737373",lineHeight:1.7,marginTop:8,paddingLeft:8,borderLeft:`2px solid ${B.light}`}}>
+            1. Abra o Gmail → ⚙️ Configurações → "Ver todas as configurações"<br/>
+            2. Aba "Encaminhamento e POP/IMAP"<br/>
+            3. Clique em "Adicionar um endereço de encaminhamento"<br/>
+            4. Digite <strong>reservas@aircheck.com.br</strong> e confirme<br/>
+            5. Clique em "Criar filtro" para encaminhar apenas emails do Airbnb:<br/>
+            &nbsp;&nbsp;De: <strong>automated@airbnb.com</strong><br/>
+            6. Marque "Encaminhar para reservas@aircheck.com.br"<br/>
+            7. Pronto! As reservas chegam automaticamente.
+          </div>
+        </details>
+        <details style={{cursor:"pointer",marginTop:6}}>
+          <summary style={{fontSize:12,fontWeight:600,color:B.primary}}>Como fazer no Outlook?</summary>
+          <div style={{fontSize:12,color:"#737373",lineHeight:1.7,marginTop:8,paddingLeft:8,borderLeft:`2px solid ${B.light}`}}>
+            1. Outlook.com → ⚙️ Configurações → "Email" → "Regras"<br/>
+            2. Clique em "+ Adicionar nova regra"<br/>
+            3. Condição: "De" contém <strong>airbnb.com</strong><br/>
+            4. Ação: "Encaminhar para" → <strong>reservas@aircheck.com.br</strong><br/>
+            5. Salve a regra. Pronto!
+          </div>
+        </details>
+      </div>
+    </Step>
+
+    <Step n={3} done={hasProperty&&hasDoorman&&hasUnit} title="Configure seus imóveis" action={()=>onGoToTab("properties")} actionLabel="Ir para Imóveis">
+      Quando a primeira reserva chegar, o imóvel será criado automaticamente. Aí você configura na aba <strong>Imóveis</strong>:
+      <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:hasUnit?B.accent:"#D97706",fontSize:12}}>{hasUnit?"✓":"○"}</span><span>Número da unidade (apartamento/casa)</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:hasDoorman?B.accent:"#D97706",fontSize:12}}>{hasDoorman?"✓":"○"}</span><span>Telefone da portaria (WhatsApp)</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:"#A3A3A3",fontSize:12}}>○</span><span>Vaga de garagem (opcional)</span></div>
+      </div>
+    </Step>
+
+    <Step n={4} done={false} title="Envie o link ao hóspede e pronto!">
+      Quando a reserva aparecer no painel, clique nela e copie o <strong>link do formulário</strong>. Envie ao hóspede pelo chat do Airbnb. Ele preenche nome, CPF, data de nascimento e foto do documento. Depois é só clicar em <strong>"Enviar para portaria"</strong> e a mensagem vai formatada no WhatsApp.
+    </Step>
+
+    {/* Skip link */}
+    <div style={{textAlign:"center",marginTop:4}}>
+      <button onClick={onDismiss} style={{fontFamily:"Outfit",fontSize:13,fontWeight:500,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:"8px 16px"}}>Pular para o painel →</button>
+    </div>
+  </div>;
 }
 
 // ─── RESERVATIONS LIST ──────────────────────────────────────────
