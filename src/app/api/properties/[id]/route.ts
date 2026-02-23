@@ -21,6 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } else if (action === "update_phone") {
       const { phoneId, phone, name, label } = body;
       await prisma.doormanPhone.update({ where: { id: phoneId }, data: { phone, name: name || null, label: label || null } });
+    } else if (action === "update_details") {
+      const { unitNumber, parkingSpot } = body;
+      await prisma.property.update({ where: { id: params.id }, data: { unitNumber: unitNumber || null, parkingSpot: parkingSpot || null } });
     }
 
     const property = await prisma.property.findUnique({
