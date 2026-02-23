@@ -121,6 +121,36 @@ export async function POST(req: NextRequest) {
     // Parse
     const { results, errors } = parseAirbnbEmail(emailContent);
 
+    // Extract property photo from HTML (more reliable than text)
+    let propertyPhotoUrl: string | null = null;
+    if (htmlBody && results.airbnbRoomId) {
+      // Look for img src near the rooms link in HTML
+      const roomUrlPattern = new RegExp(`airbnb\\.com(?:\\.br)?/rooms/${results.airbnbRoomId}`, "i");
+      const roomIdx = htmlBody.search(roomUrlPattern);
+      if (roomIdx > -1) {
+        // Search for nearby img tags (within 2000 chars before/after the room link)
+        const searchStart = Math.max(0, roomIdx - 2000);
+        const searchEnd = Math.min(htmlBody.length, roomIdx + 2000);
+        const nearbyHtml = htmlBody.slice(searchStart, searchEnd);
+        const imgMatches = nearbyHtml.match(/src=["'](https:\/\/a0\.muscache\.com\/im\/pictures\/(?!user\/)[^"']+)["']/g);
+        if (imgMatches && imgMatches.length > 0) {
+          const urlMatch = imgMatches[0].match(/src=["']([^"']+)["']/);
+          if (urlMatch) propertyPhotoUrl = urlMatch[1];
+        }
+      }
+    }
+    // Fallback: first non-user muscache image from HTML
+    if (!propertyPhotoUrl && htmlBody) {
+      const allImgs = htmlBody.match(/src=["'](https:\/\/a0\.muscache\.com\/im\/pictures\/(?!user\/|aircover)[^"']+\.jpg[^"']*)["']/gi);
+      if (allImgs && allImgs.length > 0) {
+        // Skip small icons (usually verification badges) - get the largest/first property-like image
+        for (const img of allImgs) {
+          const u = img.match(/src=["']([^"']+)["']/)?.[1];
+          if (u && !u.includes("profile") && !u.includes("icon")) { propertyPhotoUrl = u; break; }
+        }
+      }
+    }
+
     // Save parsed data to log
     await prisma.inboundEmailLog.update({
       where: { id: logId },
@@ -157,12 +187,17 @@ export async function POST(req: NextRequest) {
     }
     if (!property) {
       property = await prisma.property.create({
-        data: { userId, name: propName, airbnbRoomId: results.airbnbRoomId || null },
+        data: { userId, name: propName, airbnbRoomId: results.airbnbRoomId || null, photoUrl: propertyPhotoUrl },
       });
     } else if (results.airbnbRoomId && !property.airbnbRoomId) {
       property = await prisma.property.update({
         where: { id: property.id },
-        data: { airbnbRoomId: results.airbnbRoomId },
+        data: { airbnbRoomId: results.airbnbRoomId, ...(propertyPhotoUrl && !property.photoUrl ? { photoUrl: propertyPhotoUrl } : {}) },
+      });
+    } else if (propertyPhotoUrl && !property.photoUrl) {
+      property = await prisma.property.update({
+        where: { id: property.id },
+        data: { photoUrl: propertyPhotoUrl },
       });
     }
 
