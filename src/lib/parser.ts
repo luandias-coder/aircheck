@@ -31,18 +31,39 @@ function cleanEncoding(text: string): string {
     .replace(/\uFFFD\uFFFDes\b/g, "ções")
     .replace(/\uFFFD\uFFFDo\b/g, "ção")
     .replace(/\uFFFD\uFFFD/g, "çã")
-    // Single replacement char: context-based guesses
-    .replace(/a\uFFFD(?=o\b)/g, "aã")       // ...ação → ...ação
-    .replace(/\bEsta\uFFFDo/g, "Estação")    // Estação specifically
-    .replace(/\uFFFD(?=spede)/gi, "ó")        // hóspede
-    .replace(/\uFFFD(?=digo)/gi, "ó")         // código
-    .replace(/\uFFFD(?=rio)/gi, "á")          // itinerário, comentário
-    .replace(/\uFFFD(?=vel)/gi, "ó")          // imóvel
+    // Specific words/property terms
+    .replace(/\bEsta\uFFFDo/g, "Estação")
     .replace(/anfitri\uFFFDo/gi, "anfitrião")
     .replace(/pre\uFFFDo/gi, "preço")
     .replace(/servi\uFFFDo/gi, "serviço")
     .replace(/informa\uFFFDes/gi, "informações")
-    .replace(/\uFFFD/g, "");                  // remove any remaining
+    .replace(/\uFFFD(?=spede)/gi, "ó")
+    .replace(/\uFFFD(?=digo)/gi, "ó")
+    .replace(/\uFFFD(?=vel\b)/gi, "ó")
+    // Specific name prefixes (before generic suffix rules)
+    .replace(/L\uFFFD(?=cia\b)/g, "Lú")
+    .replace(/l\uFFFD(?=cia\b)/g, "lú")
+    .replace(/M\uFFFD(?=rci)/g, "Má")
+    .replace(/m\uFFFD(?=rci)/g, "má")
+    .replace(/S\uFFFD(?=rgio)/g, "Sé")
+    .replace(/s\uFFFD(?=rgio)/g, "sé")
+    .replace(/R\uFFFD(?=gis\b)/g, "Ré")
+    // Generic suffix patterns (names)
+    .replace(/\uFFFD(?=cio\b)/gi, "í")    // Fabrício, Maurício
+    .replace(/\uFFFD(?=cia\b)/gi, "í")    // Letícia, Patrícia
+    .replace(/\uFFFD(?=nior\b)/gi, "ú")   // Júnior
+    .replace(/\uFFFD(?=lio\b)/gi, "ú")    // Júlio
+    .replace(/\uFFFD(?=lia\b)/gi, "ú")    // Júlia
+    .replace(/\uFFFD(?=nio\b)/gi, "ô")    // Antônio
+    .replace(/\uFFFD(?=nia\b)/gi, "ô")    // Sônia
+    .replace(/\uFFFD(?=rio\b)/gi, "á")    // Mário, itinerário
+    .replace(/\uFFFD(?=ria\b)/gi, "á")    // Mária
+    .replace(/\uFFFD(?=rica?\b)/gi, "é")   // América
+    .replace(/\uFFFD(?=der\b)/gi, "é")     // Cléder
+    // Fallback: drop replacement char keeping surrounding letters
+    .replace(/([A-Za-z])\uFFFD/g, (_, p) => p)
+    .replace(/\uFFFD([A-Za-z])/g, (_, n) => n)
+    .replace(/\uFFFD/g, "");
 }
 
 export interface ParsedReservation {
@@ -111,10 +132,11 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     if (fromNova) r.guestFullName = fromNova[1].trim();
   }
   if (!r.guestFullName) {
-    const fromId = rawText.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][a-zà-ÿ\u00E0-\u024F]+)+)\s*\n[^\n]*?Identifica/m);
+    const fromId = rawText.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+)+)\s*\n[^\n]*?Identifica/m);
     if (fromId) r.guestFullName = fromId[1].trim();
   }
   if (!r.guestFullName) errors.push("Nome do hóspede não encontrado");
+  else r.guestFullName = cleanEncoding(r.guestFullName);
 
   // ── Property name (with encoding cleanup) ──────────────────
   // Pattern 1: text before "Casa/apto inteiro"
