@@ -317,7 +317,7 @@ export default function OnboardingPage(){
           </div>
 
           <button onClick={()=>{loadWhatsapp();setStep(7)}} style={btnStyle()}>Continuar →</button>
-        </div>})()
+        </div>})()}
 
         {/* ═══════════════════ STEP 7 ═══════════════════ */}
         {step===7&&reservation&&<div style={cardStyle}>
