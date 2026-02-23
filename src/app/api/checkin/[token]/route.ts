@@ -42,8 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const r = await prisma.reservation.findUnique({ where: { formToken: params.token } });
     if (!r) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
 
-    if (r.status !== "pending_form" && r.status !== "form_filled") {
-      return NextResponse.json({ error: "Formulário não pode mais ser editado" }, { status: 400 });
+    if (r.status !== "pending_form") {
+      return NextResponse.json({ error: "Este formulário já foi preenchido. Para alterações, solicite ao anfitrião." }, { status: 400 });
     }
 
     const formData = await req.formData();
