@@ -58,6 +58,7 @@ export default function Dashboard(){
           await Promise.all(toArchive.map(r=>fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"archived"})})));
           toArchive.forEach(r=>r.status="archived");
         }
+        data.sort((a,b)=>{const p=(d:string)=>{const[dd,mm,yy]=d.split("/").map(Number);return new Date(yy,mm-1,dd).getTime()};return p(a.checkInDate)-p(b.checkInDate)});
         setReservations(data);
       }
       if(pr.ok)setProperties(await pr.json());
