@@ -27,6 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: {
         ...(body.status ? { status: body.status } : {}),
         ...(body.status === "sent_to_doorman" ? { sentToDoormanAt: new Date() } : {}),
+        ...(body.numGuests ? { numGuests: body.numGuests } : {}),
       },
       include: { property: { include: { doormanPhones: true } }, guests: true },
     });
