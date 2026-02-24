@@ -181,7 +181,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
   const[deleting,setDeleting]=useState(false);
 
   const baseUrl=typeof window!=="undefined"?window.location.origin:"";
-  const formUrl=`${baseUrl}/checkin/${r.formToken}`;
+  const formUrl=r.confirmationCode?`${baseUrl}/c/${r.confirmationCode}`:`${baseUrl}/checkin/${r.formToken}`;
   const copy=()=>{navigator.clipboard.writeText(formUrl);setCopied(true);setTimeout(()=>setCopied(false),2000)};
   const hasGuests=r.guests.length>0;
   const fetchWa=async()=>{const res=await fetch(`/api/reservations/${r.id}/whatsapp`);if(res.ok){setWaData(await res.json());setShowWa(true)}};
