@@ -100,6 +100,24 @@ export async function GET() {
     sentToDoorman: (statusCounts["sent_to_doorman"] || 0) + (statusCounts["archived"] || 0),
   };
 
+  // ── Feedback ──
+  const allFeedbacks = await prisma.feedback.findMany({
+    select: { id: true, rating: true, category: true, message: true, adminNote: true, status: true, createdAt: true, user: { select: { email: true, name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const fbTotal = allFeedbacks.length;
+  const fbNew = allFeedbacks.filter(f => f.status === "new").length;
+  const avgRating = fbTotal > 0 ? allFeedbacks.reduce((s, f) => s + f.rating, 0) / fbTotal : 0;
+  const ratingDist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  allFeedbacks.forEach(f => { ratingDist[f.rating] = (ratingDist[f.rating] || 0) + 1; });
+  const catDist: Record<string, number> = {};
+  allFeedbacks.forEach(f => { catDist[f.category] = (catDist[f.category] || 0) + 1; });
+  // NPS-style: 4-5 = promoter, 3 = neutral, 1-2 = detractor
+  const promoters = allFeedbacks.filter(f => f.rating >= 4).length;
+  const detractors = allFeedbacks.filter(f => f.rating <= 2).length;
+  const nps = fbTotal > 0 ? Math.round(((promoters - detractors) / fbTotal) * 100) : 0;
+
   return NextResponse.json({
     overview: {
       users: { total: usersTotal, thisWeek: usersThisWeek, thisMonth: usersThisMonth, onboarded: usersOnboarded },
@@ -107,6 +125,7 @@ export async function GET() {
       guests: { totalExpected: totalGuestsExpected, totalRegistered: totalGuestsRegistered, thisWeek: guestsThisWeek, thisMonth: guestsThisMonth, distribution: guestDistribution },
       properties: { total: propsTotal, withDoorman: propsWithDoorman, withUnit: propsWithUnit },
       emails: { total: emailsTotal, today: emailsToday, byStatus: emailStatusCounts },
+      feedback: { total: fbTotal, new: fbNew, avgRating: Math.round(avgRating * 10) / 10, nps, ratingDist, catDist },
       funnel,
     },
     users: allUsers.map(u => ({
@@ -129,6 +148,11 @@ export async function GET() {
     emailLogs: emailLogs.map(e => ({
       id: e.id, from: e.fromEmail, subject: e.subject, status: e.status,
       error: e.error, hasReservation: !!e.reservationId, createdAt: e.createdAt,
+    })),
+    feedbacks: allFeedbacks.map(f => ({
+      id: f.id, rating: f.rating, category: f.category, message: f.message,
+      adminNote: f.adminNote, status: f.status, createdAt: f.createdAt,
+      user: f.user.name || f.user.email,
     })),
   });
 }
