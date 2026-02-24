@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createToken, setSessionCookie } from "@/lib/auth";
+import { sendEmail, welcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,10 @@ export async function POST(req: NextRequest) {
 
     const token = await createToken(user.id);
     await setSessionCookie(token);
+
+    // Send welcome email (non-blocking)
+    const welcome = welcomeEmail(user.name);
+    sendEmail({ to: user.email, subject: welcome.subject, html: welcome.html }).catch(() => {});
 
     return NextResponse.json({ id: user.id, email: user.email, name: user.name });
   } catch (e) { console.error(e); return NextResponse.json({ error: "Erro interno" }, { status: 500 }); }
