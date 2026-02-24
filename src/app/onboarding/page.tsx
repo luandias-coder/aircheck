@@ -113,7 +113,8 @@ export default function OnboardingPage(){
   // ── Step 5: Copy link ──
   const copyLink=()=>{
     if(!reservation)return;
-    navigator.clipboard.writeText(`${window.location.origin}/checkin/${reservation.formToken}`);
+    const url=reservation.confirmationCode?`${window.location.origin}/c/${reservation.confirmationCode}`:`${window.location.origin}/checkin/${reservation.formToken}`;
+    navigator.clipboard.writeText(url);
     setCopied(true);setTimeout(()=>setCopied(false),2000);
   };
 
@@ -267,10 +268,10 @@ export default function OnboardingPage(){
 
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Link do formulário</div>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:B.primary,wordBreak:"break-all",marginBottom:12}}>{typeof window!=="undefined"?window.location.origin:""}/checkin/{reservation.formToken}</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:B.primary,wordBreak:"break-all",marginBottom:12}}>{typeof window!=="undefined"?window.location.origin:""}{reservation.confirmationCode?`/c/${reservation.confirmationCode}`:`/checkin/${reservation.formToken}`}</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={copyLink} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:copied?B.accent:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",transition:"background 0.2s"}}>{copied?"Copiado! ✓":"Copiar link"}</button>
-              <a href={`/checkin/${reservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:8,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Abrir formulário ↗</a>
+              <a href={reservation.confirmationCode?`/c/${reservation.confirmationCode}`:`/checkin/${reservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:8,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Abrir formulário ↗</a>
             </div>
           </div>
 
@@ -283,7 +284,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 6 ═══════════════════ */}
         {step===6&&reservation&&(()=>{
-          const formUrl=typeof window!=="undefined"?`${window.location.origin}/checkin/${reservation.formToken}`:`/checkin/${reservation.formToken}`;
+          const formUrl=reservation.confirmationCode?`${typeof window!=="undefined"?window.location.origin:""}/c/${reservation.confirmationCode}`:`${typeof window!=="undefined"?window.location.origin:""}/checkin/${reservation.formToken}`;
           const guestMsg=`Olá ${reservation.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
           const copyMsg=()=>{navigator.clipboard.writeText(guestMsg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),3000)};
           return<div style={cardStyle}>
