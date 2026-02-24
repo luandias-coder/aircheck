@@ -20,6 +20,7 @@ model User {
   properties    Property[]
   reservations  Reservation[]
   inboundEmails UserInboundEmail[]
+  feedbacks     Feedback[]
 }
 
 model UserInboundEmail {
@@ -134,6 +135,23 @@ model InboundEmailLog {
   createdAt     DateTime @default(now())
 
   @@index([fromEmail])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  rating    Int
+  category  String   @default("sugestao")
+  message   String
+  adminNote String?
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([createdAt])
   @@index([status])
 }
