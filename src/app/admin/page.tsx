@@ -8,7 +8,7 @@ const C = {
   orange:"#F97316", cyan:"#06B6D4",
 };
 
-type Tab = "overview"|"users"|"reservations"|"properties"|"emails"|"guests";
+type Tab = "overview"|"users"|"reservations"|"properties"|"emails"|"guests"|"feedback";
 
 const STATUS_LABELS:Record<string,{label:string;color:string}> = {
   pending_form:{label:"Aguardando form",color:C.yellow},
@@ -74,6 +74,7 @@ export default function AdminPage(){
     {id:"guests",label:"Hóspedes",count:o.guests.totalRegistered},
     {id:"properties",label:"Imóveis",count:o.properties.total},
     {id:"emails",label:"Emails",count:o.emails.total},
+    {id:"feedback",label:"Feedback",count:o.feedback?.new||0},
   ];
 
   return<Shell>
@@ -96,6 +97,7 @@ export default function AdminPage(){
     {tab==="guests"&&<GuestsTab o={o}/>}
     {tab==="properties"&&<PropertiesTab properties={data.properties}/>}
     {tab==="emails"&&<EmailsTab logs={data.emailLogs} stats={o.emails}/>}
+    {tab==="feedback"&&<FeedbackAdminTab feedbacks={data.feedbacks} stats={o.feedback}/>}
   </Shell>
 }
 
@@ -164,6 +166,7 @@ function OverviewTab({o}:{o:any}){
       <Metric label="Hóspedes (registrados)" value={o.guests.totalRegistered} sub={`${o.guests.totalExpected} esperados`} color={C.purple}/>
       <Metric label="Imóveis" value={o.properties.total} sub={`${o.properties.withDoorman} c/ portaria`}/>
       <Metric label="Emails" value={o.emails.total} sub={`${o.emails.today} hoje`} color={C.cyan}/>
+      <Metric label="Satisfação" value={o.feedback?.avgRating?`${o.feedback.avgRating} ⭐`:"—"} sub={`NPS ${o.feedback?.nps||0} · ${o.feedback?.total||0} avaliações`} color={o.feedback?.nps>=50?C.green:o.feedback?.nps>=0?C.yellow:C.red}/>
     </div>
 
     {/* Funnel */}
@@ -433,5 +436,136 @@ function EmailsTab({logs,stats}:{logs:any[];stats:any}){
         time:formatDate(e.createdAt),
       }
     })}/>
+  </div>
+}
+
+// ─── FEEDBACK ADMIN TAB ─────────────────────────────────────────
+const FB_STATUS:Record<string,{label:string;color:string}>={
+  new:{label:"Novo",color:C.yellow},
+  seen:{label:"Visto",color:C.accent},
+  planned:{label:"Planejado",color:C.purple},
+  done:{label:"Implementado",color:C.green},
+};
+const FB_CATS:Record<string,{emoji:string;label:string}>={
+  sugestao:{emoji:"💡",label:"Sugestão"},
+  bug:{emoji:"🐛",label:"Problema"},
+  elogio:{emoji:"🎉",label:"Elogio"},
+};
+
+function FeedbackAdminTab({feedbacks:initialFeedbacks,stats}:{feedbacks:any[];stats:any}){
+  const[feedbacks,setFeedbacks]=useState(initialFeedbacks);
+  const[filter,setFilter]=useState("all");
+  const[replyId,setReplyId]=useState<string|null>(null);
+  const[replyText,setReplyText]=useState("");
+  const[saving,setSaving]=useState(false);
+
+  const filtered=filter==="all"?feedbacks:feedbacks.filter((f:any)=>f.status===filter||f.category===filter);
+
+  const updateFeedback=async(id:string,upd:any)=>{
+    setSaving(true);
+    try{
+      const res=await fetch("/api/admin/feedback",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,...upd})});
+      if(!res.ok)throw new Error();
+      setFeedbacks((prev:any[])=>prev.map(f=>f.id===id?{...f,...upd}:f));
+    }catch{alert("Erro ao salvar")}
+    finally{setSaving(false)}
+  };
+
+  return<div style={{display:"flex",flexDirection:"column",gap:20}}>
+    {/* Stats row */}
+    <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+      <Metric label="Total" value={stats?.total||0}/>
+      <Metric label="Novos" value={stats?.new||0} color={C.yellow}/>
+      <Metric label="Nota média" value={stats?.avgRating||"—"} color={C.accent}/>
+      <Metric label="NPS" value={stats?.nps||0} sub={stats?.nps>=50?"Excelente":stats?.nps>=0?"Bom":"Crítico"} color={stats?.nps>=50?C.green:stats?.nps>=0?C.yellow:C.red}/>
+    </div>
+
+    {/* Rating distribution */}
+    {stats?.ratingDist&&<div style={{background:C.card,border:`1px solid ${C.cardBorder}`,borderRadius:12,padding:20}}>
+      <div style={{fontSize:10,fontWeight:600,color:C.muted,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Distribuição de notas</div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {[5,4,3,2,1].map(n=>{
+          const count=stats.ratingDist[n]||0;
+          const pct=stats.total>0?Math.round((count/stats.total)*100):0;
+          return<div key={n} style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:13,minWidth:24,textAlign:"right"}}>{n} ⭐</span>
+            <div style={{flex:1,height:8,background:"rgba(255,255,255,0.06)",borderRadius:4,overflow:"hidden"}}>
+              <div style={{width:`${pct}%`,height:"100%",background:n>=4?C.green:n===3?C.yellow:C.red,borderRadius:4,transition:"width 0.5s"}}/>
+            </div>
+            <span style={{fontSize:12,color:C.muted,minWidth:50,fontFamily:"'IBM Plex Mono'"}}>{count} ({pct}%)</span>
+          </div>
+        })}
+      </div>
+    </div>}
+
+    {/* Filters */}
+    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      {[{id:"all",label:"Todos"},...Object.entries(FB_STATUS).map(([id,v])=>({id,label:v.label})),...Object.entries(FB_CATS).map(([id,v])=>({id,label:`${v.emoji} ${v.label}`}))].map(f=>
+        <button key={f.id} onClick={()=>setFilter(f.id)} style={{
+          fontFamily:"Outfit",fontSize:12,fontWeight:filter===f.id?600:400,padding:"6px 14px",
+          background:filter===f.id?"rgba(59,130,246,0.15)":"rgba(255,255,255,0.04)",
+          color:filter===f.id?C.accent:C.muted,border:`1px solid ${filter===f.id?C.accent:C.cardBorder}`,
+          borderRadius:20,cursor:"pointer",
+        }}>{f.label}</button>
+      )}
+    </div>
+
+    {/* Feedback cards */}
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:C.muted}}>Nenhum feedback</div>}
+      {filtered.map((f:any)=>{
+        const cat=FB_CATS[f.category]||FB_CATS.sugestao;
+        const st=FB_STATUS[f.status]||FB_STATUS.new;
+        return<div key={f.id} style={{background:C.card,border:`1px solid ${f.status==="new"?C.yellow:C.cardBorder}`,borderRadius:12,padding:"16px 18px"}}>
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:16}}>{cat.emoji}</span>
+              <span style={{fontSize:13,fontWeight:600}}>{f.user}</span>
+              <span style={{fontSize:12,color:C.muted}}>·</span>
+              <span style={{fontSize:12}}>{"⭐".repeat(f.rating)}</span>
+            </div>
+            <span style={{fontSize:10,color:C.muted}}>{formatDate(f.createdAt)}</span>
+          </div>
+
+          {/* Message */}
+          <div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:12,whiteSpace:"pre-wrap"}}>{f.message}</div>
+
+          {/* Admin note */}
+          {f.adminNote&&<div style={{padding:"10px 14px",background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,fontSize:12,color:C.accent,lineHeight:1.5,marginBottom:12}}>
+            <span style={{fontWeight:600}}>Sua resposta:</span> {f.adminNote}
+          </div>}
+
+          {/* Actions */}
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            {Object.entries(FB_STATUS).map(([id,v])=>
+              <button key={id} onClick={()=>updateFeedback(f.id,{status:id})} disabled={saving} style={{
+                fontFamily:"Outfit",fontSize:11,fontWeight:f.status===id?600:400,padding:"5px 12px",
+                background:f.status===id?`${v.color}22`:"transparent",
+                color:f.status===id?v.color:C.muted,
+                border:`1px solid ${f.status===id?v.color:C.cardBorder}`,borderRadius:6,cursor:"pointer",
+              }}>{v.label}</button>
+            )}
+            <div style={{flex:1}}/>
+            <button onClick={()=>{setReplyId(replyId===f.id?null:f.id);setReplyText(f.adminNote||"")}} style={{
+              fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"5px 12px",
+              background:"transparent",color:C.accent,border:`1px solid ${C.accent}`,borderRadius:6,cursor:"pointer",
+            }}>{replyId===f.id?"Cancelar":"Responder"}</button>
+          </div>
+
+          {/* Reply form */}
+          {replyId===f.id&&<div style={{marginTop:10,display:"flex",gap:8}}>
+            <input value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Resposta para o host..." onKeyDown={e=>{if(e.key==="Enter"&&replyText.trim()){updateFeedback(f.id,{adminNote:replyText.trim()});setReplyId(null)}}} style={{
+              flex:1,fontFamily:"Outfit",fontSize:13,padding:"8px 12px",background:"rgba(255,255,255,0.06)",
+              border:`1px solid ${C.cardBorder}`,borderRadius:8,color:C.text,
+            }}/>
+            <button onClick={()=>{if(replyText.trim()){updateFeedback(f.id,{adminNote:replyText.trim()});setReplyId(null)}}} disabled={!replyText.trim()||saving} style={{
+              fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 16px",background:C.accent,color:"#fff",
+              border:"none",borderRadius:8,cursor:"pointer",opacity:!replyText.trim()?0.5:1,
+            }}>Enviar</button>
+          </div>}
+        </div>
+      })}
+    </div>
   </div>
 }
