@@ -31,7 +31,7 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
   const router=useRouter();
-  const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs">("reservations");
+  const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs"|"feedback">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
   const[user,setUser]=useState<User|null>(null);
@@ -120,7 +120,7 @@ export default function Dashboard(){
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
-            {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
+            {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["feedback","Feedback",null],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
               <button key={id} onClick={()=>setTab(id as any)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
                 {l} {n!==null&&<span style={{marginLeft:4,fontSize:11,fontWeight:700,color:tab===id?B.primary:"#A3A3A3",background:tab===id?B.light:"#F5F5F5",padding:"2px 6px",borderRadius:10}}>{n}</span>}
               </button>
@@ -129,6 +129,7 @@ export default function Dashboard(){
 
           {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
+          :tab==="feedback"?<FeedbackTab/>
           :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
@@ -354,6 +355,123 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       </div>
     </div>
   </div>}
+
+// ─── FEEDBACK TAB ───────────────────────────────────────────────
+const CATEGORIES=[{id:"sugestao",emoji:"💡",label:"Sugestão"},{id:"bug",emoji:"🐛",label:"Problema"},{id:"elogio",emoji:"🎉",label:"Elogio"}];
+
+function FeedbackTab(){
+  const[feedbacks,setFeedbacks]=useState<any[]>([]);
+  const[loading,setLoading]=useState(true);
+  const[rating,setRating]=useState(0);
+  const[hoverRating,setHoverRating]=useState(0);
+  const[category,setCategory]=useState("sugestao");
+  const[message,setMessage]=useState("");
+  const[sending,setSending]=useState(false);
+  const[sent,setSent]=useState(false);
+
+  useEffect(()=>{fetch("/api/feedback").then(r=>r.json()).then(setFeedbacks).catch(()=>{}).finally(()=>setLoading(false))},[]);
+
+  const submit=async()=>{
+    if(!rating||!message.trim())return;
+    setSending(true);
+    try{
+      const res=await fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rating,category,message})});
+      if(!res.ok)throw new Error();
+      const fb=await res.json();
+      setFeedbacks(p=>[fb,...p]);
+      setRating(0);setMessage("");setSent(true);
+      setTimeout(()=>setSent(false),3000);
+    }catch{alert("Erro ao enviar. Tente novamente.")}
+    finally{setSending(false)}
+  };
+
+  return<div style={{display:"flex",flexDirection:"column",gap:16}}>
+    {/* Submit form */}
+    <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <h3 style={{fontFamily:"Outfit",fontSize:16,fontWeight:700,color:"#1A1A1A",margin:"0 0 4px"}}>Envie seu feedback</h3>
+      <p style={{fontFamily:"Outfit",fontSize:13,color:"#A3A3A3",margin:"0 0 16px"}}>Sua opinião nos ajuda a melhorar o AirCheck.</p>
+
+      {/* Star rating */}
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Como está sua experiência?</div>
+        <div style={{display:"flex",gap:4}}>
+          {[1,2,3,4,5].map(n=><button key={n}
+            onMouseEnter={()=>setHoverRating(n)} onMouseLeave={()=>setHoverRating(0)}
+            onClick={()=>setRating(n)}
+            style={{background:"none",border:"none",cursor:"pointer",fontSize:28,padding:4,transition:"transform 0.15s",transform:(hoverRating||rating)>=n?"scale(1.15)":"scale(1)"}}>
+            {(hoverRating||rating)>=n?"⭐":"☆"}
+          </button>)}
+          {rating>0&&<span style={{fontSize:12,color:"#A3A3A3",alignSelf:"center",marginLeft:8}}>
+            {["","Ruim","Regular","Bom","Muito bom","Excelente"][rating]}
+          </span>}
+        </div>
+      </div>
+
+      {/* Category */}
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Tipo</div>
+        <div style={{display:"flex",gap:8}}>
+          {CATEGORIES.map(c=><button key={c.id} onClick={()=>setCategory(c.id)} style={{
+            fontFamily:"Outfit",fontSize:13,fontWeight:category===c.id?600:400,
+            padding:"8px 14px",borderRadius:10,cursor:"pointer",transition:"all 0.2s",
+            background:category===c.id?B.light:"#FAFAF9",
+            color:category===c.id?B.primary:"#737373",
+            border:`1px solid ${category===c.id?B.muted:"#E5E5E5"}`,
+          }}>{c.emoji} {c.label}</button>)}
+        </div>
+      </div>
+
+      {/* Message */}
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Mensagem</div>
+        <textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Conte como podemos melhorar, sugira uma funcionalidade, ou nos diga o que está gostando..." rows={4} style={{
+          width:"100%",fontFamily:"Outfit",fontSize:14,color:"#1A1A1A",padding:"12px 14px",border:"1px solid #E5E5E5",borderRadius:10,background:"#fff",boxSizing:"border-box",resize:"vertical",lineHeight:1.6,
+        }}/>
+      </div>
+
+      <button onClick={submit} disabled={!rating||!message.trim()||sending} style={{
+        fontFamily:"Outfit",fontSize:14,fontWeight:600,padding:"12px 24px",
+        background:sent?B.accent:(!rating||!message.trim())?"#D4D4D4":B.primary,
+        color:"#fff",border:"none",borderRadius:10,cursor:(!rating||!message.trim()||sending)?"not-allowed":"pointer",
+        opacity:sending?0.6:1,transition:"background 0.2s",
+      }}>{sent?"✓ Enviado! Obrigado!":sending?"Enviando...":"Enviar feedback"}</button>
+    </div>
+
+    {/* Previous feedbacks */}
+    {loading?<div style={{textAlign:"center",padding:24,color:"#A3A3A3",fontSize:13}}>Carregando...</div>
+    :feedbacks.length>0&&<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Seus feedbacks anteriores</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {feedbacks.map((f:any)=>{
+          const cat=CATEGORIES.find(c=>c.id===f.category);
+          const statusInfo:Record<string,{label:string;color:string;bg:string}>={
+            new:{label:"Enviado",color:"#D97706",bg:"#FFFBEB"},
+            seen:{label:"Visto",color:"#2563EB",bg:"#EFF6FF"},
+            planned:{label:"Planejado",color:"#7C3AED",bg:"#F5F3FF"},
+            done:{label:"Implementado",color:"#059669",bg:"#ECFDF5"},
+          };
+          const st=statusInfo[f.status]||statusInfo.new;
+          return<div key={f.id} style={{background:"#FAFAF9",borderRadius:10,padding:"12px 14px",border:"1px solid #F0F0F0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:14}}>{cat?.emoji||"💡"}</span>
+                <span style={{fontSize:12,fontWeight:600,color:"#1A1A1A"}}>{cat?.label||"Sugestão"}</span>
+                <span style={{fontSize:12,color:"#D4D4D4"}}>·</span>
+                <span style={{fontSize:12}}>{"⭐".repeat(f.rating)}</span>
+              </div>
+              <span style={{fontSize:10,fontWeight:600,color:st.color,background:st.bg,padding:"3px 8px",borderRadius:6}}>{st.label}</span>
+            </div>
+            <div style={{fontSize:13,color:"#374151",lineHeight:1.5}}>{f.message}</div>
+            {f.adminNote&&<div style={{marginTop:8,padding:"8px 12px",background:B.light,borderRadius:8,fontSize:12,color:B.primary,lineHeight:1.5}}>
+              <span style={{fontWeight:600}}>Resposta:</span> {f.adminNote}
+            </div>}
+            <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>{new Date(f.createdAt).toLocaleDateString("pt-BR")}</div>
+          </div>
+        })}
+      </div>
+    </div>}
+  </div>
+}
 
 // ─── LOGS TAB ───────────────────────────────────────────────────
 interface EmailLog { id:string; fromEmail:string; toEmail:string|null; subject:string|null; htmlBody:string|null; status:string; error:string|null; createdAt:string }
