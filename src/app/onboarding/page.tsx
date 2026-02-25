@@ -23,6 +23,12 @@ function StepBadge({n}:{n:number}){return(
   </div>
 )}
 
+function BackBtn({onClick}:{onClick:()=>void}){return(
+  <button onClick={onClick} style={{fontFamily:"Outfit",fontSize:13,fontWeight:500,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:16,display:"flex",alignItems:"center",gap:4}}>
+    ← Voltar
+  </button>
+)}
+
 export default function OnboardingPage(){
   const router=useRouter();
   const[step,setStep]=useState(1);
@@ -148,7 +154,7 @@ export default function OnboardingPage(){
         {/* Progress bar */}
         <div style={{display:"flex",gap:4,marginBottom:32}}>
           {[1,2,3,4,5,6,7].map(s=>(
-            <div key={s} style={{flex:1,height:4,borderRadius:2,background:s<step?B.accent:s===step?B.primary:"#E5E5E5",transition:"background 0.4s"}}/>
+            <div key={s} onClick={()=>{if(s<step)setStep(s)}} style={{flex:1,height:4,borderRadius:2,background:s<step?B.accent:s===step?B.primary:"#E5E5E5",transition:"background 0.4s",cursor:s<step?"pointer":"default"}}/>
           ))}
         </div>
 
@@ -176,6 +182,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 2 ═══════════════════ */}
         {step===2&&<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(1)}/>
           <StepBadge n={2}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Encaminhe uma reserva</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Abra seu email e encaminhe um email de <strong style={{color:"#1A1A1A"}}>"Reserva confirmada"</strong> do Airbnb para o endereço abaixo. Se possível, escolha uma reserva futura.</p>
@@ -207,6 +214,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 3 ═══════════════════ */}
         {step===3&&reservation&&<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(2)}/>
           <StepBadge n={3}/>
           <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:100,padding:"6px 14px",marginBottom:16}}>
             <span>✅</span>
@@ -230,6 +238,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 4 ═══════════════════ */}
         {step===4&&reservation&&<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(3)}/>
           <StepBadge n={4}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:4}}>{reservation.property.name}</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:24}}>Preencha os dados do imóvel. A portaria vai receber essas informações junto com os dados do hóspede.</p>
@@ -262,6 +271,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 5 ═══════════════════ */}
         {step===5&&reservation&&<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(4)}/>
           <StepBadge n={5}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Formulário de check-in</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Este é o link que você envia ao hóspede. Ele preenche nome, CPF, data de nascimento e tira foto do documento.</p>
@@ -285,6 +295,7 @@ export default function OnboardingPage(){
         {/* ═══════════════════ STEP 6 ═══════════════════ */}
         {step===6&&reservation&&(()=>{
           return<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(5)}/>
           <StepBadge n={6}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Mensagem automática no Airbnb</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Configure uma mensagem programada no Airbnb para que <strong style={{color:"#1A1A1A"}}>cada novo hóspede receba automaticamente</strong> o link do formulário de check-in. Você faz isso uma única vez.</p>
@@ -334,6 +345,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 7 ═══════════════════ */}
         {step===7&&reservation&&<div style={cardStyle}>
+          <BackBtn onClick={()=>setStep(6)}/>
           <StepBadge n={7}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Pronto! Envie para a portaria.</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Quando o hóspede preencher o formulário, você abre a reserva no painel e clica em <strong style={{color:"#1A1A1A"}}>"Enviar para portaria"</strong>. A mensagem formatada vai direto pro WhatsApp.</p>
