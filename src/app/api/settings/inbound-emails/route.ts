@@ -21,10 +21,13 @@ export async function POST(req: NextRequest) {
 
   // Check if another user already registered this email
   const existing = await prisma.userInboundEmail.findFirst({
-    where: { email: normalized, userId: { not: userId } },
+    where: { email: normalized },
   });
-  if (existing) {
+  if (existing && existing.userId !== userId) {
     return NextResponse.json({ error: "Este email já está vinculado a outra conta AirCheck. Cada email do Airbnb só pode ser usado por um anfitrião." }, { status: 409 });
+  }
+  if (existing && existing.userId === userId) {
+    return NextResponse.json(existing); // already mine, just move on
   }
 
   try {
