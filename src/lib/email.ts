@@ -84,12 +84,12 @@ export function welcomeEmail(name: string | null) {
     subject: `Sua conta no AirCheck foi criada ✓`,
     html: layout(`
       <h1>Olá, ${firstName}! 👋</h1>
-      <p>Sua conta foi criada com sucesso. A partir de agora, o check-in dos seus hóspedes na portaria vai ser automático.</p>
+      <p>Que bom ter você aqui! Você está a poucos minutos de automatizar o check-in dos seus hóspedes na portaria do condomínio.</p>
       
-      <p>O setup inicial leva menos de 5 minutos — é só seguir o passo a passo no painel.</p>
+      <p>O setup inicial é rápido e guiado — você configura uma vez e o AirCheck cuida do resto pra você.</p>
       
       <p style="text-align:center;margin:28px 0 24px">
-        <a href="https://aircheck.com.br/dashboard" class="btn">Completar setup →</a>
+        <a href="https://aircheck.com.br/dashboard" class="btn">Começar setup →</a>
       </p>
       
       <div class="divider"></div>
