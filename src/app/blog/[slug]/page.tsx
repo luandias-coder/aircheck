@@ -61,7 +61,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   // FAQ structured data if content has h2+p pattern (helps AEO)
   const faqItems: Array<{ q: string; a: string }> = [];
-  const h2Regex = /<h2>(.*?)<\/h2>\s*<p>(.*?)<\/p>/gs;
+  const h2Regex = /<h2>(.*?)<\/h2>\s*<p>(.*?)<\/p>/g;
   let match;
   while ((match = h2Regex.exec(post.content)) !== null) {
     if (match[1].includes("?") || match[1].toLowerCase().startsWith("como") || match[1].toLowerCase().startsWith("o que") || match[1].toLowerCase().startsWith("por que") || match[1].toLowerCase().startsWith("quando") || match[1].toLowerCase().startsWith("qual")) {
