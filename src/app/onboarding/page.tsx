@@ -284,44 +284,49 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 6 ═══════════════════ */}
         {step===6&&reservation&&(()=>{
-          const formUrl=reservation.confirmationCode?`${typeof window!=="undefined"?window.location.origin:""}/c/${reservation.confirmationCode}`:`${typeof window!=="undefined"?window.location.origin:""}/checkin/${reservation.formToken}`;
-          const guestMsg=`Olá ${reservation.guestFullName.split(" ")[0]}! 😊\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\n${formUrl}\n\nQualquer dúvida, estou à disposição!`;
-          const copyMsg=()=>{navigator.clipboard.writeText(guestMsg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),3000)};
           return<div style={cardStyle}>
           <StepBadge n={6}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Envie ao hóspede pelo Airbnb</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Copie a mensagem abaixo e cole na conversa do Airbnb com <strong style={{color:"#1A1A1A"}}>{reservation.guestFullName}</strong>.</p>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Mensagem automática no Airbnb</h2>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Configure uma mensagem programada no Airbnb para que <strong style={{color:"#1A1A1A"}}>cada novo hóspede receba automaticamente</strong> o link do formulário de check-in. Você faz isso uma única vez.</p>
 
-          {/* Pre-formatted message */}
+          {/* Message preview */}
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Mensagem para o hóspede</div>
-            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>{guestMsg}</div>
-            <button onClick={copyMsg} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 20px",background:copiedMsg?B.accent:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",transition:"background 0.2s",width:"100%"}}>{copiedMsg?"✓ Mensagem copiada!":"Copiar mensagem"}</button>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Modelo de mensagem</div>
+            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>
+              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{" ! 😊\n\nSua reserva foi confirmada. Agradecemos a preferência e estamos animados para lhe receber em nosso imóvel.\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\nhttps://www.aircheck.com.br/c/"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Código de confirmação</span>{"\n\nEntrarei em contato no dia anterior ao check-in para lhe passar todas as orientações, e até lá, estarei disponível para qualquer dúvida que tenha.\n\nAté breve!"}
+            </div>
           </div>
 
-          {/* Steps */}
+          {/* Step-by-step instructions */}
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"16px 20px",marginBottom:16}}>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                <div style={{width:24,height:24,borderRadius:"50%",background:copiedMsg?B.accent:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>{copiedMsg?"✓":"1"}</div>
-                <span style={{fontSize:13,color:copiedMsg?"#059669":"#1A1A1A",fontWeight:copiedMsg?600:400}}>Copie a mensagem acima</span>
-              </div>
-              <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>2</div>
-                <span style={{fontSize:13,color:"#1A1A1A"}}>Abra a conversa no Airbnb e cole a mensagem</span>
-              </div>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Como configurar (uma vez só)</div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {[
+                "Clique no botão abaixo para abrir as configurações de respostas rápidas do Airbnb",
+                "Clique em \"Criar\" para criar um novo modelo",
+                "Dê o nome \"Confirmação de reserva\" ao modelo",
+                "Cole o texto da mensagem acima no campo de mensagem",
+                "No local de [Nome do hóspede], clique em \"Adicione informações\" (na parte inferior) e selecione \"Nome do primeiro hóspede\"",
+                "No local de [Código de confirmação], clique em \"Adicione informações\" e selecione \"Código de confirmação\"",
+                "Em \"Escolha os anúncios\", selecione os imóveis desejados",
+                "Configure a programação: \"5 minutos após um hóspede reservar\"",
+                "Clique em \"Salvar\"",
+              ].map((t,i)=>(
+                <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:`linear-gradient(135deg,${B.g1},${B.g2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0,marginTop:1}}>{i+1}</div>
+                  <span style={{fontSize:13,color:"#1A1A1A",lineHeight:1.5}}>{t}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Airbnb button */}
-          {reservation.airbnbThreadUrl?<a href={reservation.airbnbThreadUrl} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
-            💬 Abrir conversa com {reservation.guestFullName.split(" ")[0]} no Airbnb ↗
-          </a>:<a href="https://www.airbnb.com.br/hosting/messages" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
-            💬 Abrir mensagens do Airbnb ↗
-          </a>}
+          <a href="https://www.airbnb.com.br/hosting/messages/settings/quick-replies" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#FF5A5F",color:"#fff",borderRadius:12,padding:"14px 24px",textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:700,marginBottom:12}}>
+            ⚙️ Abrir configuração de respostas rápidas do Airbnb ↗
+          </a>
 
-          <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary,lineHeight:1.6,marginBottom:20}}>
-            ⚠️ Você precisa estar logado na sua <strong>conta de anfitrião</strong> do Airbnb para acessar a conversa.
+          <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 16px",fontSize:13,color:B.accent,lineHeight:1.6,marginBottom:20}}>
+            ✅ <strong>Pronto!</strong> A partir de agora, toda nova reserva receberá automaticamente o link do formulário no chat do Airbnb. Você não precisa enviar manualmente.
           </div>
 
           <button onClick={()=>{loadWhatsapp();setStep(7)}} style={btnStyle()}>Continuar →</button>
