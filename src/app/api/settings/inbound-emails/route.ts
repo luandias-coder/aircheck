@@ -17,9 +17,19 @@ export async function POST(req: NextRequest) {
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: "Email obrigatório" }, { status: 400 });
 
+  const normalized = email.toLowerCase().trim();
+
+  // Check if another user already registered this email
+  const existing = await prisma.userInboundEmail.findFirst({
+    where: { email: normalized, userId: { not: userId } },
+  });
+  if (existing) {
+    return NextResponse.json({ error: "Este email já está vinculado a outra conta AirCheck. Cada email do Airbnb só pode ser usado por um anfitrião." }, { status: 409 });
+  }
+
   try {
     const entry = await prisma.userInboundEmail.create({
-      data: { userId, email: email.toLowerCase().trim() },
+      data: { userId, email: normalized },
     });
     return NextResponse.json(entry);
   } catch (e: any) {
