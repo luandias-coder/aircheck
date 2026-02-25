@@ -151,6 +151,7 @@ export default function LandingPage() {
           .hero-text h1 { font-size: 36px !important; }
           .hero-ctas { justify-content: center !important; flex-wrap: wrap !important; }
           .steps-grid { grid-template-columns: 1fr !important; }
+          .pain-grid { grid-template-columns: 1fr !important; }
           .features-grid { grid-template-columns: 1fr !important; }
           .footer-grid { grid-template-columns: 1fr !important; text-align: center !important; }
           .nav-links { display: none !important; }
@@ -167,6 +168,7 @@ export default function LandingPage() {
             <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em" }}>Air<span className="grad-text">Check</span></span>
           </div>
           <div className="nav-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            <a href="#o-problema" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>O problema</a>
             <a href="#como-funciona" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Como funciona</a>
             <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
             <Link href="/register" className="cta-btn" style={{ padding: "10px 22px", fontSize: 14 }}>Criar conta grátis</Link>
@@ -174,6 +176,7 @@ export default function LandingPage() {
           <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>{mobileMenu ? "✕" : "☰"}</button>
         </div>
         {mobileMenu && <div style={{ padding: "0 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <a href="#o-problema" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>O problema</a>
           <a href="#como-funciona" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Como funciona</a>
           <Link href="/login" style={{ fontSize: 16, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
           <Link href="/register" className="cta-btn" style={{ justifyContent: "center" }}>Criar conta grátis</Link>
@@ -192,54 +195,84 @@ export default function LandingPage() {
                 </div>
               </FadeIn>
               <FadeIn delay={0.1}>
-                <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.04em", marginBottom: 20 }}>
-                  Check-in do Airbnb<br /><span className="grad-text">direto na portaria.</span>
+                <h1 style={{ fontSize: 50, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.04em", marginBottom: 20 }}>
+                  Check-in do Airbnb na portaria,<br /><span className="grad-text">no automático.</span>
                 </h1>
               </FadeIn>
               <FadeIn delay={0.2}>
-                <p style={{ fontSize: 18, lineHeight: 1.7, color: B.muted, maxWidth: 480, marginBottom: 36 }}>
-                  Encaminhe o email de confirmação. O hóspede preenche os dados. A portaria recebe tudo pronto no WhatsApp. Sem planilha, sem ligação, sem estresse.
+                <p style={{ fontSize: 18, lineHeight: 1.7, color: B.muted, maxWidth: 500, marginBottom: 36 }}>
+                  Coleta os dados dos hóspedes, organiza tudo e envia pra portaria pelo WhatsApp. Sem mensagem manual, sem dado faltando, sem hóspede preso na recepção.
                 </p>
               </FadeIn>
               <FadeIn delay={0.3}>
                 <div className="hero-ctas" style={{ display: "flex", gap: 14, alignItems: "center" }}>
                   <Link href="/register" className="cta-btn">Criar conta grátis →</Link>
-                  <a href="#como-funciona" className="cta-outline" style={{ padding: "14px 28px" }}>Ver como funciona</a>
+                  <a href="#o-problema" className="cta-outline" style={{ padding: "14px 28px" }}>Entenda o problema</a>
                 </div>
               </FadeIn>
-              <FadeIn delay={0.4}><p style={{ fontSize: 13, color: "#A3A3A3", marginTop: 16 }}>Crie sua conta em 30 segundos. Gratuito enquanto estivermos em lançamento.</p></FadeIn>
+              <FadeIn delay={0.4}><p style={{ fontSize: 13, color: "#A3A3A3", marginTop: 16 }}>Crie sua conta em 30 segundos. Sem cartão de crédito.</p></FadeIn>
             </div>
             <FadeIn delay={0.3}><PhoneMockup /></FadeIn>
           </div>
         </div>
       </section>
 
-      {/* SOCIAL PROOF */}
-      <section style={{ background: B.dark, padding: "28px 24px" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
-          {[{ n: 3, s: " etapas", d: "Do email à portaria" }, { n: 30, s: "seg", d: "Tempo do hóspede" }, { n: 0, s: " planilhas", d: "Zero trabalho manual" }].map((x, i) => (
-            <div key={i} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 32, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em" }}><Counter end={x.n} suffix={x.s} /></div>
-              <div style={{ fontSize: 12, color: "#A3A3A3", marginTop: 4, fontWeight: 500 }}>{x.d}</div>
+      {/* O PROBLEMA */}
+      <section id="o-problema" style={{ padding: "100px 24px", background: "#fff" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>O problema</div>
+              <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15 }}>Você já faz tudo isso<br /><span style={{ color: "#DC2626" }}>na mão, toda reserva.</span></h2>
             </div>
-          ))}
+          </FadeIn>
+          <FadeIn delay={0.05}>
+            <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, textAlign: "center", maxWidth: 640, margin: "0 auto 48px" }}>
+              Quem hospeda pelo Airbnb em prédio com portaria sabe: cada reserva exige uma série de mensagens manuais no WhatsApp e no chat — sem processo, sem padronização, sem controle nenhum.
+            </p>
+          </FadeIn>
+
+          <div className="pain-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+            {[
+              { icon: "💬", title: "Pedir dados pelo chat do Airbnb", desc: "\"Me manda o nome completo e CPF de todos?\" — toda reserva a mesma conversa. Cada hóspede responde de um jeito, falta dado, você precisa cobrar de novo." },
+              { icon: "📱", title: "Repassar tudo pro porteiro no WhatsApp", desc: "Você copia nome, datas, número de hóspedes e manda pro porteiro. Manualmente. Se esqueceu a placa do carro ou o RG, precisa mandar outra mensagem." },
+              { icon: "❓", title: "Sem saber o que já foi feito", desc: "Qual hóspede já mandou os dados? A portaria já foi avisada da reserva de amanhã? Com várias reservas ao mesmo tempo, você perde o controle." },
+              { icon: "😰", title: "Hóspede chega e portaria não sabe", desc: "O porteiro trocou de turno, a mensagem se perdeu no WhatsApp, ou você esqueceu de avisar. Resultado: hóspede esperando, e você resolvendo por telefone." },
+            ].map((p, i) => (
+              <FadeIn key={i} delay={i * 0.1}>
+                <div style={{ background: "#FEF2F2", borderRadius: 16, padding: "28px 24px", border: "1px solid #FECACA" }}>
+                  <div style={{ fontSize: 28, marginBottom: 12 }}>{p.icon}</div>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, color: "#991B1B", letterSpacing: "-0.01em", marginBottom: 8 }}>{p.title}</h4>
+                  <p style={{ fontSize: 14, color: "#B91C1C", lineHeight: 1.7, opacity: 0.8 }}>{p.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn delay={0.4}>
+            <div style={{ textAlign: "center", marginTop: 48, padding: "28px 32px", background: B.light, borderRadius: 16, border: "1px solid #E5E5E5" }}>
+              <p style={{ fontSize: 18, fontWeight: 700, color: B.dark, lineHeight: 1.5, marginBottom: 4 }}>E se existisse um processo que fizesse tudo isso por você?</p>
+              <p style={{ fontSize: 15, color: B.muted }}>Coleta de dados padronizada, envio automático pra portaria, e visibilidade total de cada reserva.</p>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
-      {/* COMO FUNCIONA */}
-      <section id="como-funciona" style={{ padding: "100px 24px", background: "#fff" }}>
+      {/* COMO FUNCIONA (A SOLUÇÃO) */}
+      <section id="como-funciona" style={{ padding: "100px 24px", background: "radial-gradient(ellipse at 50% 0%, rgba(59,95,229,0.06) 0%, transparent 50%)" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <FadeIn>
             <div style={{ textAlign: "center", marginBottom: 64 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>Como funciona</div>
-              <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15 }}>Três passos. <span className="grad-text">Zero trabalho.</span></h2>
+              <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>A solução</div>
+              <h2 style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15 }}>O AirCheck cria o processo<br /><span className="grad-text">que você nunca teve.</span></h2>
+              <p style={{ fontSize: 16, color: B.muted, marginTop: 14, maxWidth: 580, margin: "14px auto 0", lineHeight: 1.7 }}>Padroniza a coleta de dados, organiza tudo por reserva e entrega pra portaria. Você configura uma vez — depois, cada reserva segue o fluxo sozinha.</p>
             </div>
           </FadeIn>
           <div className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
             {[
-              { step: "01", icon: "📧", title: "Encaminhe o email", desc: "Recebeu a confirmação do Airbnb? Encaminhe para o seu email exclusivo AirCheck — ou configure o encaminhamento automático e nunca mais pense nisso." },
-              { step: "02", icon: "📱", title: "Hóspede preenche o formulário", desc: "Envie o link ao hóspede pelo chat do Airbnb. Ele preenche um formulário com nome, CPF, data de nascimento e foto do documento." },
-              { step: "03", icon: "✅", title: "Portaria recebe", desc: "Com um clique, envie todos os dados formatados direto no WhatsApp da portaria. Pronto, check-in resolvido." },
+              { step: "01", icon: "📧", title: "Reserva entra no sistema", desc: "O email de confirmação do Airbnb é encaminhado pro AirCheck. O sistema lê e cria a reserva automaticamente — nome do hóspede, datas, número de pessoas, código da reserva." },
+              { step: "02", icon: "📱", title: "Hóspede preenche um formulário padrão", desc: "No chat do Airbnb, o hóspede recebe automaticamente um link. Ele preenche nome, CPF, data de nascimento e tira foto do documento. Tudo padronizado, sem vai-e-volta." },
+              { step: "03", icon: "✅", title: "Portaria recebe tudo no WhatsApp", desc: "Com um toque, você envia a mensagem completa pro WhatsApp da portaria: nomes, documentos, datas, unidade, vaga. Pronto, a portaria já sabe quem vai chegar." },
             ].map((s, i) => (
               <FadeIn key={i} delay={i * 0.15}>
                 <div style={{ background: B.light, borderRadius: 20, padding: "36px 28px", height: "100%", border: "1px solid #E5E5E5" }}>
@@ -260,11 +293,11 @@ export default function LandingPage() {
           <div className="demo-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
             <FadeIn>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>Resultado final</div>
-                <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>A portaria recebe<br /><span className="grad-text">tudo organizado.</span></h2>
-                <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, marginBottom: 24 }}>Mensagem formatada, com todos os dados dos hóspedes, documentos, veículo. Direto no WhatsApp da portaria, pronto para liberar a entrada.</p>
+                <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 12 }}>Antes vs depois</div>
+                <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>De mensagens soltas<br />pra <span className="grad-text">um envio completo.</span></h2>
+                <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, marginBottom: 24 }}>Antes, você mandava &ldquo;nome: João, CPF: 123...&rdquo; no WhatsApp, sem padrão, faltando dado, sem foto de documento. Agora, a portaria recebe tudo de uma vez — organizado e completo.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {["Dados de todos os hóspedes", "CPF, RG e foto do documento", "Unidade e vaga de garagem", "Um clique para enviar"].map((t, i) => (
+                  {["Nomes, CPF e documentos de todos os hóspedes", "Foto do RG, CNH ou passaporte", "Unidade, vaga e datas formatadas", "Pronto pra portaria liberar a entrada"].map((t, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: B.accent, fontWeight: 700, flexShrink: 0 }}>✓</div>
                       <span style={{ fontSize: 14, fontWeight: 500, color: B.dark }}>{t}</span>
@@ -283,18 +316,18 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <FadeIn>
             <div style={{ textAlign: "center", marginBottom: 56 }}>
-              <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em" }}>Tudo que você precisa.</h2>
-              <p style={{ fontSize: 16, color: B.muted, marginTop: 12 }}>Sem complicação. Sem funcionalidade que ninguém usa.</p>
+              <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em" }}>Processo, controle e <span className="grad-text">zero retrabalho.</span></h2>
+              <p style={{ fontSize: 16, color: B.muted, marginTop: 12 }}>Tudo que você fazia na mão, agora funciona de forma padronizada e automática.</p>
             </div>
           </FadeIn>
           <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {[
-              { icon: "📧", title: "Email automático", desc: "Encaminhe e pronto. Nome, datas, código — tudo extraído." },
-              { icon: "📋", title: "Formulário inteligente", desc: "O hóspede preenche o número exato de cards. CPF, RG, passaporte, foto do documento." },
-              { icon: "💬", title: "WhatsApp direto", desc: "Mensagem formatada pronta pro porteiro. Um toque e enviou." },
-              { icon: "🏠", title: "Multi-imóveis", desc: "Gerencie vários apartamentos, cada um com sua portaria." },
-              { icon: "📸", title: "Foto do documento", desc: "Hóspede tira foto do RG ou CNH direto no celular." },
-              { icon: "🔒", title: "Controle total", desc: "Formulário travado após envio. Só você pode reabrir." },
+              { icon: "📧", title: "Reserva lida automaticamente", desc: "O email de confirmação do Airbnb vira uma reserva organizada — sem você digitar nada." },
+              { icon: "📋", title: "Coleta padronizada de dados", desc: "Formulário padrão com nome, CPF, data de nascimento e foto do documento. Acabou o \"me manda seus dados\" no chat." },
+              { icon: "👁️", title: "Visibilidade de cada reserva", desc: "Saiba em tempo real quem já mandou os dados, quem está pendente, e quem já foi enviado pra portaria." },
+              { icon: "💬", title: "WhatsApp completo pra portaria", desc: "Mensagem formatada com tudo que o porteiro precisa. Um toque e enviou — sem esquecer nenhum dado." },
+              { icon: "👥", title: "Múltiplos hóspedes por reserva", desc: "Famílias e grupos preenchem dados individuais no mesmo formulário. Cada hóspede com seu documento." },
+              { icon: "🏠", title: "Vários imóveis organizados", desc: "Cada apartamento com suas portarias cadastradas, unidade e vaga. Escala sem aumentar trabalho." },
             ].map((f, i) => (
               <FadeIn key={i} delay={i * 0.08}>
                 <div style={{ background: B.light, borderRadius: 16, padding: "24px 22px", border: "1px solid #EBEBEB" }}>
@@ -356,10 +389,11 @@ export default function LandingPage() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <FadeIn><h2 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 40 }}>Perguntas frequentes</h2></FadeIn>
           {[
-            { q: "O AirCheck é gratuito mesmo?", a: "Sim. Estamos em fase de lançamento e a ferramenta é 100% gratuita. No futuro, podemos implementar planos pagos, mas quem entrar agora será avisado com antecedência de qualquer mudança." },
-            { q: "Preciso instalar algum app?", a: "Não. O AirCheck é 100% web. Você acessa pelo navegador, e o hóspede também." },
-            { q: "Funciona com quantos imóveis?", a: "Ilimitados. Cadastre quantos apartamentos quiser, cada um com sua portaria." },
-            { q: "E se o hóspede errar os dados?", a: "Após o envio, só você (anfitrião) pode reabrir o formulário. Isso garante que os dados enviados à portaria estejam corretos." },
+            { q: "O que exatamente o AirCheck faz?", a: "O AirCheck automatiza o cadastro de hóspedes do Airbnb na portaria do seu condomínio. Quando uma reserva é confirmada, o sistema lê os dados do email, gera um formulário pro hóspede e entrega tudo formatado no WhatsApp do porteiro. Você não precisa ligar, digitar ou preencher nada." },
+            { q: "Preciso ficar encaminhando email a cada reserva?", a: "Não. Você configura o encaminhamento automático uma vez no Outlook/Gmail, e todos os emails de confirmação do Airbnb são processados automaticamente." },
+            { q: "Como o hóspede recebe o link do formulário?", a: "Você configura uma mensagem programada no Airbnb (uma vez só). A cada reserva confirmada, o Airbnb envia automaticamente o link personalizado no chat com o hóspede." },
+            { q: "Funciona com qualquer condomínio?", a: "Sim. O AirCheck envia os dados via WhatsApp — se o porteiro tem WhatsApp, funciona. Você cadastra o telefone da portaria e pronto." },
+            { q: "O AirCheck é gratuito mesmo?", a: "Sim. Estamos em fase de lançamento e a ferramenta é 100% gratuita. No futuro, podemos implementar planos pagos, mas quem entrar agora será avisado com antecedência." },
             { q: "Funciona com Booking.com?", a: "Por enquanto, apenas Airbnb. Estamos trabalhando para integrar outras plataformas em breve." },
           ].map((f, i) => (
             <FadeIn key={i} delay={i * 0.08}>
@@ -378,8 +412,8 @@ export default function LandingPage() {
       <section style={{ padding: "80px 24px", background: `linear-gradient(135deg, ${B.dark} 0%, #1a1a2e 100%)`, textAlign: "center" }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <FadeIn>
-            <h2 style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>Chega de digitar dados<br />de hóspede na mão.</h2>
-            <p style={{ fontSize: 16, color: "#A3A3A3", lineHeight: 1.7, marginBottom: 32 }}>Crie sua conta em 30 segundos. 100% gratuito durante o lançamento.</p>
+            <h2 style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>Pare de improvisar o check-in<br />de cada reserva.</h2>
+            <p style={{ fontSize: 16, color: "#A3A3A3", lineHeight: 1.7, marginBottom: 32 }}>Crie um processo automático pra coleta de dados e envio pra portaria. Simples, organizado, e gratuito.</p>
             <Link href="/register" className="cta-btn" style={{ fontSize: 18, padding: "18px 40px" }}>Criar conta grátis →</Link>
           </FadeIn>
         </div>
@@ -394,11 +428,12 @@ export default function LandingPage() {
                 <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="11" fill="url(#fg)"/><path d="M10 19L20 11L30 19" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13 18V28H27V18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 22.5L19 25.5L25 19.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="fg" x1="0" y1="0" x2="42" y2="42" gradientUnits="userSpaceOnUse"><stop stopColor={B.g1}/><stop offset="1" stopColor={B.g2}/></linearGradient></defs></svg>
                 <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>AirCheck</span>
               </div>
-              <p style={{ fontSize: 13, color: "#737373", lineHeight: 1.6, maxWidth: 280 }}>Check-in digital para anfitriões do Airbnb. Do email de confirmação ao WhatsApp da portaria.</p>
+              <p style={{ fontSize: 13, color: "#737373", lineHeight: 1.6, maxWidth: 280 }}>Check-in automatizado para anfitriões do Airbnb que hospedam em prédios com portaria.</p>
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Produto</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <a href="#o-problema" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>O problema</a>
                 <a href="#como-funciona" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Como funciona</a>
                 <Link href="/register" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Criar conta</Link>
               </div>
