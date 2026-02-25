@@ -81,33 +81,20 @@ function layout(content: string) {
 export function welcomeEmail(name: string | null) {
   const firstName = name?.split(" ")[0] || "Anfitrião";
   return {
-    subject: `Bem-vindo ao AirCheck, ${firstName}! 🏠`,
+    subject: `Sua conta no AirCheck foi criada ✓`,
     html: layout(`
       <h1>Olá, ${firstName}! 👋</h1>
-      <p>Que bom ter você no AirCheck. Estamos aqui para simplificar o check-in dos seus hóspedes e a comunicação com a portaria do condomínio.</p>
+      <p>Sua conta foi criada com sucesso. A partir de agora, o check-in dos seus hóspedes na portaria vai ser automático.</p>
       
-      <div class="divider"></div>
+      <p>O setup inicial leva menos de 5 minutos — é só seguir o passo a passo no painel.</p>
       
-      <p style="font-size:13px;font-weight:600;color:#1A1A1A;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Como funciona:</p>
-      
-      <p><strong style="color:#1A1A1A">1. Encaminhe seus emails</strong><br>
-      Configure o Airbnb para encaminhar confirmações de reserva. O AirCheck cria tudo automaticamente.</p>
-      
-      <p><strong style="color:#1A1A1A">2. Hóspede preenche o formulário</strong><br>
-      Um link é gerado para cada reserva. O hóspede envia nome, CPF e foto do documento em menos de 1 minuto.</p>
-      
-      <p><strong style="color:#1A1A1A">3. Envie para a portaria</strong><br>
-      Com um clique, a mensagem formatada vai direto pro WhatsApp do porteiro.</p>
-      
-      <div class="divider"></div>
-      
-      <p style="text-align:center;margin-bottom:0">
-        <a href="https://aircheck.com.br/dashboard" class="btn">Acessar meu painel →</a>
+      <p style="text-align:center;margin:28px 0 24px">
+        <a href="https://aircheck.com.br/dashboard" class="btn">Completar setup →</a>
       </p>
       
       <div class="divider"></div>
       
-      <p style="font-size:13px;color:#A3A3A3;text-align:center">Dúvidas ou sugestões? Use a aba <strong style="color:#737373">Feedback</strong> no painel — lemos tudo!</p>
+      <p style="font-size:13px;color:#A3A3A3;text-align:center;margin-bottom:0">Qualquer dúvida, use a aba <strong style="color:#737373">Feedback</strong> no painel — lemos tudo.</p>
     `),
   };
 }
