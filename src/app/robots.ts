@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard", "/admin", "/onboarding", "/api/", "/checkin/"],
+        disallow: ["/dashboard", "/admin", "/onboarding", "/api/", "/checkin/", "/doc/", "/d/"],
       },
     ],
     sitemap: "https://aircheck.com.br/sitemap.xml",
