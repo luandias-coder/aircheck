@@ -8,7 +8,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; doormanPhones:DoormanPhone[]; reservationCount:number }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; doormanPhones:DoormanPhone[]; reservationCount:number }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[]}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
@@ -180,8 +180,9 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
   const[showWa,setShowWa]=useState(false);
   const[deleting,setDeleting]=useState(false);
 
-  const baseUrl=typeof window!=="undefined"?window.location.origin:"";
-  const formUrl=r.confirmationCode?`${baseUrl}/c/${r.confirmationCode}`:`${baseUrl}/checkin/${r.formToken}`;
+  const shortDomain="https://airchk.in";
+  const formUrl=r.confirmationCode?`${shortDomain}/c/${r.confirmationCode}`:`${shortDomain}/checkin/${r.formToken}`;
+  const formUrlShort=r.confirmationCode?`airchk.in/c/${r.confirmationCode}`:`airchk.in/checkin/${r.formToken}`;
   const copy=()=>{navigator.clipboard.writeText(formUrl);setCopied(true);setTimeout(()=>setCopied(false),2000)};
   const hasGuests=r.guests.length>0;
   const fetchWa=async()=>{const res=await fetch(`/api/reservations/${r.id}/whatsapp`);if(res.ok){setWaData(await res.json());setShowWa(true)}};
@@ -554,6 +555,10 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
             <div><label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase"}}>Vaga de garagem</label><input placeholder="Ex: G1-25, Livre" value={details.parkingSpot} onChange={e=>setDetails({...details,parkingSpot:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",width:"100%",marginTop:4,boxSizing:"border-box"}}/></div>
           </div>
           <button onClick={()=>saveDetails(p.id)} disabled={savingDetails} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:savingDetails?0.5:1}}>{savingDetails?"Salvando...":"Salvar dados"}</button>
+          <div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Incluir documento na mensagem</div><div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Envia link da foto do documento de cada hóspede junto com a mensagem do WhatsApp</div></div>
+            <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_doc_links"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.includeDocLinks?"#3B5FE5":"#D4D4D4",transition:"background 0.2s"}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:p.includeDocLinks?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/></button>
+          </div>
         </div>}
         {p.doormanPhones.map(dp=><div key={dp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>📞</div><div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>{dp.name||"Portaria"}</div><div style={{fontSize:11,color:"#A3A3A3"}}>{dp.label&&`${dp.label} · `}{dp.phone}</div></div></div>
