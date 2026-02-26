@@ -36,14 +36,15 @@ model UserInboundEmail {
 }
 
 model Property {
-  id            String   @id @default(cuid())
-  userId        String
-  name          String
-  airbnbRoomId  String?
-  unitNumber    String?
-  parkingSpot   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  airbnbRoomId    String?
+  unitNumber      String?
+  parkingSpot     String?
+  includeDocLinks Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reservations  Reservation[]
