@@ -119,7 +119,7 @@ export default function OnboardingPage(){
   // ── Step 5: Copy link ──
   const copyLink=()=>{
     if(!reservation)return;
-    const url=reservation.confirmationCode?`${window.location.origin}/c/${reservation.confirmationCode}`:`${window.location.origin}/checkin/${reservation.formToken}`;
+    const url=reservation.confirmationCode?`https://airchk.in/c/${reservation.confirmationCode}`:`https://airchk.in/checkin/${reservation.formToken}`;
     navigator.clipboard.writeText(url);
     setCopied(true);setTimeout(()=>setCopied(false),2000);
   };
@@ -278,7 +278,7 @@ export default function OnboardingPage(){
 
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Link do formulário</div>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:B.primary,wordBreak:"break-all",marginBottom:12}}>{typeof window!=="undefined"?window.location.origin:""}{reservation.confirmationCode?`/c/${reservation.confirmationCode}`:`/checkin/${reservation.formToken}`}</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:B.primary,wordBreak:"break-all",marginBottom:12}}>airchk.in{reservation.confirmationCode?`/c/${reservation.confirmationCode}`:`/checkin/${reservation.formToken}`}</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={copyLink} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:copied?B.accent:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",transition:"background 0.2s"}}>{copied?"Copiado! ✓":"Copiar link"}</button>
               <a href={reservation.confirmationCode?`/c/${reservation.confirmationCode}`:`/checkin/${reservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:8,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Abrir formulário ↗</a>
@@ -304,7 +304,7 @@ export default function OnboardingPage(){
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Modelo de mensagem</div>
             <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>
-              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{" ! 😊\n\nSua reserva foi confirmada. Agradecemos a preferência e estamos animados para lhe receber em nosso imóvel.\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\nhttps://www.aircheck.com.br/c/"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Código de confirmação</span>{"\n\nEntrarei em contato no dia anterior ao check-in para lhe passar todas as orientações, e até lá, estarei disponível para qualquer dúvida que tenha.\n\nAté breve!"}
+              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{" ! 😊\n\nSua reserva foi confirmada. Agradecemos a preferência e estamos animados para lhe receber em nosso imóvel.\n\nPara agilizar seu check-in, por favor preencha este formulário com os dados dos hóspedes. É necessário para liberação na portaria do condomínio e leva menos de 1 minuto.\n\nhttps://airchk.in/c/"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Código de confirmação</span>{"\n\nEntrarei em contato no dia anterior ao check-in para lhe passar todas as orientações, e até lá, estarei disponível para qualquer dúvida que tenha.\n\nAté breve!"}
             </div>
           </div>
 
