@@ -7,8 +7,17 @@ const COOKIE_NAME = "aircheck_session";
 // Public API routes that don't need auth
 const PUBLIC_API = ["/api/checkin/", "/api/inbound-email", "/api/auth/"];
 
+const SHORT_DOMAIN = "airchk.in";
+const MAIN_DOMAIN = "https://aircheck.com.br";
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host")?.replace(/:.*$/, "") || "";
+
+  // Short domain → redirect to main domain (same path)
+  if (host === SHORT_DOMAIN || host === `www.${SHORT_DOMAIN}`) {
+    return NextResponse.redirect(`${MAIN_DOMAIN}${pathname}${request.nextUrl.search}`, 301);
+  }
 
   // Public pages
   if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/checkin/")) {
@@ -47,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/:path*", "/login", "/register", "/checkin/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login", "/register", "/checkin/:path*", "/c/:path*", "/d/:path*", "/doc/:path*"],
 };
