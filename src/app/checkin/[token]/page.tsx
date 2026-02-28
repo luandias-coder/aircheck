@@ -7,16 +7,23 @@ function maskCPF(v:string){return v.replace(/\D/g,"").slice(0,11).replace(/(\d{3
 function maskDate(v:string){return v.replace(/\D/g,"").slice(0,8).replace(/(\d{2})(\d)/,"$1/$2").replace(/(\d{2})(\d)/,"$1/$2")}
 function maskPhone(v:string){return v.replace(/\D/g,"").slice(0,13)}
 
-// Compress image to max 1.5MB JPEG using canvas
-function compressImage(file:File,maxSizeMB=1.5):Promise<File>{
+// Compress image to max 800KB JPEG using canvas with iterative quality reduction
+function compressImage(file:File,maxSizeKB=800):Promise<File>{
   return new Promise((resolve)=>{
+    // PDFs: can't compress, check size
+    if(file.type==="application/pdf"){
+      if(file.size>3*1024*1024){
+        // Too large PDF - reject
+        resolve(new File([],"too-large.pdf",{type:"application/pdf"}));
+      }else{resolve(file)}
+      return;
+    }
     if(!file.type.startsWith("image/")){resolve(file);return}
-    if(file.size<=maxSizeMB*1024*1024){resolve(file);return}
     const img=new Image();
     img.onload=()=>{
       const canvas=document.createElement("canvas");
       let w=img.width,h=img.height;
-      const maxDim=1920;
+      const maxDim=1200;
       if(w>maxDim||h>maxDim){
         if(w>h){h=Math.round(h*(maxDim/w));w=maxDim}
         else{w=Math.round(w*(maxDim/h));h=maxDim}
@@ -24,10 +31,18 @@ function compressImage(file:File,maxSizeMB=1.5):Promise<File>{
       canvas.width=w;canvas.height=h;
       const ctx=canvas.getContext("2d")!;
       ctx.drawImage(img,0,0,w,h);
-      canvas.toBlob(blob=>{
-        if(blob)resolve(new File([blob],file.name.replace(/\.\w+$/,".jpg"),{type:"image/jpeg"}));
-        else resolve(file);
-      },"image/jpeg",0.8);
+      // Iterative quality reduction
+      const tryQuality=(q:number)=>{
+        canvas.toBlob(blob=>{
+          if(!blob){resolve(file);return}
+          if(blob.size>maxSizeKB*1024&&q>0.3){
+            tryQuality(q-0.1);
+          }else{
+            resolve(new File([blob],file.name.replace(/\.\w+$/,".jpg"),{type:"image/jpeg"}));
+          }
+        },"image/jpeg",q);
+      };
+      tryQuality(0.7);
     };
     img.onerror=()=>resolve(file);
     img.src=URL.createObjectURL(file);
@@ -85,9 +100,10 @@ export default function CheckInPage({params}:{params:{token:string}}){
   const updateGuest=(i:number,field:keyof GuestForm,val:any)=>{setGuests(p=>{const n=[...p];n[i]={...n[i],[field]:val};return n})};
 
   const handleFile=async(i:number,rawFile:File)=>{
-    if(rawFile.size>25*1024*1024){alert("Arquivo muito grande. Máximo 25MB.");return}
-    // Compress images (iPhone photos can be 10MB+)
+    if(rawFile.size>15*1024*1024){alert("Arquivo muito grande. Máximo 15MB.");return}
+    if(rawFile.type==="application/pdf"&&rawFile.size>3*1024*1024){alert("PDF muito grande (máx 3MB). Tire uma foto do documento com a câmera.");return}
     const file=await compressImage(rawFile);
+    if(file.size>4*1024*1024){alert("Não foi possível comprimir o suficiente. Tire uma foto do documento com a câmera.");return}
     updateGuest(i,"file",file);
     updateGuest(i,"fileName",rawFile.name);
     if(file.type.startsWith("image/")){
@@ -99,29 +115,46 @@ export default function CheckInPage({params}:{params:{token:string}}){
     }
   };
 
-  const canSubmit=guests.length>0&&guests.every((g,i)=>{
+  const canSubmit=!!guestPhone&&guests.length>0&&guests.every((g,i)=>{
     const hasName=!!g.fullName&&!!g.birthDate;
     const hasDoc=!!g.file||(data?.guests[i]?.hasDocument===true);
     const hasForeignDocs=!g.foreign||(!!g.passport||!!g.rne);
     return hasName&&hasDoc&&hasForeignDocs;
   });
 
+  const[uploadStatus,setUploadStatus]=useState("");
+
   const handleSubmit=async(e:React.FormEvent)=>{
     e.preventDefault();
     if(!canSubmit)return;
     setSubmitting(true);
-    const fd=new FormData();
-    fd.append("guests",JSON.stringify(guests.map(g=>({fullName:g.fullName,birthDate:g.birthDate,cpf:g.cpf,rg:g.rg,foreign:g.foreign,passport:g.passport,rne:g.rne}))));
-    if(carPlate)fd.append("carPlate",carPlate);
-    if(carModel)fd.append("carModel",carModel);
-    const fullPhone=guestPhone?`${phoneCountry}${guestPhone}`:"";
-    if(fullPhone)fd.append("guestPhone",fullPhone);
-    guests.forEach((g,i)=>{if(g.file)fd.append(`document_${i}`,g.file)});
     try{
+      // Upload documents individually first
+      const documentUrls:Record<number,string>={};
+      const toUpload=guests.map((g,i)=>({index:i,file:g.file})).filter(x=>x.file);
+      for(let j=0;j<toUpload.length;j++){
+        const{index,file}=toUpload[j];
+        setUploadStatus(`Enviando documento ${j+1} de ${toUpload.length}...`);
+        const uf=new FormData();
+        uf.append("file",file!);
+        uf.append("reservationId",params.token);
+        const res=await fetch("/api/upload-doc",{method:"POST",body:uf});
+        if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||"Erro no upload do documento")}
+        const{url}=await res.json();
+        documentUrls[index]=url;
+      }
+      setUploadStatus("Salvando dados...");
+      // Submit form data with document URLs (no files)
+      const fd=new FormData();
+      fd.append("guests",JSON.stringify(guests.map((g,i)=>({fullName:g.fullName,birthDate:g.birthDate,cpf:g.cpf,rg:g.rg,foreign:g.foreign,passport:g.passport,rne:g.rne,documentUrl:documentUrls[i]||undefined}))));
+      if(carPlate)fd.append("carPlate",carPlate);
+      if(carModel)fd.append("carModel",carModel);
+      const fullPhone=`${phoneCountry}${guestPhone}`;
+      fd.append("guestPhone",fullPhone);
       const res=await fetch(`/api/checkin/${params.token}`,{method:"POST",body:fd});
       if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Erro ${res.status}`)}
       setSubmitted(true);
-    }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false)}
+    }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false);setUploadStatus("")}
   };
 
   if(loading)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#FAFAF9"}}><div style={{fontFamily:"Outfit",fontSize:14,color:"#A3A3A3"}}>Carregando...</div></div>;
@@ -164,12 +197,12 @@ export default function CheckInPage({params}:{params:{token:string}}){
 
       {/* Phone */}
       <div style={{marginBottom:16}}>
-        <label style={lblStyle}>Seu telefone <span style={{fontWeight:400,color:"#A3A3A3"}}>(opcional)</span></label>
+        <label style={lblStyle}>Seu telefone <span style={{color:"#DC2626"}}>*</span></label>
         <div style={{display:"flex",gap:8}}>
           <select value={phoneCountry} onChange={e=>setPhoneCountry(e.target.value)} style={{fontFamily:"Outfit",fontSize:16,padding:"12px 6px",border:"1px solid #E5E5E5",borderRadius:10,background:"#fff",minWidth:80,color:"#1A1A1A"}}>
             <option value="+55">🇧🇷 +55</option><option value="+1">🇺🇸 +1</option><option value="+54">🇦🇷 +54</option><option value="+595">🇵🇾 +595</option><option value="+598">🇺🇾 +598</option><option value="+56">🇨🇱 +56</option><option value="+57">🇨🇴 +57</option><option value="+351">🇵🇹 +351</option><option value="+34">🇪🇸 +34</option><option value="+33">🇫🇷 +33</option><option value="+49">🇩🇪 +49</option><option value="+44">🇬🇧 +44</option><option value="+39">🇮🇹 +39</option>
           </select>
-          <input value={guestPhone} onChange={e=>setGuestPhone(maskPhone(e.target.value))} placeholder="41999990000" inputMode="tel" enterKeyHint="next" style={{...iStyle,flex:1}}/>
+          <input value={guestPhone} onChange={e=>setGuestPhone(maskPhone(e.target.value))} placeholder="41999990000" inputMode="tel" enterKeyHint="next" required style={{...iStyle,flex:1}}/>
         </div>
       </div>
 
@@ -197,7 +230,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
         color:canSubmit?"#fff":"#A3A3A3",border:"none",borderRadius:14,cursor:canSubmit?"pointer":"not-allowed",
         boxShadow:canSubmit?"0 4px 20px rgba(0,0,0,0.15)":"none",
       }}>
-        {submitting?"Enviando...":"Enviar dados para check-in"}
+        {submitting?(uploadStatus||"Enviando..."):"Enviar dados para check-in"}
       </button>
       <p style={{textAlign:"center",fontSize:11,color:"#A3A3A3",marginTop:14,lineHeight:1.5}}>Seus dados são utilizados exclusivamente para registro na portaria.</p>
     </form>
