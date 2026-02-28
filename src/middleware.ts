@@ -5,7 +5,7 @@ const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "aircheck-secr
 const COOKIE_NAME = "aircheck_session";
 
 // Public API routes that don't need auth
-const PUBLIC_API = ["/api/checkin/", "/api/inbound-email", "/api/auth/"];
+const PUBLIC_API = ["/api/checkin/", "/api/inbound-email", "/api/auth/", "/api/upload-doc"];
 
 const SHORT_DOMAIN = "airchk.in";
 const MAIN_DOMAIN = "https://aircheck.com.br";
