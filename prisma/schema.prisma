@@ -8,14 +8,16 @@ datasource db {
 }
 
 model User {
-  id                  String   @id @default(cuid())
-  email               String   @unique
+  id                  String    @id @default(cuid())
+  email               String    @unique
   passwordHash        String
   name                String?
   phone               String?
-  onboardingCompleted Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  onboardingCompleted Boolean   @default(false)
+  resetToken          String?   @unique
+  resetTokenExpiry    DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   properties    Property[]
   reservations  Reservation[]
