@@ -99,6 +99,28 @@ export function welcomeEmail(name: string | null) {
   };
 }
 
+// ─── PASSWORD RESET EMAIL ─────────────────────────────────────
+export function resetPasswordEmail(name: string | null, resetUrl: string) {
+  const firstName = name?.split(" ")[0] || "Anfitrião";
+  return {
+    subject: "Redefinir sua senha — AirCheck",
+    html: layout(`
+      <h1>Redefinir senha</h1>
+      <p>Olá, ${firstName}! Recebemos um pedido para redefinir a senha da sua conta no AirCheck.</p>
+      
+      <p>Clique no botão abaixo para criar uma nova senha. Este link expira em 1 hora.</p>
+      
+      <p style="text-align:center;margin:28px 0 24px">
+        <a href="${resetUrl}" class="btn">Criar nova senha &rarr;</a>
+      </p>
+      
+      <div class="divider"></div>
+      
+      <p style="font-size:13px;color:#A3A3A3;text-align:center;margin-bottom:0">Se você não solicitou essa alteração, ignore este email. Sua senha permanece a mesma.</p>
+    `),
+  };
+}
+
 // ─── WEEKLY DIGEST EMAIL ────────────────────────────────────────
 interface DigestData {
   name: string | null;
