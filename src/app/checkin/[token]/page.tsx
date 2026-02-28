@@ -139,9 +139,9 @@ export default function CheckInPage({params}:{params:{token:string}}){
         uf.append("file",file!);
         uf.append("reservationId",params.token);
         const res=await fetch("/api/upload-doc",{method:"POST",body:uf});
-        if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||"Erro no upload do documento")}
-        const{url}=await res.json();
-        documentUrls[index]=url;
+        const d=await res.json().catch(()=>({error:`HTTP ${res.status}`}));
+        if(!res.ok)throw new Error(d.error||"Erro no upload do documento");
+        documentUrls[index]=d.url;
       }
       setUploadStatus("Salvando dados...");
       // Submit form data with document URLs (no files)
