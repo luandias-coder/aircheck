@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { put } from "@vercel/blob";
 
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   try {
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     
     let guests: Array<{
       fullName: string; birthDate: string; cpf?: string; rg?: string;
-      foreign?: boolean; passport?: string; rne?: string;
+      foreign?: boolean; passport?: string; rne?: string; documentUrl?: string;
     }>;
     try { guests = JSON.parse(guestsRaw); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
 
@@ -66,19 +65,10 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     // Delete existing guests for re-creation
     await prisma.guest.deleteMany({ where: { reservationId: r.id } });
 
-    // Create guests with documents
+    // Create guests with document URLs (already uploaded individually)
     for (let i = 0; i < guests.length; i++) {
       const g = guests[i];
-      let documentUrl: string | null = existingGuests[i]?.documentUrl || null;
-      const file = formData.get(`document_${i}`) as File | null;
-      if (file && file.size > 0) {
-        try {
-          const blob = await put(`docs/${r.id}/${i}-${Date.now()}-${file.name}`, file, { access: "public" });
-          documentUrl = blob.url;
-        } catch (err) {
-          console.error(`Upload error guest ${i}:`, err);
-        }
-      }
+      const documentUrl = g.documentUrl || existingGuests[i]?.documentUrl || null;
       await prisma.guest.create({
         data: {
           reservationId: r.id,
