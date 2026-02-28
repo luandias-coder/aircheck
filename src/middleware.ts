@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public pages
-  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/checkin/")) {
+  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/checkin/") || pathname.startsWith("/reset-password/")) {
     return NextResponse.next();
   }
 
@@ -56,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login", "/register", "/checkin/:path*", "/c/:path*", "/d/:path*", "/doc/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login", "/register", "/checkin/:path*", "/c/:path*", "/d/:path*", "/doc/:path*", "/reset-password/:path*"],
 };
