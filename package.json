@@ -1,33 +1,47 @@
-{
-  "name": "aircheck",
-  "version": "2.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push"
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import "./globals.css";
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+export const metadata: Metadata = {
+  title: { default: "AirCheck — Check-in automatizado para Airbnb em condomínios", template: "%s" },
+  description: "Automatize o check-in de hóspedes do Airbnb na portaria do seu condomínio. Coleta de dados padronizada, envio pro WhatsApp da portaria com um clique.",
+  metadataBase: new URL("https://aircheck.com.br"),
+  icons: { icon: "/icon.svg" },
+  openGraph: {
+    siteName: "AirCheck",
+    type: "website",
+    locale: "pt_BR",
   },
-  "dependencies": {
-    "@prisma/client": "^6.2.0",
-    "@vercel/analytics": "^1.4.1",
-    "@vercel/blob": "^0.27.0",
-    "@vercel/speed-insights": "^1.1.0",
-    "bcryptjs": "^2.4.3",
-    "jose": "^5.2.0",
-    "next": "14.2.21",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "prisma": "^6.2.0",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.0"
-  }
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      </head>
+      <body>
+        {GA_ID && <>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+          <Script id="ga4" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA_ID}');`}</Script>
+        </>}
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
+  );
 }
