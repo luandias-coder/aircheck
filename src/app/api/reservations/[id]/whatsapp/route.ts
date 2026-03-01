@@ -22,6 +22,11 @@ const E = {
   doc:      String.fromCodePoint(0x1F4CE),
 };
 
+// Format name: trim, title case each word
+function titleCase(s: string): string {
+  return s.trim().replace(/\s+/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "N\u00e3o autenticado" }, { status: 401 });
@@ -54,7 +59,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     l.push(sep);
     r.guests.forEach((g) => {
       l.push(``);
-      l.push(`${E.person} *${g.fullName}*`);
+      l.push(`${E.person} *${titleCase(g.fullName)}*`);
       if (g.birthDate) l.push(`   ${E.cake} ${g.birthDate}`);
       if (g.foreign) {
         if (g.passport) l.push(`   ${E.id} Passaporte: ${g.passport}`);
