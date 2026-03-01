@@ -131,6 +131,63 @@ function WhatsAppMockup() {
   );
 }
 
+function ContactSection() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const iStyle: React.CSSProperties = { width: "100%", fontFamily: "Outfit,sans-serif", fontSize: 15, color: "#1A1A1A", padding: "14px 16px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) return;
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!res.ok) throw new Error();
+      setStatus("sent");
+      setForm({ name: "", email: "", message: "" });
+    } catch { setStatus("error"); }
+  };
+  return (
+    <section id="contato" style={{ padding: "80px 24px", background: "#FAFAF9" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        <FadeIn>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Contato</div>
+            <h2 style={{ fontSize: 32, fontWeight: 900, color: B.dark, letterSpacing: "-0.03em", lineHeight: 1.15 }}>Tem alguma dúvida?</h2>
+            <p style={{ fontSize: 15, color: B.muted, marginTop: 12, lineHeight: 1.6 }}>Manda uma mensagem. Respondemos rápido.</p>
+          </div>
+          {status === "sent" ? (
+            <div style={{ textAlign: "center", background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: "40px 24px" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
+              <h3 style={{ fontFamily: "Outfit", fontSize: 20, fontWeight: 700, color: "#1A1A1A", marginBottom: 8 }}>Mensagem enviada!</h3>
+              <p style={{ fontSize: 14, color: B.muted }}>Vamos responder o mais breve possível.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: "28px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+              {status === "error" && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#DC2626" }}>Erro ao enviar. Tente novamente.</div>}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Nome</label>
+                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Seu nome" required style={iStyle} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Email</label>
+                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="seu@email.com" required style={iStyle} />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Mensagem</label>
+                <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Sua dúvida ou mensagem..." required rows={4} style={{ ...iStyle, resize: "vertical" }} />
+              </div>
+              <button type="submit" disabled={status === "sending"} style={{ width: "100%", padding: 14, fontFamily: "Outfit", fontSize: 15, fontWeight: 600, background: B.primary, color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", boxShadow: `0 4px 14px rgba(59,95,229,0.25)`, opacity: status === "sending" ? 0.6 : 1 }}>
+                {status === "sending" ? "Enviando..." : "Enviar mensagem"}
+              </button>
+            </form>
+          )}
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: B.muted }}>Ou envie direto para <a href="mailto:oi@aircheck.com.br" style={{ color: B.primary, fontWeight: 600, textDecoration: "none" }}>oi@aircheck.com.br</a></p>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   const [mobileMenu, setMobileMenu] = useState(false);
   return (
@@ -421,6 +478,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* CONTACT */}
+      <ContactSection />
+
       {/* FOOTER */}
       <footer style={{ background: B.dark, borderTop: "1px solid rgba(255,255,255,0.06)", padding: "40px 24px 32px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -443,7 +503,21 @@ export default function LandingPage() {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Contato</div>
-              <span style={{ fontSize: 13, color: "#737373" }}>contato@aircheck.com.br</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <a href="mailto:oi@aircheck.com.br" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>oi@aircheck.com.br</a>
+                <a href="#contato" style={{ fontSize: 13, color: "#737373", textDecoration: "none" }}>Formulário de contato</a>
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
+                <a href="https://instagram.com/aircheck.br" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style={{ color: "#737373", transition: "color 0.15s" }} onMouseOver={e=>(e.currentTarget.style.color="#fff")} onMouseOut={e=>(e.currentTarget.style.color="#737373")}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                </a>
+                <a href="https://tiktok.com/@aircheck.br" target="_blank" rel="noopener noreferrer" aria-label="TikTok" style={{ color: "#737373", transition: "color 0.15s" }} onMouseOver={e=>(e.currentTarget.style.color="#fff")} onMouseOut={e=>(e.currentTarget.style.color="#737373")}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1 0-5.78 2.92 2.92 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.57 6.33 6.33 0 0 0 9.37 22a6.33 6.33 0 0 0 6.38-6.22V9.4a8.16 8.16 0 0 0 3.84.96V7.1a4.85 4.85 0 0 1-1-.41z"/></svg>
+                </a>
+                <a href="https://x.com/aircheckbr" target="_blank" rel="noopener noreferrer" aria-label="X" style={{ color: "#737373", transition: "color 0.15s" }} onMouseOver={e=>(e.currentTarget.style.color="#fff")} onMouseOut={e=>(e.currentTarget.style.color="#737373")}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+              </div>
             </div>
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 20, fontSize: 12, color: "#525252", textAlign: "center" }}>© {new Date().getFullYear()} AirCheck. Todos os direitos reservados.</div>
