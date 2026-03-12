@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", accent:"#059669", dark:"#0F0F0F" };
@@ -330,6 +330,8 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
 
   // Form
   const [name, setName] = useState("");
@@ -339,6 +341,86 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
   const [contactPhone, setContactPhone] = useState("");
 
   const canEdit = user?.role === "admin" || user?.role === "sindico";
+
+  // Google Maps Autocomplete
+  useEffect(() => {
+    if (!editing || !addressRef.current) return;
+    const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!MAPS_KEY) return;
+    const initAutocomplete = () => {
+      if (!addressRef.current || autocompleteRef.current) return;
+      const ac = new (window as any).google.maps.places.Autocomplete(addressRef.current, {
+        types: ["address"], componentRestrictions: { country: "br" },
+      });
+      ac.addListener("place_changed", () => {
+        const place = ac.getPlace();
+        if (place?.formatted_address) setAddress(place.formatted_address);
+      });
+      autocompleteRef.current = ac;
+    };
+    if ((window as any).google?.maps?.places) { initAutocomplete(); return; }
+    if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&libraries=places&language=pt-BR`;
+      s.async = true;
+      s.onload = initAutocomplete;
+      document.head.appendChild(s);
+    }
+    return () => { autocompleteRef.current = null; };
+  }, [editing]);
+
+  // Team management
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState("porteiro");
+  const [addingUser, setAddingUser] = useState(false);
+  const [teamMsg, setTeamMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
+
+  const addUser = async () => {
+    if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword) return;
+    setAddingUser(true); setTeamMsg(null);
+    try {
+      const res = await fetch("/api/portaria/settings/users", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newUserName.trim(), email: newUserEmail.trim(), password: newUserPassword, role: newUserRole }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Erro"); }
+      const created = await res.json();
+      setSettings(s => s ? { ...s, users: [...s.users, created] } : s);
+      setNewUserName(""); setNewUserEmail(""); setNewUserPassword(""); setNewUserRole("porteiro"); setShowAddUser(false);
+      setTeamMsg({ t: "ok", m: `${created.name} adicionado com sucesso!` });
+    } catch (e: any) { setTeamMsg({ t: "err", m: e.message }); }
+    finally { setAddingUser(false); }
+  };
+
+  const toggleUserActive = async (userId: string, currentlyActive: boolean) => {
+    const action = currentlyActive ? "deactivate" : "reactivate";
+    const label = currentlyActive ? "desativar" : "reativar";
+    if (!confirm(`Tem certeza que deseja ${label} este usuário?`)) return;
+    try {
+      const res = await fetch("/api/portaria/settings/users", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action }),
+      });
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro"); return; }
+      const updated = await res.json();
+      setSettings(s => s ? { ...s, users: s.users.map(u => u.id === userId ? updated : u) } : s);
+    } catch { alert("Erro de conexão"); }
+  };
+
+  const changeRole = async (userId: string, newRole: string) => {
+    try {
+      const res = await fetch("/api/portaria/settings/users", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action: "change_role", role: newRole }),
+      });
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro"); return; }
+      const updated = await res.json();
+      setSettings(s => s ? { ...s, users: s.users.map(u => u.id === userId ? updated : u) } : s);
+    } catch { alert("Erro de conexão"); }
+  };
 
   useEffect(() => {
     fetch("/api/portaria/settings").then(async r => {
@@ -404,7 +486,9 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <div style={labelStyle}>Endereço</div>
-                <div style={readStyle}>{settings.address || <span style={{ color: "#525252" }}>Não informado</span>}</div>
+                <div style={readStyle}>
+                  {settings.address ? (<><span>{settings.address}</span> <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: B.primary, marginLeft: 8, textDecoration: "none" }}>📍 Ver no mapa</a></>) : <span style={{ color: "#525252" }}>Não informado</span>}
+                </div>
               </div>
               <div>
                 <div style={labelStyle}>Contato principal</div>
@@ -428,7 +512,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
             </div>
             <div>
               <label style={labelStyle}>Endereço</label>
-              <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro" style={inputStyle} />
+              <input ref={addressRef} value={address} onChange={e => setAddress(e.target.value)} placeholder="Comece a digitar o endereço..." style={inputStyle} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
@@ -455,19 +539,79 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
 
       {/* Team */}
       <div style={{ background: "#1A1A1A", border: "1px solid #2A2A2A", borderRadius: 16, padding: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: B.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Equipe da portaria</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: B.primary, textTransform: "uppercase", letterSpacing: "0.06em" }}>Equipe da portaria</div>
+          {canEdit && !showAddUser && (
+            <button onClick={() => { setShowAddUser(true); setTeamMsg(null); }} style={{ fontFamily: "Outfit", fontSize: 12, fontWeight: 600, padding: "6px 14px", background: B.primary, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>+ Adicionar</button>
+          )}
+        </div>
+
+        {teamMsg && <div style={{ background: teamMsg.t === "ok" ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.1)", border: `1px solid ${teamMsg.t === "ok" ? "rgba(5,150,105,0.2)" : "rgba(220,38,38,0.2)"}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: teamMsg.t === "ok" ? "#059669" : "#DC2626", marginBottom: 10 }}>{teamMsg.m}</div>}
+
+        {/* Add user form */}
+        {showAddUser && (
+          <div style={{ background: "#111", border: "1px solid #333", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: B.primary, textTransform: "uppercase", marginBottom: 10 }}>Novo membro</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "#525252", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Nome *</label>
+                  <input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nome completo" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "#525252", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Email *</label>
+                  <input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="email@exemplo.com" type="email" style={inputStyle} />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "#525252", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Senha inicial *</label>
+                  <input value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mín. 6 caracteres" type="text" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "#525252", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Função</label>
+                  <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                    <option value="porteiro">Porteiro</option>
+                    <option value="sindico">Síndico</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button onClick={addUser} disabled={addingUser || !newUserName.trim() || !newUserEmail.trim() || newUserPassword.length < 6} style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 600, padding: "8px 18px", background: B.primary, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", opacity: addingUser || !newUserName.trim() || !newUserEmail.trim() || newUserPassword.length < 6 ? 0.5 : 1 }}>{addingUser ? "Adicionando..." : "Adicionar"}</button>
+                <button onClick={() => { setShowAddUser(false); setNewUserName(""); setNewUserEmail(""); setNewUserPassword(""); setNewUserRole("porteiro"); setTeamMsg(null); }} style={{ fontFamily: "Outfit", fontSize: 13, padding: "8px 18px", background: "none", color: "#525252", border: "1px solid #333", borderRadius: 8, cursor: "pointer" }}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users list */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {settings.users.map(u => (
-            <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#111", border: "1px solid #2A2A2A", borderRadius: 10, padding: "10px 14px" }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{u.name}</div>
-                <div style={{ fontSize: 12, color: "#525252", marginTop: 2 }}>{u.email}</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: u.role === "admin" ? B.primary : u.role === "sindico" ? "#D97706" : "#A3A3A3", background: u.role === "admin" ? "rgba(59,95,229,0.1)" : u.role === "sindico" ? "rgba(217,119,6,0.1)" : "rgba(163,163,163,0.1)", padding: "2px 8px", borderRadius: 8 }}>
-                  {u.role === "admin" ? "Admin" : u.role === "sindico" ? "Síndico" : "Porteiro"}
-                </span>
-                {!u.active && <span style={{ fontSize: 10, color: "#DC2626" }}>Inativo</span>}
+            <div key={u.id} style={{ background: u.active ? "#111" : "#0A0A0A", border: `1px solid ${u.active ? "#2A2A2A" : "#1A1A1A"}`, borderRadius: 10, padding: "10px 14px", opacity: u.active ? 1 : 0.5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: u.active ? "#fff" : "#525252" }}>{u.name} {!u.active && <span style={{ fontSize: 11, color: "#DC2626" }}>(Inativo)</span>}</div>
+                  <div style={{ fontSize: 12, color: "#525252", marginTop: 2 }}>{u.email}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {canEdit ? (
+                    <select value={u.role} onChange={e => changeRole(u.id, e.target.value)} style={{ fontFamily: "Outfit", fontSize: 11, padding: "4px 8px", background: "#1A1A1A", color: u.role === "admin" ? B.primary : u.role === "sindico" ? "#D97706" : "#A3A3A3", border: "1px solid #333", borderRadius: 6, cursor: "pointer" }}>
+                      <option value="porteiro">Porteiro</option>
+                      <option value="sindico">Síndico</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: u.role === "admin" ? B.primary : u.role === "sindico" ? "#D97706" : "#A3A3A3", background: u.role === "admin" ? "rgba(59,95,229,0.1)" : u.role === "sindico" ? "rgba(217,119,6,0.1)" : "rgba(163,163,163,0.1)", padding: "2px 8px", borderRadius: 8 }}>
+                      {u.role === "admin" ? "Admin" : u.role === "sindico" ? "Síndico" : "Porteiro"}
+                    </span>
+                  )}
+                  {canEdit && (
+                    <button onClick={() => toggleUserActive(u.id, u.active)} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 500, padding: "4px 10px", background: "none", color: u.active ? "#DC2626" : "#059669", border: `1px solid ${u.active ? "rgba(220,38,38,0.2)" : "rgba(5,150,105,0.2)"}`, borderRadius: 6, cursor: "pointer" }}>
+                      {u.active ? "Desativar" : "Reativar"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
