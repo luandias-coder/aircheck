@@ -96,9 +96,7 @@ export default function PortariaDashboard() {
       <div style={{ background:"#1A1A1A", borderBottom:"1px solid #2A2A2A" }}>
         <div style={{ maxWidth:800, margin:"0 auto", padding:"14px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:36, height:36, borderRadius:10, background:`linear-gradient(135deg, ${B.g1}, ${B.g2})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M10 19L20 11L30 19" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13 18V28H27V18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 22.5L19 25.5L25 19.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="11" fill="url(#phg)"/><path d="M10 19L20 11L30 19" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13 18V28H27V18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 22.5L19 25.5L25 19.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="phg" x1="0" y1="0" x2="42" y2="42" gradientUnits="userSpaceOnUse"><stop stopColor="#3B5FE5"/><stop offset="1" stopColor="#5E4FE5"/></linearGradient></defs></svg>
             <div>
               <div style={{ fontSize:15, fontWeight:700, color:"#fff" }}>{condo?.name}</div>
               <div style={{ fontSize:11, color:"#525252" }}>Painel da Portaria · {condo?.code}</div>
