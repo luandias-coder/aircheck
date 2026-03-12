@@ -37,6 +37,47 @@ model UserInboundEmail {
   @@index([email])
 }
 
+// ─── CONDOMINIUM MODULE ───
+
+model Condominium {
+  id           String   @id @default(cuid())
+  name         String
+  address      String?
+  code         String   @unique   // 6-char code (ex: AK3F7B)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  plan         String   @default("pilot") // pilot, basic, pro
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users       CondominiumUser[]
+  properties  Property[]
+
+  @@index([code])
+}
+
+model CondominiumUser {
+  id              String   @id @default(cuid())
+  condominiumId   String
+  name            String
+  email           String
+  passwordHash    String
+  role            String   @default("porteiro") // admin, sindico, porteiro
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@unique([condominiumId, email])
+  @@index([condominiumId])
+  @@index([email])
+}
+
+// ─── END CONDOMINIUM MODULE ───
+
 model Property {
   id              String   @id @default(cuid())
   userId          String
@@ -45,16 +86,19 @@ model Property {
   unitNumber      String?
   parkingSpot     String?
   includeDocLinks Boolean  @default(false)
+  condominiumId   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  condominium   Condominium?  @relation(fields: [condominiumId], references: [id], onDelete: SetNull)
   reservations  Reservation[]
   doormanPhones DoormanPhone[]
 
   @@unique([userId, name])
   @@index([userId])
   @@index([airbnbRoomId])
+  @@index([condominiumId])
 }
 
 model DoormanPhone {
