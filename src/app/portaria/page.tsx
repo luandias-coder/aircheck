@@ -105,7 +105,7 @@ export default function PortariaDashboard() {
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ fontSize:12, color:"#525252", textAlign:"right" }}>
               <div style={{ color:"#A3A3A3" }}>{user?.name}</div>
-              <div>{user?.role === "admin" ? "Administrador" : user?.role === "sindico" ? "Síndico" : "Porteiro"}</div>
+              <div>{user?.role === "admin" ? "Administrador" : "Porteiro"}</div>
             </div>
             <button onClick={logout} style={{ fontFamily:"Outfit", fontSize:11, fontWeight:500, padding:"6px 12px", background:"none", color:"#525252", border:"1px solid #333", borderRadius:8, cursor:"pointer" }}>Sair</button>
           </div>
@@ -338,7 +338,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
-  const canEdit = user?.role === "admin" || user?.role === "sindico";
+  const canEdit = user?.role === "admin";
 
   // Google Maps Autocomplete
   useEffect(() => {
@@ -524,7 +524,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
             </div>
             <div>
               <label style={labelStyle}>Email para comunicação</label>
-              <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="sindico@condominio.com" type="email" style={inputStyle} />
+              <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="contato@condominio.com" type="email" style={inputStyle} />
             </div>
             {msg && <div style={{ background: msg.t === "ok" ? "rgba(5,150,105,0.1)" : "rgba(220,38,38,0.1)", border: `1px solid ${msg.t === "ok" ? "rgba(5,150,105,0.2)" : "rgba(220,38,38,0.2)"}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: msg.t === "ok" ? "#059669" : "#DC2626" }}>{msg.m}</div>}
             <div style={{ display: "flex", gap: 8 }}>
@@ -570,7 +570,6 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
                   <label style={{ fontSize: 10, fontWeight: 600, color: "#525252", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Função</label>
                   <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
                     <option value="porteiro">Porteiro</option>
-                    <option value="sindico">Síndico</option>
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
@@ -594,14 +593,13 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {canEdit ? (
-                    <select value={u.role} onChange={e => changeRole(u.id, e.target.value)} style={{ fontFamily: "Outfit", fontSize: 11, padding: "4px 8px", background: "#1A1A1A", color: u.role === "admin" ? B.primary : u.role === "sindico" ? "#D97706" : "#A3A3A3", border: "1px solid #333", borderRadius: 6, cursor: "pointer" }}>
+                    <select value={u.role} onChange={e => changeRole(u.id, e.target.value)} style={{ fontFamily: "Outfit", fontSize: 11, padding: "4px 8px", background: "#1A1A1A", color: u.role === "admin" ? B.primary : "#A3A3A3", border: "1px solid #333", borderRadius: 6, cursor: "pointer" }}>
                       <option value="porteiro">Porteiro</option>
-                      <option value="sindico">Síndico</option>
                       <option value="admin">Admin</option>
                     </select>
                   ) : (
-                    <span style={{ fontSize: 11, fontWeight: 600, color: u.role === "admin" ? B.primary : u.role === "sindico" ? "#D97706" : "#A3A3A3", background: u.role === "admin" ? "rgba(59,95,229,0.1)" : u.role === "sindico" ? "rgba(217,119,6,0.1)" : "rgba(163,163,163,0.1)", padding: "2px 8px", borderRadius: 8 }}>
-                      {u.role === "admin" ? "Admin" : u.role === "sindico" ? "Síndico" : "Porteiro"}
+                    <span style={{ fontSize: 11, fontWeight: 600, color: u.role === "admin" ? B.primary : "#A3A3A3", background: u.role === "admin" ? "rgba(59,95,229,0.1)" : "rgba(163,163,163,0.1)", padding: "2px 8px", borderRadius: 8 }}>
+                      {u.role === "admin" ? "Admin" : "Porteiro"}
                     </span>
                   )}
                   {canEdit && (
