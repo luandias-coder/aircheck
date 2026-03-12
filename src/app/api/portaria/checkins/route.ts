@@ -30,14 +30,10 @@ export async function GET(req: NextRequest) {
     });
 
     if (properties.length === 0) {
-      return NextResponse.json({ checkins: [], properties: [], stats: { today: 0, upcoming: 0, pending: 0 } });
+      return NextResponse.json({ checkins: [], properties: [], stats: { today: 0, upcoming: 0, pending: 0, totalProperties: 0 } });
     }
 
     const propertyIds = properties.map(p => p.id);
-
-    // Build date filter
-    const now = new Date();
-    const todayStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
 
     // Fetch reservations for these properties (exclude archived)
     const reservations = await prisma.reservation.findMany({
@@ -89,6 +85,7 @@ export async function GET(req: NextRequest) {
       id: r.id,
       guestName: r.guestFullName,
       guestPhone: r.guestPhone,
+      guestPhotoUrl: r.guestPhotoUrl, // ← NOVO: foto do Airbnb
       checkInDate: r.checkInDate,
       checkInTime: r.checkInTime,
       checkOutDate: r.checkOutDate,
