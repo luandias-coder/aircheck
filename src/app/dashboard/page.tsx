@@ -575,7 +575,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
                 </div>
                 {(p.condominium.address||p.condominium.contactName||p.condominium.contactPhone)&&(
                   <div style={{background:"#F9FAFB",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#525252",display:"flex",flexDirection:"column",gap:2}}>
-                    {p.condominium.address&&<div>📍 {p.condominium.address}</div>}
+                    {p.condominium.address&&<div>📍 {p.condominium.address} <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.condominium.address)}`} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:B.primary,textDecoration:"none",marginLeft:4}}>Ver no mapa →</a></div>}
                     {p.condominium.contactName&&<div>👤 {p.condominium.contactName}</div>}
                     {p.condominium.contactPhone&&<div>📞 {p.condominium.contactPhone}</div>}
                   </div>
