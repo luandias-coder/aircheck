@@ -19,12 +19,19 @@ async function getPortariaAuth(req: NextRequest) {
   } catch { return null; }
 }
 
+// Count active admins in a condominium
+async function countActiveAdmins(condominiumId: string): Promise<number> {
+  return prisma.condominiumUser.count({
+    where: { condominiumId, role: "admin", active: true },
+  });
+}
+
 // POST: add new user
 export async function POST(req: NextRequest) {
   const auth = await getPortariaAuth(req);
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  if (!["admin", "sindico"].includes(auth.role)) {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  if (auth.role !== "admin") {
+    return NextResponse.json({ error: "Apenas administradores podem adicionar membros" }, { status: 403 });
   }
 
   try {
@@ -37,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Senha deve ter pelo menos 6 caracteres" }, { status: 400 });
     }
 
-    const validRoles = ["porteiro", "sindico", "admin"];
+    const validRoles = ["porteiro", "admin"];
     const userRole = validRoles.includes(role) ? role : "porteiro";
 
     const existing = await prisma.condominiumUser.findFirst({
@@ -72,8 +79,8 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await getPortariaAuth(req);
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  if (!["admin", "sindico"].includes(auth.role)) {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  if (auth.role !== "admin") {
+    return NextResponse.json({ error: "Apenas administradores podem gerenciar a equipe" }, { status: 403 });
   }
 
   try {
@@ -86,6 +93,19 @@ export async function PATCH(req: NextRequest) {
     });
     if (!target) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
+    // ── Protect last admin ──
+    if (target.role === "admin" && target.active) {
+      const adminCount = await countActiveAdmins(auth.condominiumId);
+
+      if (action === "deactivate" && adminCount <= 1) {
+        return NextResponse.json({ error: "Não é possível desativar o único administrador. Promova outro membro antes." }, { status: 400 });
+      }
+      if (action === "change_role" && role !== "admin" && adminCount <= 1) {
+        return NextResponse.json({ error: "Não é possível remover o único administrador. Promova outro membro antes." }, { status: 400 });
+      }
+    }
+
+    // Prevent self-deactivation
     if (userId === auth.condoUserId && action === "deactivate") {
       return NextResponse.json({ error: "Você não pode desativar sua própria conta" }, { status: 400 });
     }
@@ -95,8 +115,8 @@ export async function PATCH(req: NextRequest) {
     } else if (action === "reactivate") {
       await prisma.condominiumUser.update({ where: { id: userId }, data: { active: true } });
     } else if (action === "change_role") {
-      const validRoles = ["porteiro", "sindico", "admin"];
-      if (!validRoles.includes(role)) return NextResponse.json({ error: "Role inválido" }, { status: 400 });
+      const validRoles = ["porteiro", "admin"];
+      if (!validRoles.includes(role)) return NextResponse.json({ error: "Função inválida" }, { status: 400 });
       await prisma.condominiumUser.update({ where: { id: userId }, data: { role } });
     } else {
       return NextResponse.json({ error: "Ação desconhecida" }, { status: 400 });
