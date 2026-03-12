@@ -51,14 +51,14 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH: atualiza dados do condomínio (apenas admin ou sindico)
+// PATCH: atualiza dados do condomínio (apenas admin)
 export async function PATCH(req: NextRequest) {
   const auth = await getPortariaAuth(req);
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
   // Apenas admin e síndico podem editar
-  if (!["admin", "sindico"].includes(auth.role)) {
-    return NextResponse.json({ error: "Sem permissão. Apenas administradores e síndicos podem alterar configurações." }, { status: 403 });
+  if (auth.role !== "admin") {
+    return NextResponse.json({ error: "Apenas administradores podem alterar configurações." }, { status: 403 });
   }
 
   try {
