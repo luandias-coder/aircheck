@@ -26,20 +26,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       await prisma.property.update({ where: { id: params.id }, data: { unitNumber: unitNumber || null, parkingSpot: parkingSpot || null } });
     } else if (action === "toggle_doc_links") {
       await prisma.property.update({ where: { id: params.id }, data: { includeDocLinks: !prop.includeDocLinks } });
-    } else if (action === "link_condominium") {
-      const { code } = body;
-      if (!code) return NextResponse.json({ error: "Código obrigatório" }, { status: 400 });
-      const condo = await prisma.condominium.findUnique({ where: { code: code.toUpperCase().trim() } });
-      if (!condo) return NextResponse.json({ error: "Código não encontrado. Verifique com a administração do condomínio." }, { status: 404 });
-      if (!condo.active) return NextResponse.json({ error: "Este condomínio não está ativo no momento." }, { status: 400 });
-      await prisma.property.update({ where: { id: params.id }, data: { condominiumId: condo.id } });
-    } else if (action === "unlink_condominium") {
-      await prisma.property.update({ where: { id: params.id }, data: { condominiumId: null } });
     }
 
     const property = await prisma.property.findUnique({
       where: { id: params.id },
-      include: { doormanPhones: true, condominium: { select: { id: true, name: true, code: true } }, _count: { select: { reservations: true } } },
+      include: { doormanPhones: true, _count: { select: { reservations: true } } },
     });
 
     return NextResponse.json({ ...property, reservationCount: property?._count.reservations, _count: undefined });
