@@ -87,6 +87,7 @@ model Property {
   parkingSpot     String?
   includeDocLinks Boolean  @default(false)
   condominiumId   String?
+  whatsappEnabled Boolean  @default(true) // se false + condomínio parceiro, dados fluem pelo painel
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
