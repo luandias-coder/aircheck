@@ -79,7 +79,7 @@ export default function PortariaDashboard() {
   });
 
   // Unique units for filter
-  const units = [...new Set(properties.map(p => p.unitNumber).filter(Boolean))] as string[];
+  const units = Array.from(new Set(properties.map(p => p.unitNumber).filter(Boolean))) as string[];
 
   if (loading) return (
     <div style={{ minHeight:"100vh", background:"#0F0F0F", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Outfit", color:"#525252" }}>
