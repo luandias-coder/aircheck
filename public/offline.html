@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirCheck — Sem conexão</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FAFAF9;
+      color: #0F0F0F;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      max-width: 380px;
+      background: #fff;
+      border: 1px solid #E5E5E5;
+      border-radius: 20px;
+      padding: 48px 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .icon { font-size: 48px; margin-bottom: 20px; }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.03em; }
+    p { font-size: 15px; color: #737373; line-height: 1.6; margin-bottom: 24px; }
+    button {
+      font-family: 'Outfit'; font-size: 15px; font-weight: 700;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #3B5FE5, #5E4FE5);
+      color: #fff; border: none; border-radius: 12px; cursor: pointer;
+      box-shadow: 0 8px 32px rgba(59,95,229,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>Sem conexão</h1>
+    <p>Verifique sua internet e tente novamente. Seus dados estão seguros.</p>
+    <button onclick="location.reload()">Tentar novamente</button>
+  </div>
+</body>
+</html>
