@@ -19,8 +19,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`${MAIN_DOMAIN}${pathname}${request.nextUrl.search}`, 301);
   }
 
-  // Public pages
-  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/checkin/") || pathname.startsWith("/reset-password/") || pathname === "/portaria/login") {
+  // Public pages (no auth required)
+  if (
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/register/condominio" ||
+    pathname === "/portaria/login" ||
+    pathname.startsWith("/checkin/") ||
+    pathname.startsWith("/reset-password/")
+  ) {
     return NextResponse.next();
   }
 
@@ -50,8 +57,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Protected: /dashboard and /api/*
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api/")) {
+  // Protected: /dashboard, /onboarding, and /api/*
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding") || pathname.startsWith("/api/")) {
     const token = request.cookies.get(COOKIE_NAME)?.value;
     if (!token) {
       if (pathname.startsWith("/api/")) {
@@ -64,7 +71,6 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, SECRET);
       return NextResponse.next();
     } catch {
-      // Invalid token
       const response = pathname.startsWith("/api/")
         ? NextResponse.json({ error: "Sessão expirada" }, { status: 401 })
         : NextResponse.redirect(new URL("/login", request.url));
@@ -77,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login", "/register", "/checkin/:path*", "/c/:path*", "/d/:path*", "/doc/:path*", "/reset-password/:path*", "/portaria/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login", "/register", "/register/:path*", "/checkin/:path*", "/c/:path*", "/d/:path*", "/doc/:path*", "/reset-password/:path*", "/onboarding/:path*", "/portaria/:path*"],
 };
