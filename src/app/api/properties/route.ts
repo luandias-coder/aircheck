@@ -8,9 +8,24 @@ export async function GET() {
   try {
     const props = await prisma.property.findMany({
       where: { userId },
-      include: { doormanPhones: true, _count: { select: { reservations: true } } },
+      include: {
+        doormanPhones: true,
+        condominium: {
+          select: { id: true, name: true, code: true, address: true, contactName: true, contactPhone: true },
+        },
+        _count: { select: { reservations: true } },
+      },
       orderBy: { createdAt: "asc" },
     });
-    return NextResponse.json(props.map((p) => ({ ...p, reservationCount: p._count.reservations, _count: undefined })));
-  } catch (e) { console.error(e); return NextResponse.json({ error: "Erro interno" }, { status: 500 }); }
+    return NextResponse.json(
+      props.map((p) => ({
+        ...p,
+        reservationCount: p._count.reservations,
+        _count: undefined,
+      }))
+    );
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  }
 }

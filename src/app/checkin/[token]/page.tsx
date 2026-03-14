@@ -52,7 +52,7 @@ function compressImage(file:File,maxSizeKB=800):Promise<File>{
 interface GuestForm { fullName:string; birthDate:string; cpf:string; rg:string; foreign:boolean; passport:string; rne:string; file:File|null; preview:string|null; fileName:string|null }
 const emptyGuest=():GuestForm=>({fullName:"",birthDate:"",cpf:"",rg:"",foreign:false,passport:"",rne:"",file:null,preview:null,fileName:null});
 
-interface ResData { propertyName:string; guestName:string; guestPhone:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; carPlate:string|null; carModel:string|null; guests:Array<{fullName:string;birthDate:string;cpf:string|null;rg:string|null;foreign:boolean;passport:string|null;rne:string|null;hasDocument:boolean}> }
+interface ResData { propertyName:string; guestName:string; guestPhone:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; carPlate:string|null; carModel:string|null; condominiumName:string|null; condominiumAddress:string|null; guests:Array<{fullName:string;birthDate:string;cpf:string|null;rg:string|null;foreign:boolean;passport:string|null;rne:string|null;hasDocument:boolean}> }
 
 // 16px font prevents iOS auto-zoom on input focus
 const iStyle:React.CSSProperties = {width:"100%",fontFamily:"Outfit,sans-serif",fontSize:16,color:"#1A1A1A",padding:"12px 14px",border:"1px solid #E5E5E5",borderRadius:10,background:"#fff",boxSizing:"border-box",WebkitAppearance:"none" as any};
@@ -168,6 +168,11 @@ export default function CheckInPage({params}:{params:{token:string}}){
       <div style={{fontFamily:"Outfit",fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Check-in</div>
       <div style={{fontFamily:"Outfit",fontSize:16,fontWeight:600,color:"#1A1A1A",marginTop:4}}>{data?.checkInDate} a partir das {data?.checkInTime}</div>
     </div>
+    {data?.condominiumAddress&&<div style={{background:"#fff",borderRadius:12,padding:16,border:"1px solid #E5E5E5",marginBottom:16}}>
+      <div style={{fontFamily:"Outfit",fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Endereço</div>
+      <div style={{fontFamily:"Outfit",fontSize:14,fontWeight:500,color:"#1A1A1A",marginTop:4}}>{data.condominiumAddress}</div>
+      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.condominiumAddress)}`} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",fontFamily:"Outfit",fontSize:13,fontWeight:600,marginTop:8,padding:"8px 16px",background:"#3B5FE5",color:"#fff",borderRadius:8,textDecoration:"none"}}>📍 Como chegar</a>
+    </div>}
     <p style={{fontFamily:"Outfit",fontSize:12,color:"#A3A3A3",lineHeight:1.5}}>Precisa corrigir alguma informação? Entre em contato com o anfitrião para solicitar a reabertura do formulário.</p>
   </div></div>;
 
@@ -180,6 +185,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
           <span style={{fontSize:11,fontWeight:600,color:B.muted,textTransform:"uppercase",letterSpacing:"0.14em"}}>Check-in digital</span>
         </div>
         <h1 style={{fontFamily:"Outfit",fontSize:22,fontWeight:800,lineHeight:1.2,margin:0}}>{data?.propertyName}</h1>
+        {data?.condominiumAddress&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,flexWrap:"wrap"}}><span style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>📍 {data.condominiumAddress}</span><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.condominiumAddress)}`} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"#B4C6FC",textDecoration:"none",fontWeight:600}}>Como chegar →</a></div>}
         <div style={{display:"flex",gap:1,marginTop:20,borderRadius:10,overflow:"hidden"}}>
           {[{l:"Check-in",v:data?.checkInDate||""},{l:"Check-out",v:data?.checkOutDate||""},{l:"Noites",v:data?.nights?`${data.nights}`:"-"}].map((x,i)=><div key={i} style={{flex:1,textAlign:"center",padding:"10px 6px",background:"rgba(255,255,255,0.06)"}}>
             <div style={{fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",color:"rgba(255,255,255,0.4)",marginBottom:3}}>{x.l}</div>
