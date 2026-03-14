@@ -67,7 +67,6 @@ function FormMockup() {
 }
 
 function WhatsAppMockup() {
-  const sep = "--------------------------------------";
   return (
     <div style={{ maxWidth: 320, margin: "0 auto" }}>
       <div style={{ background: "#E7DCCF", borderRadius: 16, padding: 16, boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
@@ -75,27 +74,29 @@ function WhatsAppMockup() {
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>P</div>
           <div><div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Portaria Central</div><div style={{ fontSize: 10, color: "#93C5B5" }}>online</div></div>
         </div>
-        <div style={{ background: "#DCF8C6", borderRadius: "0 10px 10px 10px", padding: "10px 12px", fontSize: 11, color: "#303030", lineHeight: 1.6, whiteSpace: "pre-wrap", fontFamily: "system-ui" }}>
-{`🏠 *Studio Aurora Centro*
-📍 Unid. 501 · Vaga G1-25
-${sep}
-📅 *Check-in:* 15/03 às 15:00
-📅 *Check-out:* 18/03 às 12:00
-🌙 3 noites · 2 hóspedes
-${sep}
-
-👤 *Maria Souza*
-📅 Nasc: 01/01/1990
-🪪 CPF: 000.000.000-00
-🪪 RG: 12.345.678-9
-
-👤 *João Souza*
-📅 Nasc: 15/06/1988
-🪪 CPF: 111.222.333-44
-${sep}
-🚗 *Veículo:* HB20 Prata · ABC-1D23
-
-✅ Enviado via AirCheck`}
+        <div style={{ background: "#DCF8C6", borderRadius: "0 10px 10px 10px", padding: "10px 12px", fontSize: 11, color: "#303030", lineHeight: 1.6, fontFamily: "system-ui" }}>
+          🏠 <strong>Studio Aurora Centro</strong><br/>
+          📍 Unid. 501 · Vaga G1-25<br/>
+          <span style={{color:"#999"}}>--------------------------------------</span><br/>
+          📅 <strong>Check-in:</strong> 15/03 às 15:00<br/>
+          📅 <strong>Check-out:</strong> 18/03 às 12:00<br/>
+          🌙 3 noites · 2 hóspedes<br/>
+          <span style={{color:"#999"}}>--------------------------------------</span><br/>
+          <br/>
+          👤 <strong>Maria Souza</strong><br/>
+          📅 Nasc: 01/01/1990<br/>
+          🪪 CPF: 000.000.000-00<br/>
+          🪪 RG: 12.345.678-9<br/>
+          📎 Doc: airchk.in/d/a1b2c3<br/>
+          <br/>
+          👤 <strong>João Souza</strong><br/>
+          📅 Nasc: 15/06/1988<br/>
+          🪪 CPF: 111.222.333-44<br/>
+          📎 Doc: airchk.in/d/d4e5f6<br/>
+          <span style={{color:"#999"}}>--------------------------------------</span><br/>
+          🚗 <strong>Veículo:</strong> HB20 Prata · ABC-1D23<br/>
+          <br/>
+          ✅ Enviado via AirCheck
         </div>
         <div style={{ textAlign: "right", fontSize: 10, color: "#999", marginTop: 4 }}>14:32 ✓✓</div>
       </div>
