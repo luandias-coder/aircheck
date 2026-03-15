@@ -33,10 +33,26 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   try {
     const r = await prisma.reservation.findFirst({
       where: { id: params.id, userId },
-      include: { property: { include: { doormanPhones: true } }, guests: true },
+      include: {
+        property: {
+          include: {
+            doormanPhones: true,
+            condominium: { select: { reportMode: true, doormanWhatsapp: true } },
+          },
+        },
+        guests: true,
+      },
     });
     if (!r) return NextResponse.json({ error: "Reserva n\u00e3o encontrada" }, { status: 404 });
-    if (r.property.doormanPhones.length === 0) return NextResponse.json({ error: "Nenhuma portaria configurada" }, { status: 400 });
+
+    // Determine phone targets:
+    // If condominium with reportMode "whatsapp" → use condominium's doormanWhatsapp
+    // Otherwise → use property's doormanPhones
+    const condoWhatsappMode = r.property.condominium?.reportMode === "whatsapp" && r.property.condominium?.doormanWhatsapp;
+
+    if (!condoWhatsappMode && r.property.doormanPhones.length === 0) {
+      return NextResponse.json({ error: "Nenhuma portaria configurada" }, { status: 400 });
+    }
     if (r.guests.length === 0) return NextResponse.json({ error: "Aguardando formul\u00e1rio" }, { status: 400 });
 
     const sep = "--------------------------------------";
@@ -82,11 +98,28 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     l.push(`${E.check} _Enviado via AirCheck_`);
 
     const message = l.join("\n");
-    const links = r.property.doormanPhones.map((dp) => {
-      const phone = dp.phone.replace(/\D/g, "");
-      const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
-      return { phone: dp.phone, name: dp.name, label: dp.label, link: `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}` };
-    });
+
+    // Build links
+    let links: Array<{ phone: string; name: string | null; label: string | null; link: string }>;
+
+    if (condoWhatsappMode) {
+      // Use condominium's doormanWhatsapp number
+      const rawPhone = r.property.condominium!.doormanWhatsapp!.replace(/\D/g, "");
+      const fullPhone = rawPhone.startsWith("55") ? rawPhone : `55${rawPhone}`;
+      links = [{
+        phone: r.property.condominium!.doormanWhatsapp!,
+        name: "Portaria do condomínio",
+        label: null,
+        link: `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`,
+      }];
+    } else {
+      // Use property's doormanPhones
+      links = r.property.doormanPhones.map((dp) => {
+        const phone = dp.phone.replace(/\D/g, "");
+        const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
+        return { phone: dp.phone, name: dp.name, label: dp.label, link: `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}` };
+      });
+    }
 
     return NextResponse.json({ message, links });
   } catch (e) { console.error(e); return NextResponse.json({ error: "Erro interno" }, { status: 500 }); }
