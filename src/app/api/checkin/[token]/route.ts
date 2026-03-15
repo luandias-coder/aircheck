@@ -5,14 +5,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   try {
     const r = await prisma.reservation.findUnique({
       where: { formToken: params.token },
-      include: {
-        property: {
-          include: {
-            condominium: { select: { name: true, address: true } },
-          },
-        },
-        guests: true,
-      },
+      include: { property: true, guests: true },
     });
     if (!r) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
 
@@ -29,8 +22,6 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       status: r.status,
       carPlate: r.carPlate,
       carModel: r.carModel,
-      condominiumName: r.property.condominium?.name || null,
-      condominiumAddress: r.property.condominium?.address || null,
       guests: r.guests.map((g) => ({
         fullName: g.fullName,
         birthDate: g.birthDate,
@@ -50,6 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const r = await prisma.reservation.findUnique({ where: { formToken: params.token } });
     if (!r) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
 
+    if (r.status === "cancelled") {
+      return NextResponse.json({ error: "Esta reserva foi cancelada." }, { status: 400 });
+    }
     if (r.status !== "pending_form") {
       return NextResponse.json({ error: "Este formulário já foi preenchido. Para alterações, solicite ao anfitrião." }, { status: 400 });
     }
@@ -68,9 +62,13 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const carModel = formData.get("carModel") as string | null;
     const guestPhone = formData.get("guestPhone") as string | null;
 
+    // Fetch existing guests to preserve document URLs
     const existingGuests = await prisma.guest.findMany({ where: { reservationId: r.id }, orderBy: { createdAt: "asc" } });
+
+    // Delete existing guests for re-creation
     await prisma.guest.deleteMany({ where: { reservationId: r.id } });
 
+    // Create guests with document URLs (already uploaded individually)
     for (let i = 0; i < guests.length; i++) {
       const g = guests[i];
       const documentUrl = g.documentUrl || existingGuests[i]?.documentUrl || null;
