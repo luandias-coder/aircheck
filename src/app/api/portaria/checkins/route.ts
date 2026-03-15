@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     const reservations = await prisma.reservation.findMany({
       where: {
         propertyId: { in: propertyIds },
-        status: { not: "archived" },
+        status: { notIn: ["archived", "cancelled"] },
       },
       include: {
         property: { select: { id: true, name: true, unitNumber: true, parkingSpot: true } },
