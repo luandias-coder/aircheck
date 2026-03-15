@@ -24,6 +24,7 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
   form_filled:{l:"Formulário preenchido",c:"#059669",bg:"#ECFDF5",dot:"#059669"},
   sent_to_doorman:{l:"Enviado à portaria",c:"#2563EB",bg:"#EFF6FF",dot:"#2563EB"},
   archived:{l:"Arquivada",c:"#737373",bg:"#F5F5F5",dot:"#A3A3A3"},
+  cancelled:{l:"Cancelada",c:"#DC2626",bg:"#FEF2F2",dot:"#DC2626"},
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
@@ -48,7 +49,7 @@ export default function Dashboard(){
         // Auto-archive past reservations
         const now=new Date();now.setHours(0,0,0,0);
         const toArchive=data.filter(r=>{
-          if(r.status==="archived")return false;
+          if(r.status==="archived"||r.status==="cancelled")return false;
           if(!r.checkOutDate)return false;
           const[dd,mm,yy]=r.checkOutDate.split("/").map(Number);
           const co=new Date(yy,mm-1,dd);
@@ -71,8 +72,8 @@ export default function Dashboard(){
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
 
   const selected=reservations.find(r=>r.id===selectedId);
-  const active=reservations.filter(r=>r.status!=="archived");
-  const archived=reservations.filter(r=>r.status==="archived");
+  const active=reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled");
+  const archived=reservations.filter(r=>r.status==="archived"||r.status==="cancelled");
   const pending=active.filter(r=>r.status==="pending_form").length;
   const filled=active.filter(r=>r.status==="form_filled").length;
   const upcoming=active.filter(r=>daysUntil(r.checkInDate)>=0).length;
@@ -141,16 +142,16 @@ export default function Dashboard(){
 // ─── RESERVATIONS LIST ──────────────────────────────────────────
 function ReservationsList({active,archived,onSelect}:{active:Reservation[];archived:Reservation[];onSelect:(id:string)=>void}){
   const[showArchived,setShowArchived]=useState(false);
-  const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:isArch?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
+  const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";const isCancelled=r.status==="cancelled";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:(isArch||isCancelled)?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       {/* Guest photo */}
       {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:42,height:42,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"2px solid #F0F0F0"}}/>:<div style={{width:42,height:42,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <span style={{fontSize:15,fontWeight:600,color:"#1A1A1A"}}>{r.guestFullName}</span>
+          <span style={{fontSize:15,fontWeight:600,color:isCancelled?"#DC2626":"#1A1A1A",textDecoration:isCancelled?"line-through":"none"}}>{r.guestFullName}</span>
           {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du<=1?"#DC2626":"#D97706",background:du<=1?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du<=1?"Hoje!":"Em "+du+" dias"}</span>}
         </div>
-        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
+        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3,textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
         <Badge status={r.status}/>
@@ -497,6 +498,8 @@ function LogsTab(){
     error:{c:"#DC2626",bg:"#FEF2F2",l:"Erro"},
     parse_failed:{c:"#DC2626",bg:"#FEF2F2",l:"Parse falhou"},
     duplicate:{c:"#737373",bg:"#F5F5F5",l:"Duplicata"},
+    cancellation:{c:"#DC2626",bg:"#FEF2F2",l:"Cancelamento"},
+    cancellation_orphan:{c:"#D97706",bg:"#FFFBEB",l:"Cancel. órfão"},
   };
 
   if(loading)return<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando logs...</div>;
