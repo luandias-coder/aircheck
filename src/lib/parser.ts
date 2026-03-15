@@ -166,9 +166,14 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   }
   // Cancellation-specific guest name patterns
   if (!r.guestFullName && r.isCancellation) {
+    // PT: "seu hóspede, Luan, precisou cancelar" / "seu hóspede, Luan Dias, precisou"
+    const cancelHospede = rawText.match(/h[oó\uFFFD]spede,?\s+([A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+)*),?\s+(?:precisou|cancelou)/i);
+    if (cancelHospede) r.guestFullName = cancelHospede[1].trim();
     // PT: "A reserva de NAME foi cancelada" / "NAME cancelou a reserva"
-    const cancelNamePT = rawText.match(/(?:reserva\s+de\s+|cancelou[\s\S]{0,5}reserva[\s\S]{0,20}?por\s+)([A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+)+)/i);
-    if (cancelNamePT) r.guestFullName = cancelNamePT[1].trim();
+    if (!r.guestFullName) {
+      const cancelNamePT = rawText.match(/(?:reserva\s+de\s+|cancelou[\s\S]{0,5}reserva[\s\S]{0,20}?por\s+)([A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+)+)/i);
+      if (cancelNamePT) r.guestFullName = cancelNamePT[1].trim();
+    }
     // EN: "NAME's reservation has been cancelled" / "NAME cancelled their reservation"
     if (!r.guestFullName) {
       const cancelNameEN = rawText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:'s\s+reservation|\s+cancell?ed)/i);
@@ -333,6 +338,8 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     /confirma(?:ção|..o|cao)[\s\S]{0,30}?([A-Z0-9]{10})/i,
     /Confirmation\s+code[\s\n]+([A-Z0-9]{8,12})/i,
     /confirmation[\s\S]{0,20}?([A-Z0-9]{10})/i,
+    /reserva\s+([A-Z0-9]{8,12})\s+de\s+\d/i,
+    /reserva\s+([A-Z0-9]{8,12})\b/i,
   ];
   for (const pat of codePats) {
     const m = rawText.match(pat);
