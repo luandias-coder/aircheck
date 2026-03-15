@@ -613,6 +613,19 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
 
           <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados do imóvel</div>
 
+          {/* Unit number & parking spot */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div>
+              <label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Nº da Unidade *</label>
+              <input value={details.unitNumber} onChange={e=>setDetails({...details,unitNumber:e.target.value})} placeholder="Ex: 501, Bloco A - 102" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
+            </div>
+            <div>
+              <label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Vaga de garagem</label>
+              <input value={details.parkingSpot} onChange={e=>setDetails({...details,parkingSpot:e.target.value})} placeholder="Ex: G1-25" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
+            </div>
+          </div>
+          <button onClick={()=>saveDetails(p.id)} disabled={savingDetails} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:savingDetails?0.5:1}}>{savingDetails?"Salvando...":"Salvar dados"}</button>
+
           <div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Incluir documento na mensagem</div><div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Envia link da foto do documento de cada hóspede junto com a mensagem do WhatsApp</div></div>
             <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_doc_links"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.includeDocLinks?"#3B5FE5":"#D4D4D4",transition:"background 0.2s"}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:p.includeDocLinks?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/></button>
