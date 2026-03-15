@@ -127,6 +127,86 @@ export async function POST(req: NextRequest) {
       data: { parsedData: JSON.stringify({ results, errors }, null, 2) },
     });
 
+    // ── Handle cancellation ──────────────────────────────────
+    if (results.isCancellation) {
+      if (results.confirmationCode) {
+        const existing = await prisma.reservation.findFirst({
+          where: { userId, confirmationCode: results.confirmationCode },
+        });
+        if (existing) {
+          await prisma.reservation.update({
+            where: { id: existing.id },
+            data: { status: "cancelled" },
+          });
+          await prisma.inboundEmailLog.update({
+            where: { id: logId },
+            data: { status: "cancellation", reservationId: existing.id },
+          });
+          return NextResponse.json({
+            success: true,
+            action: "cancelled",
+            reservationId: existing.id,
+            confirmationCode: results.confirmationCode,
+            logId,
+          });
+        } else {
+          // Cancellation received but no matching reservation found
+          await prisma.inboundEmailLog.update({
+            where: { id: logId },
+            data: {
+              status: "cancellation_orphan",
+              error: `Cancelamento recebido mas reserva não encontrada: ${results.confirmationCode}`,
+            },
+          });
+          return NextResponse.json({
+            message: "Cancelamento recebido mas reserva não encontrada",
+            confirmationCode: results.confirmationCode,
+            logId,
+          }, { status: 200 });
+        }
+      } else {
+        // Cancellation without confirmation code — try matching by guest name
+        if (results.guestFullName) {
+          const existing = await prisma.reservation.findFirst({
+            where: {
+              userId,
+              guestFullName: results.guestFullName,
+              status: { not: "cancelled" },
+            },
+            orderBy: { createdAt: "desc" },
+          });
+          if (existing) {
+            await prisma.reservation.update({
+              where: { id: existing.id },
+              data: { status: "cancelled" },
+            });
+            await prisma.inboundEmailLog.update({
+              where: { id: logId },
+              data: { status: "cancellation", reservationId: existing.id },
+            });
+            return NextResponse.json({
+              success: true,
+              action: "cancelled",
+              reservationId: existing.id,
+              matchedBy: "guestName",
+              logId,
+            });
+          }
+        }
+        await prisma.inboundEmailLog.update({
+          where: { id: logId },
+          data: {
+            status: "cancellation_orphan",
+            error: "Cancelamento recebido mas sem código ou hóspede para match",
+          },
+        });
+        return NextResponse.json({
+          message: "Cancelamento recebido mas não foi possível identificar a reserva",
+          logId,
+        }, { status: 200 });
+      }
+    }
+
     if (results.confidence === "low") {
       await prisma.inboundEmailLog.update({
         where: { id: logId },
