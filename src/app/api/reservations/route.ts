@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const reservations = await prisma.reservation.findMany({
       where: { userId },
-      include: { property: { include: { doormanPhones: true } }, guests: true },
+      include: { property: { include: { doormanPhones: true, condominium: { select: { reportMode: true, doormanWhatsapp: true } } } }, guests: true },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(reservations);
