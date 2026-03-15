@@ -229,7 +229,7 @@ export default function HomePage() {
             <a href="#condominios" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Condomínios</a>
             <Link href="/blog" style={{ fontSize: 14, fontWeight: 500, color: B.muted, textDecoration: "none" }}>Blog</Link>
             <Link href="/login" style={{ fontSize: 14, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-            <Link href="/register" className="cta-btn" style={{ padding: "10px 22px", fontSize: 13 }}>Criar conta</Link>
+            <a href="#preco" className="cta-btn" style={{ padding: "10px 22px", fontSize: 13 }}>Criar conta</a>
           </div>
           <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} style={{ display: "none", background: "none", border: "none", fontSize: 22, cursor: "pointer" }}>{mobileMenu ? "✕" : "☰"}</button>
         </div>
@@ -238,7 +238,7 @@ export default function HomePage() {
           <a href="#condominios" onClick={() => setMobileMenu(false)} style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Condomínios</a>
           <Link href="/blog" style={{ fontSize: 16, fontWeight: 500, color: B.dark, textDecoration: "none" }}>Blog</Link>
           <Link href="/login" style={{ fontSize: 16, fontWeight: 600, color: B.primary, textDecoration: "none" }}>Entrar</Link>
-          <Link href="/register" className="cta-btn" style={{ justifyContent: "center" }}>Criar conta</Link>
+          <a href="#preco" onClick={() => setMobileMenu(false)} className="cta-btn" style={{ justifyContent: "center" }}>Criar conta</a>
         </div>}
       </nav>
 
@@ -499,7 +499,13 @@ export default function HomePage() {
           <div className="duo-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <FadeIn delay={0.1}>
               <div style={{ background: "#fff", borderRadius: 24, padding: "36px 28px", border: "2px solid #E5E5E5", height: "100%", boxShadow: "0 8px 40px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Para anfitriões</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "#FFF7ED", border: "1px solid #FDBA74", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏠</div>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.02em" }}>Anfitrião</div>
+                    <div style={{ fontSize: 12, color: B.muted }}>Para quem aluga pelo Airbnb</div>
+                  </div>
+                </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
                   <span style={{ fontSize: 16, fontWeight: 600, color: B.muted }}>R$</span>
                   <span style={{ fontSize: 52, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1 }}>0</span>
@@ -513,13 +519,19 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <Link href="/register" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "14px 24px", fontSize: 15 }}>Criar conta →</Link>
+                <Link href="/register" className="cta-btn" style={{ width: "100%", justifyContent: "center", padding: "14px 24px", fontSize: 15 }}>Criar conta de anfitrião →</Link>
               </div>
             </FadeIn>
             <FadeIn delay={0.2}>
               <div style={{ background: "#fff", borderRadius: 24, padding: "36px 28px", border: `2px solid ${B.primary}`, height: "100%", boxShadow: `0 8px 40px rgba(59,95,229,0.12)`, position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: 20, right: -30, background: B.primary, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 36px", transform: "rotate(45deg)" }}>NOVO</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: B.primary, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Para condomínios</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: B.light, border: `1px solid ${B.muted}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#1A1A1A", letterSpacing: "-0.02em" }}>Condomínio</div>
+                    <div style={{ fontSize: 12, color: B.muted }}>Para síndicos e administradoras</div>
+                  </div>
+                </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
                   <span style={{ fontSize: 16, fontWeight: 600, color: B.muted }}>R$</span>
                   <span style={{ fontSize: 52, fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1 }}>0</span>
