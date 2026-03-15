@@ -8,8 +8,8 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null}|null }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null}; guests:Guest[] }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null}|null }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -250,9 +250,9 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <button onClick={async()=>{if(!confirm(`Adicionar mais 1 hóspede? (atual: ${r.numGuests})`))return;await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({numGuests:r.numGuests+1})});onRefresh()}} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"8px 14px",background:"none",color:B.primary,border:`1px solid ${B.muted}`,borderRadius:8,cursor:"pointer",marginTop:12}}>👤+ Adicionar hóspede</button>
     </div>}
 
-    {hasGuests&&(r.property.whatsappEnabled!==false)&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    {hasGuests&&(!(r.property.condominium?.reportMode==="dashboard"&&r.property.condominiumId))&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Enviar para portaria</div>
-      {r.property.doormanPhones.length===0?<div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#D97706"}}>⚠️ Configure portaria(s) na aba Imóveis</div>
+      {r.property.doormanPhones.length===0&&!(r.property.condominium?.reportMode==="whatsapp")?<div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#D97706"}}>⚠️ Configure portaria(s) na aba Imóveis</div>
       :!waData?<button onClick={fetchWa} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 18px",background:"#25D366",color:"#fff",border:"none",borderRadius:10,cursor:"pointer"}}>Gerar mensagem WhatsApp</button>
       :<div>
         {showWa&&<pre style={{fontFamily:"Outfit",fontSize:12,color:"#374151",whiteSpace:"pre-wrap",lineHeight:1.7,background:"#F0FDF4",border:"1px solid #BBF7D0",padding:14,borderRadius:10,marginBottom:10}}>{waData.message}</pre>}
@@ -268,9 +268,9 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
         </div>
       </div>}
     </div>}
-    {hasGuests&&r.property.whatsappEnabled===false&&r.property.condominiumId&&<div className="fade-up" style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    {hasGuests&&r.property.condominium?.reportMode==="dashboard"&&r.property.condominiumId&&<div className="fade-up" style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:13,color:"#059669",fontWeight:500}}>🏢 Dados enviados pelo painel da portaria</div>
-      <div style={{fontSize:12,color:"#737373",marginTop:4}}>Você desabilitou o envio via WhatsApp. Os dados desta reserva serão acessados diretamente pelo porteiro no painel do condomínio.</div>
+      <div style={{fontSize:12,color:"#737373",marginTop:4}}>O condomínio configurou o recebimento via painel digital. Os dados desta reserva serão acessados diretamente pelo porteiro.</div>
     </div>}
   </div>
 }
@@ -561,7 +561,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
   return<div style={{display:"flex",flexDirection:"column",gap:10}}>
     <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem, portarias e condomínio parceiro.</div>
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s) · {p.doormanPhones.length} portaria(s){p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{!p.whatsappEnabled?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s) · {p.doormanPhones.length} portaria(s){p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>
         {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,marginBottom:4}}>
           {/* ── Condomínio Parceiro (PRIMEIRO BLOCO) ── */}
@@ -583,15 +583,20 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
                     {p.condominium.contactPhone&&<div>📞 {p.condominium.contactPhone}</div>}
                   </div>
                 )}
-                {/* Toggle WhatsApp */}
-                <div style={{borderTop:"1px solid #F0F0F0",paddingTop:10,marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Comunicação via WhatsApp</div>
-                    <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>{p.whatsappEnabled?"Você envia os dados por WhatsApp manualmente":"Dados fluem automaticamente pelo painel da portaria"}</div>
-                  </div>
-                  <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_whatsapp"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.whatsappEnabled?"#25D366":"#D4D4D4",transition:"background 0.2s"}}>
-                    <div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:3,left:p.whatsappEnabled?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/>
-                  </button>
+                {/* Report mode (read-only — defined by condo admin) */}
+                <div style={{borderTop:"1px solid #F0F0F0",paddingTop:10,marginTop:10}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Modo de comunicação</div>
+                  {p.condominium.reportMode==="whatsapp"?(
+                    <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 14px"}}>
+                      <div style={{fontSize:13,fontWeight:500,color:"#059669"}}>📱 WhatsApp — definido pelo condomínio</div>
+                      <div style={{fontSize:11,color:"#737373",marginTop:2}}>Envie os dados via WhatsApp. O número da portaria será preenchido automaticamente.</div>
+                    </div>
+                  ):(
+                    <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 14px"}}>
+                      <div style={{fontSize:13,fontWeight:500,color:B.primary}}>🖥️ Painel da portaria — definido pelo condomínio</div>
+                      <div style={{fontSize:11,color:"#737373",marginTop:2}}>Os dados fluem automaticamente para o painel da portaria.</div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
