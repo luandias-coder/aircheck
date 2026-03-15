@@ -118,8 +118,8 @@ export default function CheckInPage({params}:{params:{token:string}}){
   const canSubmit=!!guestPhone&&guests.length>0&&guests.every((g,i)=>{
     const hasName=!!g.fullName&&!!g.birthDate;
     const hasDoc=!!g.file||(data?.guests[i]?.hasDocument===true);
-    const hasForeignDocs=!g.foreign||(!!g.passport||!!g.rne);
-    return hasName&&hasDoc&&hasForeignDocs;
+    const hasIdDoc=g.foreign?!!g.passport:!!g.cpf;
+    return hasName&&hasDoc&&hasIdDoc;
   });
 
   const[uploadStatus,setUploadStatus]=useState("");
@@ -292,7 +292,7 @@ function GuestCard({index:i,guest:g,total,hasExistingDoc,onChange,onFile}:{index
         <label style={lblStyle}>Passaporte <span style={{color:B.primary}}>*</span></label>
         <input value={g.passport} onChange={e=>onChange(i,"passport",e.target.value)} placeholder="Número do passaporte" enterKeyHint="next" style={iStyle}/>
       </>:<>
-        <label style={lblStyle}>CPF</label>
+        <label style={lblStyle}>CPF <span style={{color:B.primary}}>*</span></label>
         <input value={g.cpf} onChange={e=>onChange(i,"cpf",maskCPF(e.target.value))} placeholder="000.000.000-00" inputMode="numeric" enterKeyHint="next" style={iStyle}/>
       </>}
     </div>
