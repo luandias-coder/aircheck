@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, name: true, address: true, code: true,
         contactName: true, contactEmail: true, contactPhone: true,
+        reportMode: true, doormanWhatsapp: true,
         plan: true, active: true,
         users: {
           select: { id: true, name: true, email: true, role: true, active: true },
@@ -56,18 +57,28 @@ export async function PATCH(req: NextRequest) {
   const auth = await getPortariaAuth(req);
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  // Apenas admin e síndico podem editar
+  // Apenas admin pode editar
   if (auth.role !== "admin") {
     return NextResponse.json({ error: "Apenas administradores podem alterar configurações." }, { status: 403 });
   }
 
   try {
     const body = await req.json();
-    const { name, address, contactName, contactEmail, contactPhone } = body;
+    const { name, address, contactName, contactEmail, contactPhone, reportMode, doormanWhatsapp } = body;
 
     // Validação mínima
     if (name !== undefined && (!name || name.trim().length < 2)) {
       return NextResponse.json({ error: "Nome do condomínio é obrigatório" }, { status: 400 });
+    }
+
+    // Validação reportMode
+    if (reportMode !== undefined && !["dashboard", "whatsapp"].includes(reportMode)) {
+      return NextResponse.json({ error: "Modo de reporte inválido" }, { status: 400 });
+    }
+
+    // Se reportMode = whatsapp, doormanWhatsapp é obrigatório
+    if (reportMode === "whatsapp" && !doormanWhatsapp?.trim()) {
+      return NextResponse.json({ error: "Informe o número de WhatsApp da portaria para usar o modo WhatsApp" }, { status: 400 });
     }
 
     const updateData: Record<string, string | null> = {};
@@ -76,6 +87,8 @@ export async function PATCH(req: NextRequest) {
     if (contactName !== undefined) updateData.contactName = contactName?.trim() || null;
     if (contactEmail !== undefined) updateData.contactEmail = contactEmail?.trim() || null;
     if (contactPhone !== undefined) updateData.contactPhone = contactPhone?.trim() || null;
+    if (reportMode !== undefined) updateData.reportMode = reportMode;
+    if (doormanWhatsapp !== undefined) updateData.doormanWhatsapp = doormanWhatsapp?.trim() || null;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "Nenhum dado para atualizar" }, { status: 400 });
@@ -87,6 +100,7 @@ export async function PATCH(req: NextRequest) {
       select: {
         id: true, name: true, address: true, code: true,
         contactName: true, contactEmail: true, contactPhone: true,
+        reportMode: true, doormanWhatsapp: true,
         plan: true, active: true,
       },
     });
