@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       },
       include: {
         property: { select: { id: true, name: true, unitNumber: true, parkingSpot: true } },
+        user: { select: { name: true, phone: true } },
         guests: {
           select: { id: true, fullName: true, birthDate: true, cpf: true, rg: true, foreign: true, passport: true, rne: true, documentUrl: true },
         },
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
       id: r.id,
       guestName: r.guestFullName,
       guestPhone: r.guestPhone,
-      guestPhotoUrl: r.guestPhotoUrl, // ← NOVO: foto do Airbnb
+      guestPhotoUrl: r.guestPhotoUrl,
       checkInDate: r.checkInDate,
       checkInTime: r.checkInTime,
       checkOutDate: r.checkOutDate,
@@ -96,6 +97,8 @@ export async function GET(req: NextRequest) {
       confirmationCode: r.confirmationCode,
       carPlate: r.carPlate,
       carModel: r.carModel,
+      hostName: r.user.name || "Anfitrião",
+      hostPhone: r.user.phone || null,
       property: r.property,
       guests: r.guests,
     }));
