@@ -15,6 +15,7 @@ const STATUS_LABELS:Record<string,{label:string;color:string}> = {
   form_filled:{label:"Form preenchido",color:C.accent},
   sent_to_doorman:{label:"Enviado portaria",color:C.green},
   archived:{label:"Arquivado",color:C.muted},
+  cancelled:{label:"Cancelado",color:C.red},
 };
 
 const EMAIL_STATUS_LABELS:Record<string,{label:string;color:string}> = {
@@ -23,6 +24,8 @@ const EMAIL_STATUS_LABELS:Record<string,{label:string;color:string}> = {
   error:{label:"Erro",color:C.red},
   ignored:{label:"Ignorado",color:C.yellow},
   duplicate:{label:"Duplicado",color:C.orange},
+  cancellation:{label:"Cancelamento",color:C.red},
+  cancellation_orphan:{label:"Cancel. órfão",color:C.orange},
 };
 
 function formatDate(d:string|null){
@@ -279,7 +282,7 @@ function ReservationsTab({reservations}:{reservations:any[]}){
 
   return<div style={{display:"flex",flexDirection:"column",gap:16}}>
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-      {[{id:"all",label:"Todas"},{id:"pending_form",label:"Aguardando"},{id:"form_filled",label:"Preenchido"},{id:"sent_to_doorman",label:"Portaria"},{id:"archived",label:"Arquivo"}].map(f=>
+      {[{id:"all",label:"Todas"},{id:"pending_form",label:"Aguardando"},{id:"form_filled",label:"Preenchido"},{id:"sent_to_doorman",label:"Portaria"},{id:"cancelled",label:"Cancelada"},{id:"archived",label:"Arquivo"}].map(f=>
         <button key={f.id} onClick={()=>setFilter(f.id)} style={{
           fontFamily:"Outfit",fontSize:12,fontWeight:filter===f.id?600:400,padding:"6px 14px",
           background:filter===f.id?"rgba(59,130,246,0.15)":"rgba(255,255,255,0.04)",
