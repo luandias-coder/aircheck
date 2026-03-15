@@ -40,17 +40,19 @@ model UserInboundEmail {
 // ─── CONDOMINIUM MODULE ───
 
 model Condominium {
-  id           String   @id @default(cuid())
-  name         String
-  address      String?
-  code         String   @unique   // 6-char code (ex: AK3F7B)
-  contactName  String?
-  contactEmail String?
-  contactPhone String?
-  plan         String   @default("pilot") // pilot, basic, pro
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  code            String   @unique   // 6-char code (ex: AK3F7B)
+  contactName     String?
+  contactEmail    String?
+  contactPhone    String?
+  reportMode      String   @default("dashboard") // "dashboard" | "whatsapp"
+  doormanWhatsapp String?  // número WhatsApp informado pelo admin (usado quando reportMode = "whatsapp")
+  plan            String   @default("pilot") // pilot, basic, pro
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   users       CondominiumUser[]
   properties  Property[]
@@ -87,7 +89,7 @@ model Property {
   parkingSpot     String?
   includeDocLinks Boolean  @default(false)
   condominiumId   String?
-  whatsappEnabled Boolean  @default(true) // se false + condomínio parceiro, dados fluem pelo painel
+  whatsappEnabled Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
