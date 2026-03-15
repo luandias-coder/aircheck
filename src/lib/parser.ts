@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-// AirCheck Parser v5.3
+// AirCheck Parser v5.4
 // - Fixes corrupted encoding (João, Estação, Fabrício, etc)
 // - Extracts Airbnb room ID, thread ID/URL, guest photo
 // - English email support (guests, dates, confirmation, property)
+// - Cancellation email detection
 // ═══════════════════════════════════════════════════════════════
 
 const MONTH_MAP: Record<string, number> = {
@@ -75,6 +76,7 @@ function cleanEncoding(text: string): string {
 }
 
 export interface ParsedReservation {
+  isCancellation?: boolean;
   guestFullName?: string;
   propertyName?: string;
   checkInDate?: string;
@@ -100,6 +102,19 @@ export interface ParseResult {
 export function parseAirbnbEmail(rawText: string): ParseResult {
   const r: Record<string, any> = {};
   const errors: string[] = [];
+
+  // ── Cancellation detection ─────────────────────────────────
+  const cancelPatterns = [
+    /reserva\s+cancelada/i,
+    /reservation\s+cancell?ed/i,
+    /seu\s+h[oó]spede\s+cancelou/i,
+    /your\s+guest\s+cancell?ed/i,
+    /a\s+reserva\s+de\s+.+?\s+foi\s+cancelada/i,
+    /the\s+reservation\s+.+?\s+has\s+been\s+cancell?ed/i,
+    /cancelamento\s+(?:de\s+)?reserva/i,
+    /cancellation\s+(?:of\s+)?reservation/i,
+  ];
+  r.isCancellation = cancelPatterns.some(pat => pat.test(rawText));
 
   // ── Email year from forwarded header ────────────────────────
   let emailYear = new Date().getFullYear();
@@ -148,6 +163,22 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   if (!r.guestFullName) {
     const fromNewEN = rawText.match(/New reservation confirmed[!.]?\s+(\w[\w\s]*?)\s+arrives/i);
     if (fromNewEN) r.guestFullName = fromNewEN[1].trim();
+  }
+  // Cancellation-specific guest name patterns
+  if (!r.guestFullName && r.isCancellation) {
+    // PT: "A reserva de NAME foi cancelada" / "NAME cancelou a reserva"
+    const cancelNamePT = rawText.match(/(?:reserva\s+de\s+|cancelou[\s\S]{0,5}reserva[\s\S]{0,20}?por\s+)([A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F][\wà-ÿ\u00E0-\u024F]+)+)/i);
+    if (cancelNamePT) r.guestFullName = cancelNamePT[1].trim();
+    // EN: "NAME's reservation has been cancelled" / "NAME cancelled their reservation"
+    if (!r.guestFullName) {
+      const cancelNameEN = rawText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:'s\s+reservation|\s+cancell?ed)/i);
+      if (cancelNameEN) r.guestFullName = cancelNameEN[1].trim();
+    }
+    // PT: "Reserva cancelada — NAME"
+    if (!r.guestFullName) {
+      const cancelDash = rawText.match(/[Rr]eserva\s+cancelada\s*[-–—]\s*(.+?)(?:\s*\n|\s+em\b)/i);
+      if (cancelDash) r.guestFullName = cancelDash[1].trim();
+    }
   }
   if (!r.guestFullName) {
     const fromId = rawText.match(/\n\s*([A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+(?:\s+[A-ZÀ-Ú\u00C0-\u024F\uFFFD][a-zà-ÿ\u00E0-\u024F\uFFFD]+)+)\s*\n[^\n]*?Identifica/m);
@@ -335,12 +366,19 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
 
   // ── Confidence ─────────────────────────────────────────────
   const has = (k: string) => !!r[k];
-  r.confidence =
-    has("guestFullName") && has("propertyName") && has("checkInDate") && has("checkOutDate") && has("confirmationCode")
-      ? "high"
-      : has("guestFullName") && has("checkInDate")
-        ? "medium"
-        : "low";
+  if (r.isCancellation) {
+    // Cancellation only needs confirmation code to match
+    r.confidence = has("confirmationCode") ? "high"
+      : has("guestFullName") ? "medium"
+      : "low";
+  } else {
+    r.confidence =
+      has("guestFullName") && has("propertyName") && has("checkInDate") && has("checkOutDate") && has("confirmationCode")
+        ? "high"
+        : has("guestFullName") && has("checkInDate")
+          ? "medium"
+          : "low";
+  }
 
   delete r._ciMonth; delete r._ciYear;
   return { results: r as ParsedReservation, errors };
