@@ -5,6 +5,7 @@ import { getCurrentUserId } from "@/lib/auth";
 // Shared select for condominium data in response
 const CONDO_SELECT = {
   id: true, name: true, code: true, address: true, contactName: true, contactPhone: true,
+  reportMode: true, doormanWhatsapp: true,
 } as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -64,17 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } else if (action === "unlink_condominium") {
       await prisma.property.update({
         where: { id: params.id },
-        data: { condominiumId: null, whatsappEnabled: true }, // reset WhatsApp ao desvincular
-      });
-
-    // ── Toggle WhatsApp ──
-    } else if (action === "toggle_whatsapp") {
-      if (!prop.condominiumId) {
-        return NextResponse.json({ error: "Imóvel não está vinculado a um condomínio parceiro" }, { status: 400 });
-      }
-      await prisma.property.update({
-        where: { id: params.id },
-        data: { whatsappEnabled: !prop.whatsappEnabled },
+        data: { condominiumId: null },
       });
 
     } else {
