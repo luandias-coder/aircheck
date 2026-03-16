@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     const blob = await put(filename, file, {
       access: "public",
       addRandomSuffix: true,
+      token: process.env.BLOB_PUBLIC_READ_WRITE_TOKEN,
     });
 
     // Update condominium with photo URL
