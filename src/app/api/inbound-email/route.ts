@@ -83,6 +83,52 @@ export async function POST(req: NextRequest) {
     });
     logId = log.id;
 
+    // ── Gmail Forwarding Confirmation ────────────────────────
+    // Intercept emails from forwarding-noreply@google.com
+    // Extract confirmation code + host email, save for onboarding polling
+    if (fromEmail === "forwarding-noreply@google.com") {
+      const emailContent = textBody || htmlBody || "";
+      
+      // Extract confirmation code (numeric, typically 9 digits)
+      const codeMatch = emailContent.match(/(?:Confirmation code|Código de confirmação|código de verificação)[:\s]+(\d{5,12})/i)
+        || emailContent.match(/(\d{7,12})/); // fallback: grab first long number
+      const code = codeMatch ? codeMatch[1] : null;
+
+      // Extract host email from subject or body
+      // Subject: "Gmail Forwarding Confirmation - Receive Mail from user@example.com"
+      // Body: "user@example.com has requested to automatically forward mail..."
+      let hostEmail: string | null = null;
+      const subjectEmailMatch = subject.match(/from\s+([^\s<>]+@[^\s<>]+)/i);
+      if (subjectEmailMatch) hostEmail = subjectEmailMatch[1].toLowerCase().trim();
+      if (!hostEmail) {
+        const bodyEmailMatch = emailContent.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\s+(?:has requested|solicitou)/i);
+        if (bodyEmailMatch) hostEmail = bodyEmailMatch[1].toLowerCase().trim();
+      }
+      // Fallback: find any email that isn't aircheck/google
+      if (!hostEmail) {
+        const allEmails = emailContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+        hostEmail = allEmails.find(e => !e.includes("aircheck") && !e.includes("airchk") && !e.includes("google")) || null;
+      }
+
+      await prisma.inboundEmailLog.update({
+        where: { id: logId },
+        data: {
+          status: "gmail_verification",
+          parsedData: JSON.stringify({ code, hostEmail }, null, 2),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        action: "gmail_verification",
+        code,
+        hostEmail,
+        logId,
+      });
+    }
+
+    // ── Normal email processing ──────────────────────────────
+
     // Use text body for parsing, fall back to html
     const emailContent = textBody || htmlBody || "";
 
