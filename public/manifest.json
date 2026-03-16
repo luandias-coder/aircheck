@@ -2,7 +2,7 @@
   "name": "AirCheck — Check-in automatizado para Airbnb",
   "short_name": "AirCheck",
   "description": "Automatize o check-in de hóspedes do Airbnb na portaria do seu condomínio.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FAFAF9",
