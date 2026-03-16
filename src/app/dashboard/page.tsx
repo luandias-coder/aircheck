@@ -8,7 +8,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null}|null }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
@@ -571,8 +571,17 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
               <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"12px 14px"}}>
                 <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
                   <div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#1A1A1A"}}>{p.condominium.name}</div>
-                    <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Código: {p.condominium.code}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      {p.condominium.photoUrl ? (
+                        <img src={p.condominium.photoUrl} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}} />
+                      ) : (
+                        <div style={{width:44,height:44,borderRadius:10,background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:B.muted,flexShrink:0}}>🏢</div>
+                      )}
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700,color:"#1A1A1A"}}>{p.condominium.name}</div>
+                        <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Código: {p.condominium.code}</div>
+                      </div>
+                    </div>
                   </div>
                   <button onClick={()=>unlinkCondo(p.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Desvincular</button>
                 </div>
@@ -649,7 +658,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
           {p.doormanPhones.length===0&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nenhuma portaria configurada</div>}
         </> : (
           <div style={{fontSize:12,color:"#737373",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
-            📞 Portaria gerenciada pelo condomínio <strong style={{color:"#1A1A1A"}}>{p.condominium.name}</strong>.
+            {p.condominium.photoUrl && <img src={p.condominium.photoUrl} alt="" style={{width:24,height:24,borderRadius:6,objectFit:"cover",verticalAlign:"middle",marginRight:6}} />}📞 Portaria gerenciada pelo condomínio <strong style={{color:"#1A1A1A"}}>{p.condominium.name}</strong>.
             {p.condominium.reportMode==="whatsapp"&&p.condominium.doormanWhatsapp&&<span> WhatsApp: <strong style={{color:"#1A1A1A"}}>{p.condominium.doormanWhatsapp}</strong></span>}
           </div>
         )}
