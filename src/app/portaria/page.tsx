@@ -10,7 +10,7 @@ interface PropertyInfo { id:string; name:string; unitNumber:string|null; parking
 interface Stats { today:number; upcoming:number; pending:number; totalProperties:number }
 interface CondoUser { id:string; name:string; email:string; role:string }
 interface Condo { id:string; name:string; code:string; address:string|null }
-interface CondoSettings { id:string; name:string; address:string|null; code:string; contactName:string|null; contactEmail:string|null; contactPhone:string|null; reportMode:string; doormanWhatsapp:string|null; plan:string; active:boolean; users:Array<{id:string;name:string;email:string;role:string;active:boolean}>; totalProperties:number }
+interface CondoSettings { id:string; name:string; address:string|null; code:string; contactName:string|null; contactEmail:string|null; contactPhone:string|null; reportMode:string; doormanWhatsapp:string|null; photoUrl:string|null; plan:string; active:boolean; users:Array<{id:string;name:string;email:string;role:string;active:boolean}>; totalProperties:number }
 
 // ─── PORTARIA STATUS (simplified: 2 states) ─────────────────────
 function portariaStatus(status:string):{l:string;c:string;bg:string;icon:string}{
@@ -353,6 +353,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
   const [contactPhone, setContactPhone] = useState("");
   const [reportMode, setReportMode] = useState("dashboard");
   const [doormanWhatsapp, setDoormanWhatsapp] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const canEdit = user?.role === "admin";
 
@@ -470,6 +471,27 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
     finally { setSaving(false); }
   };
 
+  const uploadPhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) { alert("Apenas imagens são aceitas"); return; }
+    if (file.size > 2 * 1024 * 1024) { alert("Imagem muito grande. Máximo 2MB."); return; }
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/portaria/settings/photo", { method: "POST", body: fd });
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro no upload"); return; }
+      const { url } = await res.json();
+      setSettings(s => s ? { ...s, photoUrl: url } : s);
+    } catch { alert("Erro de conexão"); }
+    finally { setUploadingPhoto(false); }
+  };
+
+  const removePhoto = async () => {
+    if (!confirm("Remover a foto do condomínio?")) return;
+    await fetch("/api/portaria/settings/photo", { method: "DELETE" });
+    setSettings(s => s ? { ...s, photoUrl: null } : s);
+  };
+
   if (loading) return <div style={{ textAlign: "center", padding: 40, color: "#A3A3A3" }}>Carregando...</div>;
   if (!settings) return <div style={{ textAlign: "center", padding: 40, color: "#DC2626" }}>Erro ao carregar configurações.</div>;
 
@@ -490,6 +512,29 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
 
         {!editing ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Condominium photo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 4, paddingBottom: 16, borderBottom: "1px solid #F0F0F0" }}>
+              {settings.photoUrl ? (
+                <img src={settings.photoUrl} alt="" style={{ width: 72, height: 72, borderRadius: 14, objectFit: "cover", border: "2px solid #E5E5E5" }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 14, background: B.light, border: `2px dashed ${B.muted}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: B.muted }}>🏢</div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{settings.photoUrl ? "Foto do condomínio" : "Adicionar foto"}</div>
+                <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 2 }}>Logo, fachada ou imagem de identificação</div>
+                {canEdit && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <label style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, padding: "5px 12px", background: B.primary, color: "#fff", borderRadius: 6, cursor: uploadingPhoto ? "wait" : "pointer", opacity: uploadingPhoto ? 0.5 : 1 }}>
+                      {uploadingPhoto ? "Enviando..." : settings.photoUrl ? "Trocar" : "Upload"}
+                      <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }} disabled={uploadingPhoto} />
+                    </label>
+                    {settings.photoUrl && (
+                      <button onClick={removePhoto} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 500, padding: "5px 12px", background: "none", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer" }}>Remover</button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             <div>
               <div style={labelStyle}>Nome do condomínio</div>
               <div style={readStyle}>{settings.name}</div>
@@ -532,6 +577,27 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Condominium photo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 4, paddingBottom: 16, borderBottom: "1px solid #F0F0F0" }}>
+              {settings.photoUrl ? (
+                <img src={settings.photoUrl} alt="" style={{ width: 72, height: 72, borderRadius: 14, objectFit: "cover", border: "2px solid #E5E5E5" }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 14, background: B.light, border: `2px dashed ${B.muted}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: B.muted }}>🏢</div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{settings.photoUrl ? "Foto do condomínio" : "Adicionar foto"}</div>
+                <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 2 }}>Logo, fachada ou imagem de identificação</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <label style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, padding: "5px 12px", background: B.primary, color: "#fff", borderRadius: 6, cursor: uploadingPhoto ? "wait" : "pointer", opacity: uploadingPhoto ? 0.5 : 1 }}>
+                    {uploadingPhoto ? "Enviando..." : settings.photoUrl ? "Trocar" : "Upload"}
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }} disabled={uploadingPhoto} />
+                  </label>
+                  {settings.photoUrl && (
+                    <button onClick={removePhoto} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 500, padding: "5px 12px", background: "none", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer" }}>Remover</button>
+                  )}
+                </div>
+              </div>
+            </div>
             <div>
               <label style={labelStyle}>Nome do condomínio *</label>
               <input value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
