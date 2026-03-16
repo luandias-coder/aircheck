@@ -23,3 +23,15 @@ input:focus, select:focus, textarea:focus {
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-up { animation: fadeUp 0.4s ease-out both; }
+
+/* PWA: prevent horizontal overflow */
+html, body {
+  overflow-x: hidden;
+}
+
+/* PWA: extra bottom padding when tab bar is visible */
+@media (display-mode: standalone) {
+  .dashboard-content {
+    padding-bottom: 100px !important;
+  }
+}
