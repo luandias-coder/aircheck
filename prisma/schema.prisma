@@ -49,6 +49,7 @@ model Condominium {
   contactPhone    String?
   reportMode      String   @default("dashboard") // "dashboard" | "whatsapp"
   doormanWhatsapp String?  // número WhatsApp informado pelo admin (usado quando reportMode = "whatsapp")
+  photoUrl        String?  // logo, fachada ou imagem de identificação do condomínio
   plan            String   @default("pilot") // pilot, basic, pro
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
