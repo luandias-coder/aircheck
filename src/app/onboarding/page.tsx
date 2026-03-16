@@ -37,6 +37,7 @@ type EmailProvider = {
   deeplink: string | null;
   steps: { text: string; highlight?: boolean }[];
   note?: string;
+  autoConfirmAfterStep?: number; // 0-indexed: show Gmail auto-confirm widget after this step
 };
 
 function getEmailProvider(email: string): EmailProvider {
@@ -46,17 +47,16 @@ function getEmailProvider(email: string): EmailProvider {
     return {
       id: "gmail", name: "Gmail", icon: "📧", color: "#EA4335",
       deeplink: "https://mail.google.com/mail/u/0/#settings/fwdandpop",
+      autoConfirmAfterStep: 2, // Show auto-confirm widget after step 3 (0-indexed)
       steps: [
         { text: 'No computador, abra o Gmail e clique na ⚙️ engrenagem → "Ver todas as configurações"' },
         { text: 'Vá na aba "Encaminhamento e POP/IMAP"' },
-        { text: 'Clique em "Adicionar um endereço de encaminhamento" e digite: reservas@aircheck.com.br — o Gmail vai enviar um email de confirmação' },
-        { text: 'Abra o email de confirmação do Gmail e clique no link para confirmar. Depois, volte para as configurações do Gmail' },
+        { text: 'Clique em "Adicionar um endereço de encaminhamento" e digite: reservas@aircheck.com.br — confirmaremos automaticamente em alguns segundos' },
         { text: 'Agora vamos criar o filtro: volte para a caixa de entrada, clique na barra de pesquisa e depois em "Mostrar opções de pesquisa" (ícone de filtro)' },
         { text: 'No campo "De", digite: automated@airbnb.com — clique em "Criar filtro"' },
         { text: 'Marque "Encaminhar para reservas@aircheck.com.br" e marque também "Aplicar filtro às conversas correspondentes". Clique em "Criar filtro"' },
         { text: "Pronto! Toda reserva nova (e cancelamento) chega automaticamente no AirCheck.", highlight: true },
       ],
-      note: 'O passo 3 é fundamental: sem adicionar o endereço de encaminhamento antes, o Gmail não oferece a opção "Encaminhar para" no filtro.',
     };
   }
 
@@ -119,6 +119,9 @@ export default function OnboardingPage(){
   const[reservation,setReservation]=useState<Reservation|null>(null);
   const pollRef=useRef<NodeJS.Timeout|null>(null);
   const[showAutoGuide,setShowAutoGuide]=useState(true);
+  const[gmailConfirmed,setGmailConfirmed]=useState(false);
+  const[gmailPolling,setGmailPolling]=useState(false);
+  const gmailPollRef=useRef<NodeJS.Timeout|null>(null);
 
   // Step 4
   const[unitNumber,setUnitNumber]=useState("");
@@ -151,6 +154,28 @@ export default function OnboardingPage(){
     }).catch(()=>router.push("/login"));
     return()=>{if(pollRef.current)clearInterval(pollRef.current)};
   },[router]);
+
+  // ── Gmail forwarding auto-confirmation polling ──
+  useEffect(()=>{
+    const email=airbnbEmail||user?.inboundEmails?.[0]?.email||"";
+    const domain=email.split("@")[1]?.toLowerCase()||"";
+    const isGmail=domain==="gmail.com"||domain==="googlemail.com";
+    if(!isGmail||step!==2||gmailConfirmed){
+      if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
+      setGmailPolling(false);
+      return;
+    }
+    setGmailPolling(true);
+    const check=async()=>{
+      try{
+        const res=await fetch("/api/gmail-verification");
+        if(res.ok){const data=await res.json();if(data.found){setGmailConfirmed(true);setGmailPolling(false);if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}}}
+      }catch{}
+    };
+    check();
+    gmailPollRef.current=setInterval(check,4000);
+    return()=>{if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}};
+  },[step,airbnbEmail,user,gmailConfirmed]);
 
   // ── Step 1: Save email ──
   const saveEmail=async()=>{
@@ -310,18 +335,45 @@ export default function OnboardingPage(){
 
               <div style={{display:"flex",flexDirection:"column",gap:0}}>
                 {provider.steps.map((s,i)=>(
-                  <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 0",borderBottom:i<provider.steps.length-1?"1px solid #F0F0F0":"none"}}>
-                    <div style={{minWidth:24,height:24,borderRadius:"50%",background:s.highlight?B.accent:B.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>
-                      {s.highlight?"✓":i+1}
+                  <div key={i}>
+                    <div style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 0",borderBottom:(i<provider.steps.length-1&&provider.autoConfirmAfterStep!==i)?"1px solid #F0F0F0":"none"}}>
+                      <div style={{minWidth:24,height:24,borderRadius:"50%",background:s.highlight?B.accent:B.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>
+                        {s.highlight?"✓":i+1}
+                      </div>
+                      <span style={{fontSize:13,color:s.highlight?"#059669":"#525252",fontWeight:s.highlight?600:400,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:(()=>{
+                        let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
+                        html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">reservas@aircheck.com.br</code>`);
+                        html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">automated@airbnb.com</code>`);
+                        return html;
+                      })()}}/>
                     </div>
-                    <span style={{fontSize:13,color:s.highlight?"#059669":"#525252",fontWeight:s.highlight?600:400,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:(()=>{
-                      // 1) Bold quoted text first (on clean text, before injecting HTML)
-                      let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
-                      // 2) Then style email addresses (injected HTML won't be caught by quotes regex)
-                      html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">reservas@aircheck.com.br</code>`);
-                      html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">automated@airbnb.com</code>`);
-                      return html;
-                    })()}}/>
+
+                    {/* Gmail auto-confirm widget — inserted after designated step */}
+                    {provider.autoConfirmAfterStep===i&&(
+                      <div style={{margin:"4px 0 8px",borderBottom:"1px solid #F0F0F0",paddingBottom:12}}>
+                        {gmailConfirmed?(
+                          <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:10}}>
+                            <span style={{fontSize:22}}>✅</span>
+                            <div>
+                              <div style={{fontSize:14,fontWeight:700,color:"#059669"}}>Encaminhamento confirmado!</div>
+                              <div style={{fontSize:12,color:"#737373",marginTop:2}}>Confirmamos automaticamente. Agora siga para o passo {i+2} para criar o filtro.</div>
+                            </div>
+                          </div>
+                        ):gmailPolling?(
+                          <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+                            <div style={{width:14,height:14,borderRadius:"50%",border:"2.5px solid #D97706",borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/>
+                            <div>
+                              <div style={{fontSize:12,fontWeight:600,color:"#D97706"}}>Aguardando confirmação do Gmail...</div>
+                              <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Adicione o endereço no Gmail. Confirmamos automaticamente em segundos.</div>
+                            </div>
+                          </div>
+                        ):(
+                          <div style={{background:"#F5F5F4",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#737373",lineHeight:1.5}}>
+                            O Gmail vai enviar um email de confirmação. Não se preocupe — nós confirmamos automaticamente pra você.
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
