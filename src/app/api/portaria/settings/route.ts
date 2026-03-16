@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, name: true, address: true, code: true,
         contactName: true, contactEmail: true, contactPhone: true,
-        reportMode: true, doormanWhatsapp: true,
+        reportMode: true, doormanWhatsapp: true, photoUrl: true,
         plan: true, active: true,
         users: {
           select: { id: true, name: true, email: true, role: true, active: true },
@@ -100,7 +100,7 @@ export async function PATCH(req: NextRequest) {
       select: {
         id: true, name: true, address: true, code: true,
         contactName: true, contactEmail: true, contactPhone: true,
-        reportMode: true, doormanWhatsapp: true,
+        reportMode: true, doormanWhatsapp: true, photoUrl: true,
         plan: true, active: true,
       },
     });
