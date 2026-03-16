@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import BottomTabBar from "@/components/BottomTabBar";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)", accent:"#059669", dark:"#0F0F0F" };
@@ -105,7 +104,7 @@ export default function Dashboard(){
         </div>
       </div>
 
-      <div className="dashboard-content" style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
+      <div style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
         {loading&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando...</div>}
 
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
@@ -136,8 +135,6 @@ export default function Dashboard(){
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
-
-      <BottomTabBar tab={tab} onTabChange={(t) => { setTab(t); setView("list"); }} />
     </div>
   );
 }
@@ -564,7 +561,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
   return<div style={{display:"flex",flexDirection:"column",gap:10}}>
     <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem, portarias e condomínio parceiro.</div>
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{!p.condominium&&p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>
         {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,marginBottom:4}}>
           {/* ── Condomínio Parceiro (PRIMEIRO BLOCO) ── */}
@@ -638,10 +635,11 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
           </div>
           <button onClick={()=>saveDetails(p.id)} disabled={savingDetails} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:savingDetails?0.5:1}}>{savingDetails?"Salvando...":"Salvar dados"}</button>
 
-          <div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          {/* Doc links toggle: only in standalone mode */}
+          {!p.condominium&&<div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Incluir documento na mensagem</div><div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Envia link da foto do documento de cada hóspede junto com a mensagem do WhatsApp</div></div>
             <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_doc_links"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.includeDocLinks?"#3B5FE5":"#D4D4D4",transition:"background 0.2s"}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:p.includeDocLinks?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/></button>
-          </div>
+          </div>}
         </div>}
         {/* Doorman phones: only show in standalone mode (no condominium) */}
         {!p.condominium ? <>
@@ -660,9 +658,21 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
           </div>}
           {p.doormanPhones.length===0&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nenhuma portaria configurada</div>}
         </> : (
-          <div style={{fontSize:12,color:"#737373",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
-            {p.condominium.photoUrl && <img src={p.condominium.photoUrl} alt="" style={{width:24,height:24,borderRadius:6,objectFit:"cover",verticalAlign:"middle",marginRight:6}} />}📞 Portaria gerenciada pelo condomínio <strong style={{color:"#1A1A1A"}}>{p.condominium.name}</strong>.
-            {p.condominium.reportMode==="whatsapp"&&p.condominium.doormanWhatsapp&&<span> WhatsApp: <strong style={{color:"#1A1A1A"}}>{p.condominium.doormanWhatsapp}</strong></span>}
+          <div style={{background:"#FAFAF9",borderRadius:10,padding:"14px 16px",border:"1px solid #F0F0F0",display:"flex",alignItems:"center",gap:12}}>
+            {p.condominium.photoUrl ? (
+              <img src={p.condominium.photoUrl} alt="" style={{width:40,height:40,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}} />
+            ) : (
+              <div style={{width:40,height:40,borderRadius:10,background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:B.muted,flexShrink:0}}>🏢</div>
+            )}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{p.condominium.name}</div>
+              <div style={{fontSize:11,color:"#737373",marginTop:2}}>
+                {p.condominium.reportMode==="whatsapp"
+                  ? <>📱 WhatsApp: <strong>{p.condominium.doormanWhatsapp}</strong></>
+                  : <>🖥️ Dados via painel da portaria</>
+                }
+              </div>
+            </div>
           </div>
         )}
         {!p.unitNumber&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nº da Unidade não configurado — clique em Editar</div>}
