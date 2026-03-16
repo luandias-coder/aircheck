@@ -31,6 +31,35 @@ function BackBtn({onClick}:{onClick:()=>void}){return(
 // ─── EMAIL FORWARDING GUIDE COMPONENT ───────────────────────────
 function EmailForwardingGuide(){
   const[provider,setProvider]=useState<"gmail"|"outlook"|"yahoo"|null>(null);
+  const[gmailCode,setGmailCode]=useState<string|null>(null);
+  const[gmailPolling,setGmailPolling]=useState(false);
+  const[gmailCopied,setGmailCopied]=useState(false);
+  const gmailPollRef=useRef<NodeJS.Timeout|null>(null);
+
+  // Poll for Gmail verification code
+  useEffect(()=>{
+    if(provider!=="gmail"||gmailCode){
+      if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
+      return;
+    }
+    setGmailPolling(true);
+    const check=async()=>{
+      try{
+        const res=await fetch("/api/gmail-verification");
+        if(res.ok){
+          const data=await res.json();
+          if(data.found&&data.code){
+            setGmailCode(data.code);
+            setGmailPolling(false);
+            if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
+          }
+        }
+      }catch{}
+    };
+    check();
+    gmailPollRef.current=setInterval(check,4000);
+    return()=>{if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}};
+  },[provider,gmailCode]);
 
   const providers = [
     { id:"gmail" as const, name:"Gmail", icon:"📧", color:"#EA4335", bg:"#FEE2E2" },
@@ -47,7 +76,7 @@ function EmailForwardingGuide(){
   return(
     <div style={{borderTop:"1px solid #F0F0F0",paddingTop:20,marginTop:4}}>
       <div style={{fontSize:13,fontWeight:700,color:"#1A1A1A",marginBottom:4}}>🔄 Configure o encaminhamento automático</div>
-      <div style={{fontSize:12,color:"#A3A3A3",marginBottom:14,lineHeight:1.5}}>Assim todas as reservas futuras entram no AirCheck sem você precisar encaminhar manualmente. Escolha seu provedor:</div>
+      <div style={{fontSize:12,color:"#A3A3A3",marginBottom:14,lineHeight:1.5}}>Assim todas as reservas futuras (confirmações e cancelamentos) entram no AirCheck sem você precisar encaminhar manualmente. Escolha seu provedor:</div>
 
       {/* Provider selector */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -80,7 +109,30 @@ function EmailForwardingGuide(){
             </div>
             <div style={stepStyle}>
               <div style={numStyle}>3</div>
-              <div style={textStyle}>Clique em <strong style={{color:"#1A1A1A"}}>"Adicionar um endereço de encaminhamento"</strong> e digite:<br/><span style={codeStyle}>reservas@aircheck.com.br</span><br/><span style={{fontSize:11,color:"#A3A3A3"}}>O Gmail vai enviar um email de confirmação. Peça pra gente verificar se chegou.</span></div>
+              <div style={{...textStyle,flex:1}}>
+                <div>Clique em <strong style={{color:"#1A1A1A"}}>"Adicionar um endereço de encaminhamento"</strong> e digite:<br/><span style={codeStyle}>reservas@aircheck.com.br</span></div>
+                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>O Gmail vai pedir um código de confirmação. É uma verificação de segurança do Google.</div>
+                
+                {/* Auto-detected code widget */}
+                {gmailCode?(
+                  <div style={{marginTop:10,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px"}}>
+                    <div style={{fontSize:12,fontWeight:600,color:"#059669",marginBottom:6}}>✅ Código recebido automaticamente!</div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:22,fontWeight:700,color:"#059669",letterSpacing:"0.12em"}}>{gmailCode}</div>
+                      <button onClick={()=>{navigator.clipboard.writeText(gmailCode);setGmailCopied(true);setTimeout(()=>setGmailCopied(false),2000)}} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"5px 12px",background:gmailCopied?"#059669":"#fff",color:gmailCopied?"#fff":"#059669",border:`1px solid ${gmailCopied?"#059669":"#BBF7D0"}`,borderRadius:6,cursor:"pointer"}}>{gmailCopied?"Copiado!":"Copiar"}</button>
+                    </div>
+                    <div style={{fontSize:11,color:"#737373",marginTop:6}}>Cole este código no Gmail para confirmar o encaminhamento.</div>
+                  </div>
+                ):gmailPolling?(
+                  <div style={{marginTop:10,background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:14,height:14,borderRadius:"50%",border:"2.5px solid #D97706",borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:"#D97706"}}>Aguardando código de confirmação...</div>
+                      <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Adicione o endereço no Gmail. O código aparecerá aqui automaticamente.</div>
+                    </div>
+                  </div>
+                ):null}
+              </div>
             </div>
             <div style={stepStyle}>
               <div style={numStyle}>4</div>
@@ -174,6 +226,12 @@ function EmailForwardingGuide(){
         </div>
       )}
 
+      {provider&&(
+        <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#2563EB",lineHeight:1.5}}>
+          💡 <strong>Confirmações e cancelamentos</strong> do Airbnb vêm do mesmo remetente (<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11}}>automated@airbnb.com</span>). Com essa regra, ambos serão processados automaticamente — reservas canceladas atualizam o status no AirCheck.
+        </div>
+      )}
+
       {!provider&&(
         <div style={{textAlign:"center",padding:"12px 0",fontSize:12,color:"#A3A3A3"}}>
           Selecione seu provedor acima para ver o tutorial passo a passo.
@@ -205,6 +263,10 @@ export default function OnboardingPage(){
   const[doormanPhone,setDoormanPhone]=useState("");
   const[doormanName,setDoormanName]=useState("");
   const[propSaving,setPropSaving]=useState(false);
+  const[condoCode,setCondoCode]=useState("");
+  const[condoLinked,setCondoLinked]=useState(false);
+  const[condoError,setCondoError]=useState("");
+  const[condoSaving,setCondoSaving]=useState(false);
 
   // Step 5
   const[copied,setCopied]=useState(false);
@@ -256,13 +318,21 @@ export default function OnboardingPage(){
   };
 
   // ── Step 4: Save property details ──
+  const linkCondo=async()=>{
+    if(!reservation||!condoCode.trim())return;
+    setCondoSaving(true);setCondoError("");
+    const res=await fetch(`/api/properties/${reservation.property.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"link_condominium",code:condoCode.trim()})});
+    if(!res.ok){const d=await res.json();setCondoError(d.error||"Código inválido");setCondoSaving(false);return}
+    setCondoLinked(true);setCondoSaving(false);setCondoError("");
+  };
+
   const saveProperty=async()=>{
     if(!reservation)return;
     if(!unitNumber.trim()){alert("Preencha o número da unidade");return}
-    if(!doormanPhone){alert("Preencha o WhatsApp da portaria");return}
+    if(!condoLinked&&!doormanPhone){alert("Preencha o WhatsApp da portaria ou vincule ao condomínio");return}
     setPropSaving(true);
     await fetch(`/api/properties/${reservation.property.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update_details",unitNumber:unitNumber.trim(),parkingSpot:parkingSpot.trim()})});
-    if(reservation.property.doormanPhones.length===0){
+    if(!condoLinked&&reservation.property.doormanPhones.length===0&&doormanPhone){
       await fetch(`/api/properties/${reservation.property.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add_phone",phone:doormanPhone,name:doormanName||"Portaria",label:""})});
     }
     const rr=await fetch("/api/reservations");
@@ -339,7 +409,7 @@ export default function OnboardingPage(){
           <BackBtn onClick={()=>setStep(1)}/>
           <StepBadge n={2}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Encaminhe uma reserva</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Abra seu email e encaminhe um email de <strong style={{color:"#1A1A1A"}}>"Reserva confirmada"</strong> do Airbnb para o endereço abaixo. Se possível, escolha uma reserva futura.</p>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Abra seu email e encaminhe um email de <strong style={{color:"#1A1A1A"}}>"Reserva confirmada"</strong> do Airbnb para o endereço abaixo. Se possível, escolha uma reserva futura. O AirCheck também processa emails de <strong style={{color:"#1A1A1A"}}>cancelamento</strong> automaticamente.</p>
 
           <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px 20px",marginBottom:20,textAlign:"center"}}>
             <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Encaminhe para</div>
@@ -400,12 +470,38 @@ export default function OnboardingPage(){
               <label style={labelStyle}>Vaga de garagem <span style={{fontWeight:400,color:"#A3A3A3"}}>(opcional)</span></label>
               <input value={parkingSpot} onChange={e=>setParkingSpot(e.target.value)} placeholder="Ex: G1-25, Livre" style={inputStyle}/>
             </div>
+
+            {/* Condominium code */}
             <div style={{borderTop:"1px solid #F0F0F0",paddingTop:14}}>
+              <div style={{fontSize:12,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>🏢 Condomínio Parceiro</div>
+              {condoLinked?(
+                <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:18}}>✅</span>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:600,color:"#059669"}}>Condomínio vinculado com sucesso!</div>
+                    <div style={{fontSize:12,color:"#737373",marginTop:2}}>A portaria será gerenciada pelo condomínio. Você não precisa preencher o WhatsApp da portaria.</div>
+                  </div>
+                </div>
+              ):(
+                <div>
+                  <div style={{fontSize:13,color:"#737373",lineHeight:1.5,marginBottom:8}}>Se seu condomínio é parceiro do AirCheck e te enviou um código de vinculação, insira abaixo.</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <input placeholder="Ex: AK3F7B" value={condoCode} onChange={e=>setCondoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} maxLength={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:600,padding:"10px 14px",border:`1px solid ${condoError?"#DC2626":"#E5E5E5"}`,borderRadius:10,background:"#fff",width:130,textAlign:"center",letterSpacing:"0.15em",boxSizing:"border-box"}}/>
+                    <button onClick={linkCondo} disabled={condoSaving||condoCode.length<4} style={{...btnStyle(true),fontSize:13,padding:"10px 18px",opacity:condoSaving||condoCode.length<4?0.5:1,cursor:condoSaving||condoCode.length<4?"not-allowed":"pointer"}}>{condoSaving?"Verificando...":"Vincular"}</button>
+                  </div>
+                  {condoError&&<div style={{fontSize:12,color:"#DC2626",marginTop:6}}>{condoError}</div>}
+                  <div style={{fontSize:11,color:"#A3A3A3",marginTop:8}}>Não tem código? Sem problema — pule esta etapa e configure o WhatsApp da portaria abaixo.</div>
+                </div>
+              )}
+            </div>
+
+            {/* Doorman WhatsApp - only if not linked to condo */}
+            {!condoLinked&&<div style={{borderTop:"1px solid #F0F0F0",paddingTop:14}}>
               <label style={labelStyle}>WhatsApp da portaria *</label>
               <input value={doormanPhone} onChange={e=>setDoormanPhone(maskPhone(e.target.value))} placeholder="(41) 99999-0000" inputMode="tel" style={{...inputStyle,marginBottom:10}}/>
               <label style={labelStyle}>Nome do contato</label>
               <input value={doormanName} onChange={e=>setDoormanName(e.target.value)} placeholder="Ex: Portaria Central" style={inputStyle}/>
-            </div>
+            </div>}
           </div>
 
           <div style={{background:"#F5F5F4",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#737373",lineHeight:1.6,marginBottom:20}}>
@@ -502,7 +598,7 @@ export default function OnboardingPage(){
           <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"20px",marginBottom:24,textAlign:"center"}}>
             <div style={{fontSize:28,marginBottom:8}}>🎉</div>
             <div style={{fontSize:18,fontWeight:800,color:B.accent,marginBottom:6}}>Setup completo!</div>
-            <div style={{fontSize:13,color:"#737373",lineHeight:1.6}}>Seu AirCheck está pronto. A partir de agora, basta encaminhar o email de cada reserva (ou configurar o encaminhamento automático) e repetir o processo.</div>
+            <div style={{fontSize:13,color:"#737373",lineHeight:1.6}}>Seu AirCheck está pronto. A partir de agora, basta encaminhar o email de cada reserva (ou configurar o encaminhamento automático) e repetir o processo. Cancelamentos também são processados automaticamente.</div>
           </div>
 
           <button onClick={completeOnboarding} style={btnStyle()}>Ir para o painel →</button>
