@@ -303,25 +303,28 @@ export default function OnboardingPage(){
                 Crie um filtro no {provider.name} para encaminhar automaticamente os emails de reserva do Airbnb. Leva menos de 2 minutos:
               </p>
 
+              {/* Deeplink button — before steps */}
+              {provider.deeplink&&<a href={provider.deeplink} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:B.primary,background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer",marginBottom:16}}>
+                Abrir configurações do {provider.name} ↗
+              </a>}
+
               <div style={{display:"flex",flexDirection:"column",gap:0}}>
                 {provider.steps.map((s,i)=>(
                   <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 0",borderBottom:i<provider.steps.length-1?"1px solid #F0F0F0":"none"}}>
                     <div style={{minWidth:24,height:24,borderRadius:"50%",background:s.highlight?B.accent:B.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>
                       {s.highlight?"✓":i+1}
                     </div>
-                    <span style={{fontSize:13,color:s.highlight?"#059669":"#525252",fontWeight:s.highlight?600:400,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:s.text
-                      .replace(/reservas@aircheck\.com\.br/g,`<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">reservas@aircheck.com.br</span>`)
-                      .replace(/automated@airbnb\.com/g,`<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">automated@airbnb.com</span>`)
-                      .replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>')
-                    }}/>
+                    <span style={{fontSize:13,color:s.highlight?"#059669":"#525252",fontWeight:s.highlight?600:400,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:(()=>{
+                      // 1) Bold quoted text first (on clean text, before injecting HTML)
+                      let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
+                      // 2) Then style email addresses (injected HTML won't be caught by quotes regex)
+                      html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">reservas@aircheck.com.br</code>`);
+                      html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">automated@airbnb.com</code>`);
+                      return html;
+                    })()}}/>
                   </div>
                 ))}
               </div>
-
-              {/* Deeplink button */}
-              {provider.deeplink&&<a href={provider.deeplink} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:B.primary,background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer",marginTop:12}}>
-                Abrir configurações do {provider.name} ↗
-              </a>}
 
               {/* Provider-specific note */}
               {provider.note&&<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#D97706",lineHeight:1.6,marginTop:12}}>
