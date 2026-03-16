@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-// AirCheck Parser v5.4
+// AirCheck Parser v5.5
 // - Fixes corrupted encoding (João, Estação, Fabrício, etc)
 // - Extracts Airbnb room ID, thread ID/URL, guest photo
 // - English email support (guests, dates, confirmation, property)
-// - Cancellation email detection
+// - Cancellation email detection (PT + EN, including EN "cancel reservation CODE")
 // ═══════════════════════════════════════════════════════════════
 
 const MONTH_MAP: Record<string, number> = {
@@ -109,10 +109,12 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     /reservation\s+cancell?ed/i,
     /seu\s+h[oó]spede\s+cancelou/i,
     /your\s+guest\s+cancell?ed/i,
+    /had\s+to\s+cancel\s+reservation/i,
     /a\s+reserva\s+de\s+.+?\s+foi\s+cancelada/i,
     /the\s+reservation\s+.+?\s+has\s+been\s+cancell?ed/i,
     /cancelamento\s+(?:de\s+)?reserva/i,
     /cancellation\s+(?:of\s+)?reservation/i,
+    /[Cc]anceled:\s+[Rr]eservation/,
   ];
   r.isCancellation = cancelPatterns.some(pat => pat.test(rawText));
 
@@ -178,6 +180,11 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     if (!r.guestFullName) {
       const cancelNameEN = rawText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:'s\s+reservation|\s+cancell?ed)/i);
       if (cancelNameEN) r.guestFullName = cancelNameEN[1].trim();
+    }
+    // EN: "your guest NAME had to cancel" / "your guest NAME has canceled"
+    if (!r.guestFullName) {
+      const guestCancel = rawText.match(/your\s+guest\s+(.+?)\s+(?:had\s+to\s+cancel|has\s+cancel|cancell?ed)/i);
+      if (guestCancel) r.guestFullName = guestCancel[1].trim();
     }
     // PT: "Reserva cancelada — NAME"
     if (!r.guestFullName) {
@@ -338,6 +345,11 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     /confirma(?:ção|..o|cao)[\s\S]{0,30}?([A-Z0-9]{10})/i,
     /Confirmation\s+code[\s\n]+([A-Z0-9]{8,12})/i,
     /confirmation[\s\S]{0,20}?([A-Z0-9]{10})/i,
+    // EN cancellation: "cancel reservation HMHZXNNMN5" / "Canceled: Reservation HMHZXNNMN5"
+    /[Cc]ancel(?:ed|l?ed)?[:\s]+[Rr]eservation\s+([A-Z0-9]{8,12})/,
+    /cancel\s+reservation\s+([A-Z0-9]{8,12})/i,
+    /[Rr]eservation\s+([A-Z0-9]{8,12})\s+(?:for|has)/,
+    // PT: "reserva CODE"
     /reserva\s+([A-Z0-9]{8,12})\s+de\s+\d/i,
     /reserva\s+([A-Z0-9]{8,12})\b/i,
   ];
@@ -390,3 +402,4 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   delete r._ciMonth; delete r._ciYear;
   return { results: r as ParsedReservation, errors };
 }
+
