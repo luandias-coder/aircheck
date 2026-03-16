@@ -85,23 +85,23 @@ export async function POST(req: NextRequest) {
 
     // ── Gmail Forwarding Confirmation ────────────────────────
     // Intercept emails from forwarding-noreply@google.com
-    // Extract confirmation code + host email, save for onboarding polling
+    // Extract confirmation link + host email, auto-confirm by fetching the link
     if (fromEmail === "forwarding-noreply@google.com") {
       const emailContent = textBody || htmlBody || "";
       
-      // Extract confirmation code (numeric, typically 9 digits)
-      const codeMatch = emailContent.match(/(?:Confirmation code|Código de confirmação|código de verificação)[:\s]+(\d{5,12})/i)
-        || emailContent.match(/(\d{7,12})/); // fallback: grab first long number
-      const code = codeMatch ? codeMatch[1] : null;
+      // Extract confirmation link (vf- = verify forwarding)
+      const linkMatch = emailContent.match(/(https:\/\/mail-settings\.google\.com\/mail\/vf-[^\s<>"]+)/);
+      const confirmLink = linkMatch ? linkMatch[1] : null;
 
       // Extract host email from subject or body
-      // Subject: "Gmail Forwarding Confirmation - Receive Mail from user@example.com"
-      // Body: "user@example.com has requested to automatically forward mail..."
+      // Subject: "Confirmação de encaminhamento do Gmail: receber e-mail de user@example.com"
+      // OR: "Gmail Forwarding Confirmation - Receive Mail from user@example.com"
+      // Body: "user@example.com pediu para encaminhar" / "user@example.com has requested"
       let hostEmail: string | null = null;
-      const subjectEmailMatch = subject.match(/from\s+([^\s<>]+@[^\s<>]+)/i);
+      const subjectEmailMatch = subject.match(/(?:de|from)\s+([^\s<>]+@[^\s<>]+)/i);
       if (subjectEmailMatch) hostEmail = subjectEmailMatch[1].toLowerCase().trim();
       if (!hostEmail) {
-        const bodyEmailMatch = emailContent.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\s+(?:has requested|solicitou)/i);
+        const bodyEmailMatch = emailContent.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\s+(?:pediu para|has requested|solicitou)/i);
         if (bodyEmailMatch) hostEmail = bodyEmailMatch[1].toLowerCase().trim();
       }
       // Fallback: find any email that isn't aircheck/google
@@ -110,19 +110,35 @@ export async function POST(req: NextRequest) {
         hostEmail = allEmails.find(e => !e.includes("aircheck") && !e.includes("airchk") && !e.includes("google")) || null;
       }
 
+      // Auto-confirm by fetching the link
+      let autoConfirmed = false;
+      if (confirmLink) {
+        try {
+          const confirmRes = await fetch(confirmLink, {
+            method: "GET",
+            redirect: "follow",
+            headers: { "User-Agent": "Mozilla/5.0 AirCheck-AutoConfirm" },
+          });
+          autoConfirmed = confirmRes.ok || confirmRes.status === 200 || confirmRes.status === 302;
+        } catch (e) {
+          console.error("[gmail-verification] Auto-confirm fetch failed:", e);
+          autoConfirmed = false;
+        }
+      }
+
       await prisma.inboundEmailLog.update({
         where: { id: logId },
         data: {
           status: "gmail_verification",
-          parsedData: JSON.stringify({ code, hostEmail }, null, 2),
+          parsedData: JSON.stringify({ hostEmail, confirmLink: confirmLink ? "present" : null, autoConfirmed }, null, 2),
         },
       });
 
       return NextResponse.json({
         success: true,
         action: "gmail_verification",
-        code,
         hostEmail,
+        autoConfirmed,
         logId,
       });
     }
@@ -196,7 +212,6 @@ export async function POST(req: NextRequest) {
             logId,
           });
         } else {
-          // Cancellation received but no matching reservation found
           await prisma.inboundEmailLog.update({
             where: { id: logId },
             data: {
@@ -211,7 +226,6 @@ export async function POST(req: NextRequest) {
           }, { status: 200 });
         }
       } else {
-        // Cancellation without confirmation code — try matching by guest name
         if (results.guestFullName) {
           const existing = await prisma.reservation.findFirst({
             where: {
@@ -268,7 +282,6 @@ export async function POST(req: NextRequest) {
       property = await prisma.property.findFirst({
         where: { userId, airbnbRoomId: results.airbnbRoomId },
       });
-      // Update name if we have a better one
       if (property && results.propertyName && property.name !== results.propertyName) {
         property = await prisma.property.update({
           where: { id: property.id },
@@ -327,7 +340,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Update log with success
     await prisma.inboundEmailLog.update({
       where: { id: logId },
       data: { status: "success", reservationId: reservation.id },
@@ -344,7 +356,6 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     console.error("Inbound email error:", e);
 
-    // Try to update log with error
     if (logId) {
       try {
         await prisma.inboundEmailLog.update({
@@ -353,7 +364,6 @@ export async function POST(req: NextRequest) {
         });
       } catch {}
     } else {
-      // Create error log if we couldn't even create the initial log
       try {
         await prisma.inboundEmailLog.create({
           data: { fromEmail: fromEmail || "unknown", status: "error", error: e.message || "Erro interno" },
