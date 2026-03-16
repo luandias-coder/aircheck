@@ -5,7 +5,7 @@ import { getCurrentUserId } from "@/lib/auth";
 // Shared select for condominium data in response
 const CONDO_SELECT = {
   id: true, name: true, code: true, address: true, contactName: true, contactPhone: true,
-  reportMode: true, doormanWhatsapp: true,
+  reportMode: true, doormanWhatsapp: true, photoUrl: true,
 } as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
