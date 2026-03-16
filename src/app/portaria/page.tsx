@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import BottomTabBarPortaria from "@/components/BottomTabBarPortaria";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", accent:"#059669" };
 
@@ -104,7 +105,7 @@ export default function PortariaDashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth:800, margin:"0 auto", padding:"20px 20px 40px" }}>
+      <div className="portaria-content" style={{ maxWidth:800, margin:"0 auto", padding:"20px 20px 40px" }}>
 
         {/* Tabs */}
         <div style={{ display:"flex", gap:0, borderBottom:"1px solid #E5E5E5", marginBottom:20 }}>
@@ -332,6 +333,8 @@ export default function PortariaDashboard() {
 
         {tab === "settings" && <SettingsTab user={user} condominiumId={condo?.id || ""} />}
       </div>
+
+      <BottomTabBarPortaria tab={tab} onTabChange={setTab} isAdmin={user?.role === "admin"} />
     </div>
   );
 }
