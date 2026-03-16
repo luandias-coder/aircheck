@@ -11,7 +11,7 @@ export async function GET() {
       include: {
         doormanPhones: true,
         condominium: {
-          select: { id: true, name: true, code: true, address: true, contactName: true, contactPhone: true, reportMode: true, doormanWhatsapp: true },
+          select: { id: true, name: true, code: true, address: true, contactName: true, contactPhone: true, reportMode: true, doormanWhatsapp: true, photoUrl: true },
         },
         _count: { select: { reservations: true } },
       },
