@@ -34,4 +34,7 @@ html, body {
   .dashboard-content {
     padding-bottom: 100px !important;
   }
+  .portaria-content {
+    padding-bottom: 100px !important;
+  }
 }
