@@ -31,14 +31,13 @@ function BackBtn({onClick}:{onClick:()=>void}){return(
 // ─── EMAIL FORWARDING GUIDE COMPONENT ───────────────────────────
 function EmailForwardingGuide(){
   const[provider,setProvider]=useState<"gmail"|"outlook"|"yahoo"|null>(null);
-  const[gmailCode,setGmailCode]=useState<string|null>(null);
+  const[gmailConfirmed,setGmailConfirmed]=useState(false);
   const[gmailPolling,setGmailPolling]=useState(false);
-  const[gmailCopied,setGmailCopied]=useState(false);
   const gmailPollRef=useRef<NodeJS.Timeout|null>(null);
 
-  // Poll for Gmail verification code
+  // Poll for Gmail forwarding auto-confirmation
   useEffect(()=>{
-    if(provider!=="gmail"||gmailCode){
+    if(provider!=="gmail"||gmailConfirmed){
       if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
       return;
     }
@@ -48,8 +47,8 @@ function EmailForwardingGuide(){
         const res=await fetch("/api/gmail-verification");
         if(res.ok){
           const data=await res.json();
-          if(data.found&&data.code){
-            setGmailCode(data.code);
+          if(data.found){
+            setGmailConfirmed(true);
             setGmailPolling(false);
             if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
           }
@@ -59,7 +58,7 @@ function EmailForwardingGuide(){
     check();
     gmailPollRef.current=setInterval(check,4000);
     return()=>{if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}};
-  },[provider,gmailCode]);
+  },[provider,gmailConfirmed]);
 
   const providers = [
     { id:"gmail" as const, name:"Gmail", icon:"📧", color:"#EA4335", bg:"#FEE2E2" },
@@ -111,24 +110,23 @@ function EmailForwardingGuide(){
               <div style={numStyle}>3</div>
               <div style={{...textStyle,flex:1}}>
                 <div>Clique em <strong style={{color:"#1A1A1A"}}>"Adicionar um endereço de encaminhamento"</strong> e digite:<br/><span style={codeStyle}>reservas@aircheck.com.br</span></div>
-                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>O Gmail vai pedir um código de confirmação. É uma verificação de segurança do Google.</div>
+                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>O Gmail vai pedir uma confirmação. Nós confirmamos automaticamente pra você — basta aguardar alguns segundos.</div>
                 
-                {/* Auto-detected code widget */}
-                {gmailCode?(
-                  <div style={{marginTop:10,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px"}}>
-                    <div style={{fontSize:12,fontWeight:600,color:"#059669",marginBottom:6}}>✅ Código recebido automaticamente!</div>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:22,fontWeight:700,color:"#059669",letterSpacing:"0.12em"}}>{gmailCode}</div>
-                      <button onClick={()=>{navigator.clipboard.writeText(gmailCode);setGmailCopied(true);setTimeout(()=>setGmailCopied(false),2000)}} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"5px 12px",background:gmailCopied?"#059669":"#fff",color:gmailCopied?"#fff":"#059669",border:`1px solid ${gmailCopied?"#059669":"#BBF7D0"}`,borderRadius:6,cursor:"pointer"}}>{gmailCopied?"Copiado!":"Copiar"}</button>
+                {/* Auto-confirmation widget */}
+                {gmailConfirmed?(
+                  <div style={{marginTop:10,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:22}}>✅</span>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#059669"}}>Encaminhamento confirmado!</div>
+                      <div style={{fontSize:12,color:"#737373",marginTop:2}}>Já confirmamos automaticamente. Agora siga para o passo 4 para criar o filtro.</div>
                     </div>
-                    <div style={{fontSize:11,color:"#737373",marginTop:6}}>Cole este código no Gmail para confirmar o encaminhamento.</div>
                   </div>
                 ):gmailPolling?(
                   <div style={{marginTop:10,background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
                     <div style={{width:14,height:14,borderRadius:"50%",border:"2.5px solid #D97706",borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/>
                     <div>
-                      <div style={{fontSize:12,fontWeight:600,color:"#D97706"}}>Aguardando código de confirmação...</div>
-                      <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Adicione o endereço no Gmail. O código aparecerá aqui automaticamente.</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"#D97706"}}>Aguardando confirmação do Gmail...</div>
+                      <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Adicione o endereço no Gmail. Confirmaremos automaticamente em segundos.</div>
                     </div>
                   </div>
                 ):null}
