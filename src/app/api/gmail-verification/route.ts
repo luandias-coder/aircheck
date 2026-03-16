@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
 
-// GET: returns the Gmail forwarding confirmation code for the current user
-// Used by onboarding polling to auto-display the code
+// GET: checks if Gmail forwarding was auto-confirmed for the current user
+// Used by onboarding polling
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -15,7 +15,6 @@ export async function GET() {
       select: { email: true },
     });
     
-    // Also get the user's account email
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { email: true },
@@ -48,10 +47,10 @@ export async function GET() {
       try {
         const data = JSON.parse(log.parsedData);
         const hostEmail = data.hostEmail?.toLowerCase();
-        if (hostEmail && allEmails.includes(hostEmail) && data.code) {
+        if (hostEmail && allEmails.includes(hostEmail)) {
           return NextResponse.json({
             found: true,
-            code: data.code,
+            autoConfirmed: data.autoConfirmed === true,
             hostEmail: data.hostEmail,
             receivedAt: log.createdAt,
           });
