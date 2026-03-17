@@ -1,6 +1,6 @@
 "use client";
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", shadow:"rgba(59,95,229,0.25)" };
 
@@ -26,13 +26,8 @@ const fieldLbl:React.CSSProperties = { fontSize: 10, fontWeight: 600, color: "#7
 const fieldInput:React.CSSProperties = { width: "100%", fontFamily: "Outfit", fontSize: 16, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" };
 
 export default function RegisterPage() {
-  return <Suspense><RegisterInner /></Suspense>;
-}
-
-function RegisterInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const condoParam = searchParams.get("condo");
+  const [condoParam, setCondoParam] = useState<string|null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -40,6 +35,11 @@ function RegisterInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("condo");
+    if (p) setCondoParam(p);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
