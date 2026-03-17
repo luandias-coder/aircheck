@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import BottomTabBar from "@/components/BottomTabBar";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
@@ -31,14 +31,9 @@ function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
 
 // ─── MAIN ───────────────────────────────────────────────────────
-export default function DashboardPage(){
-  return <Suspense><Dashboard /></Suspense>;
-}
-
-function Dashboard(){
+export default function Dashboard(){
   const router=useRouter();
-  const searchParams=useSearchParams();
-  const condoFromUrl=searchParams.get("condo");
+  const[condoFromUrl,setCondoFromUrl]=useState<string|null>(null);
   const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs"|"feedback">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
@@ -75,7 +70,10 @@ function Dashboard(){
     }catch(e){console.error(e)}finally{setLoading(false)}
   },[router]);
   useEffect(()=>{fetchData()},[fetchData]);
-  useEffect(()=>{if(condoFromUrl&&!loading)setTab("properties")},[condoFromUrl,loading]);
+  useEffect(()=>{
+    const p=new URLSearchParams(window.location.search).get("condo");
+    if(p){setCondoFromUrl(p);setTab("properties")}
+  },[]);
 
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
 
