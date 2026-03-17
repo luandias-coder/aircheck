@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import BottomTabBar from "@/components/BottomTabBar";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)", accent:"#059669", dark:"#0F0F0F" };
@@ -8,8 +9,8 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null}|null }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null}; guests:Guest[] }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
   form_filled:{l:"Formulário preenchido",c:"#059669",bg:"#ECFDF5",dot:"#059669"},
   sent_to_doorman:{l:"Enviado à portaria",c:"#2563EB",bg:"#EFF6FF",dot:"#2563EB"},
   archived:{l:"Arquivada",c:"#737373",bg:"#F5F5F5",dot:"#A3A3A3"},
+  cancelled:{l:"Cancelada",c:"#DC2626",bg:"#FEF2F2",dot:"#DC2626"},
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
@@ -31,6 +33,8 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
   const router=useRouter();
+  const searchParams=useSearchParams();
+  const condoFromUrl=searchParams.get("condo");
   const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs"|"feedback">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
@@ -48,7 +52,7 @@ export default function Dashboard(){
         // Auto-archive past reservations
         const now=new Date();now.setHours(0,0,0,0);
         const toArchive=data.filter(r=>{
-          if(r.status==="archived")return false;
+          if(r.status==="archived"||r.status==="cancelled")return false;
           if(!r.checkOutDate)return false;
           const[dd,mm,yy]=r.checkOutDate.split("/").map(Number);
           const co=new Date(yy,mm-1,dd);
@@ -67,12 +71,13 @@ export default function Dashboard(){
     }catch(e){console.error(e)}finally{setLoading(false)}
   },[router]);
   useEffect(()=>{fetchData()},[fetchData]);
+  useEffect(()=>{if(condoFromUrl&&!loading)setTab("properties")},[condoFromUrl,loading]);
 
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
 
   const selected=reservations.find(r=>r.id===selectedId);
-  const active=reservations.filter(r=>r.status!=="archived");
-  const archived=reservations.filter(r=>r.status==="archived");
+  const active=reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled");
+  const archived=reservations.filter(r=>r.status==="archived"||r.status==="cancelled");
   const pending=active.filter(r=>r.status==="pending_form").length;
   const filled=active.filter(r=>r.status==="form_filled").length;
   const upcoming=active.filter(r=>daysUntil(r.checkInDate)>=0).length;
@@ -103,7 +108,7 @@ export default function Dashboard(){
         </div>
       </div>
 
-      <div style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
+      <div className="dashboard-content" style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
         {loading&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando...</div>}
 
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
@@ -128,12 +133,14 @@ export default function Dashboard(){
           </div>
 
           {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
-          :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
+          :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
           :tab==="feedback"?<FeedbackTab/>
           :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
+
+      <BottomTabBar tab={tab} onTabChange={(t) => { setTab(t); setView("list"); }} />
     </div>
   );
 }
@@ -141,16 +148,16 @@ export default function Dashboard(){
 // ─── RESERVATIONS LIST ──────────────────────────────────────────
 function ReservationsList({active,archived,onSelect}:{active:Reservation[];archived:Reservation[];onSelect:(id:string)=>void}){
   const[showArchived,setShowArchived]=useState(false);
-  const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:isArch?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
+  const RCard=({r}:{r:Reservation})=>{const du=daysUntil(r.checkInDate);const isArch=r.status==="archived";const isCancelled=r.status==="cancelled";return<button key={r.id} onClick={()=>onSelect(r.id)} className="fade-up" style={{width:"100%",textAlign:"left",background:isArch?"#FAFAF9":"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",display:"block",transition:"all 0.15s",opacity:(isArch||isCancelled)?0.7:1}} onMouseOver={e=>{e.currentTarget.style.borderColor=B.primary;e.currentTarget.style.transform="translateY(-1px)"}} onMouseOut={e=>{e.currentTarget.style.borderColor="#F0F0F0";e.currentTarget.style.transform="none"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       {/* Guest photo */}
       {r.guestPhotoUrl?<img src={r.guestPhotoUrl} alt="" style={{width:42,height:42,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"2px solid #F0F0F0"}}/>:<div style={{width:42,height:42,borderRadius:"50%",background:B.light,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16,fontWeight:700,color:B.primary}}>{r.guestFullName[0]}</div>}
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <span style={{fontSize:15,fontWeight:600,color:"#1A1A1A"}}>{r.guestFullName}</span>
-          {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du<=1?"#DC2626":"#D97706",background:du<=1?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du<=1?"Hoje!":"Em "+du+" dias"}</span>}
+          <span style={{fontSize:15,fontWeight:600,color:isCancelled?"#DC2626":"#1A1A1A",textDecoration:isCancelled?"line-through":"none"}}>{r.guestFullName}</span>
+          {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du===0?"#DC2626":"#D97706",background:du===0?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du===0?"Hoje!":du===1?"Amanhã":"Em "+du+" dias"}</span>}
         </div>
-        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
+        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3,textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
         <Badge status={r.status}/>
@@ -249,9 +256,9 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <button onClick={async()=>{if(!confirm(`Adicionar mais 1 hóspede? (atual: ${r.numGuests})`))return;await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({numGuests:r.numGuests+1})});onRefresh()}} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"8px 14px",background:"none",color:B.primary,border:`1px solid ${B.muted}`,borderRadius:8,cursor:"pointer",marginTop:12}}>👤+ Adicionar hóspede</button>
     </div>}
 
-    {hasGuests&&(r.property.whatsappEnabled!==false)&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    {hasGuests&&(!(r.property.condominium?.reportMode==="dashboard"&&r.property.condominiumId))&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Enviar para portaria</div>
-      {r.property.doormanPhones.length===0?<div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#D97706"}}>⚠️ Configure portaria(s) na aba Imóveis</div>
+      {r.property.doormanPhones.length===0&&!(r.property.condominium?.reportMode==="whatsapp")?<div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#D97706"}}>⚠️ Configure portaria(s) na aba Imóveis</div>
       :!waData?<button onClick={fetchWa} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"10px 18px",background:"#25D366",color:"#fff",border:"none",borderRadius:10,cursor:"pointer"}}>Gerar mensagem WhatsApp</button>
       :<div>
         {showWa&&<pre style={{fontFamily:"Outfit",fontSize:12,color:"#374151",whiteSpace:"pre-wrap",lineHeight:1.7,background:"#F0FDF4",border:"1px solid #BBF7D0",padding:14,borderRadius:10,marginBottom:10}}>{waData.message}</pre>}
@@ -267,9 +274,9 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
         </div>
       </div>}
     </div>}
-    {hasGuests&&r.property.whatsappEnabled===false&&r.property.condominiumId&&<div className="fade-up" style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    {hasGuests&&r.property.condominium?.reportMode==="dashboard"&&r.property.condominiumId&&<div className="fade-up" style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:13,color:"#059669",fontWeight:500}}>🏢 Dados enviados pelo painel da portaria</div>
-      <div style={{fontSize:12,color:"#737373",marginTop:4}}>Você desabilitou o envio via WhatsApp. Os dados desta reserva serão acessados diretamente pelo porteiro no painel do condomínio.</div>
+      <div style={{fontSize:12,color:"#737373",marginTop:4}}>O condomínio configurou o recebimento via painel digital. Os dados desta reserva serão acessados diretamente pelo porteiro.</div>
     </div>}
   </div>
 }
@@ -497,6 +504,8 @@ function LogsTab(){
     error:{c:"#DC2626",bg:"#FEF2F2",l:"Erro"},
     parse_failed:{c:"#DC2626",bg:"#FEF2F2",l:"Parse falhou"},
     duplicate:{c:"#737373",bg:"#F5F5F5",l:"Duplicata"},
+    cancellation:{c:"#DC2626",bg:"#FEF2F2",l:"Cancelamento"},
+    cancellation_orphan:{c:"#D97706",bg:"#FFFBEB",l:"Cancel. órfão"},
   };
 
   if(loading)return<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando logs...</div>;
@@ -535,11 +544,11 @@ function LogsTab(){
 }
 
 // ─── PROPERTIES TAB ─────────────────────────────────────────────
-function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:()=>void}){
+function PropertiesTab({properties,onRefresh,initialCondoCode}:{properties:Property[];onRefresh:()=>void;initialCondoCode?:string}){
   const[editingId,setEditingId]=useState<string|null>(null);
   const[form,setForm]=useState({phone:"",name:"",label:""});
   const[details,setDetails]=useState({unitNumber:"",parkingSpot:""});
-  const[condoCode,setCondoCode]=useState("");
+  const[condoCode,setCondoCode]=useState(initialCondoCode||"");
   const[condoError,setCondoError]=useState("");
   const[condoSaving,setCondoSaving]=useState(false);
   const[saving,setSaving]=useState(false);
@@ -557,8 +566,9 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
 
   return<div style={{display:"flex",flexDirection:"column",gap:10}}>
     <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem, portarias e condomínio parceiro.</div>
+    {initialCondoCode&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#F0F4FF",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#3B5FE5",border:"1px solid #D4DEFF"}}><span>🏢</span>Você foi convidado por um condomínio! Edite um imóvel abaixo e vincule usando o código <strong>{initialCondoCode}</strong>.</div>}
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s) · {p.doormanPhones.length} portaria(s){p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{!p.whatsappEnabled?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{!p.condominium&&p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>
         {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,marginBottom:4}}>
           {/* ── Condomínio Parceiro (PRIMEIRO BLOCO) ── */}
@@ -568,8 +578,17 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
               <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"12px 14px"}}>
                 <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
                   <div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#1A1A1A"}}>{p.condominium.name}</div>
-                    <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Código: {p.condominium.code}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      {p.condominium.photoUrl ? (
+                        <img src={p.condominium.photoUrl} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}} />
+                      ) : (
+                        <div style={{width:44,height:44,borderRadius:10,background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:B.muted,flexShrink:0}}>🏢</div>
+                      )}
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700,color:"#1A1A1A"}}>{p.condominium.name}</div>
+                        <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Código: {p.condominium.code}</div>
+                      </div>
+                    </div>
                   </div>
                   <button onClick={()=>unlinkCondo(p.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Desvincular</button>
                 </div>
@@ -580,15 +599,20 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
                     {p.condominium.contactPhone&&<div>📞 {p.condominium.contactPhone}</div>}
                   </div>
                 )}
-                {/* Toggle WhatsApp */}
-                <div style={{borderTop:"1px solid #F0F0F0",paddingTop:10,marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Comunicação via WhatsApp</div>
-                    <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>{p.whatsappEnabled?"Você envia os dados por WhatsApp manualmente":"Dados fluem automaticamente pelo painel da portaria"}</div>
-                  </div>
-                  <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_whatsapp"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.whatsappEnabled?"#25D366":"#D4D4D4",transition:"background 0.2s"}}>
-                    <div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:3,left:p.whatsappEnabled?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/>
-                  </button>
+                {/* Report mode (read-only — defined by condo admin) */}
+                <div style={{borderTop:"1px solid #F0F0F0",paddingTop:10,marginTop:10}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Modo de comunicação</div>
+                  {p.condominium.reportMode==="whatsapp"?(
+                    <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 14px"}}>
+                      <div style={{fontSize:13,fontWeight:500,color:"#059669"}}>📱 WhatsApp — definido pelo condomínio</div>
+                      <div style={{fontSize:11,color:"#737373",marginTop:2}}>Envie os dados via WhatsApp. O número da portaria será preenchido automaticamente.</div>
+                    </div>
+                  ):(
+                    <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 14px"}}>
+                      <div style={{fontSize:13,fontWeight:500,color:B.primary}}>🖥️ Painel da portaria — definido pelo condomínio</div>
+                      <div style={{fontSize:11,color:"#737373",marginTop:2}}>Os dados fluem automaticamente para o painel da portaria.</div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -605,25 +629,59 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
 
           <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados do imóvel</div>
 
-          <div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          {/* Unit number & parking spot */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div>
+              <label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Nº da Unidade *</label>
+              <input value={details.unitNumber} onChange={e=>setDetails({...details,unitNumber:e.target.value})} placeholder="Ex: 501, Bloco A - 102" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
+            </div>
+            <div>
+              <label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Vaga de garagem</label>
+              <input value={details.parkingSpot} onChange={e=>setDetails({...details,parkingSpot:e.target.value})} placeholder="Ex: G1-25" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
+            </div>
+          </div>
+          <button onClick={()=>saveDetails(p.id)} disabled={savingDetails} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:savingDetails?0.5:1}}>{savingDetails?"Salvando...":"Salvar dados"}</button>
+
+          {/* Doc links toggle: only in standalone mode */}
+          {!p.condominium&&<div style={{borderTop:"1px solid #E5E5E5",paddingTop:12,marginTop:4,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>Incluir documento na mensagem</div><div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Envia link da foto do documento de cada hóspede junto com a mensagem do WhatsApp</div></div>
             <button onClick={async()=>{await fetch(`/api/properties/${p.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_doc_links"})});onRefresh()}} style={{fontFamily:"Outfit",width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:p.includeDocLinks?"#3B5FE5":"#D4D4D4",transition:"background 0.2s"}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:p.includeDocLinks?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}/></button>
-          </div>
+          </div>}
         </div>}
-        {p.doormanPhones.map(dp=><div key={dp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>📞</div><div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>{dp.name||"Portaria"}</div><div style={{fontSize:11,color:"#A3A3A3"}}>{dp.label&&`${dp.label} · `}{dp.phone}</div></div></div>
-          {editingId===p.id&&<button onClick={()=>removePhone(p.id,dp.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Remover</button>}
-        </div>)}
-        {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8}}>
-          <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Adicionar portaria</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-            <input placeholder="(41) 99999-0000" value={form.phone} onChange={e=>setForm({...form,phone:maskPhone(e.target.value)})} inputMode="tel" style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
-            <input placeholder="Nome" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
-            <input placeholder="Rótulo (ex: Remota)" value={form.label} onChange={e=>setForm({...form,label:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
+        {/* Doorman phones: only show in standalone mode (no condominium) */}
+        {!p.condominium ? <>
+          {p.doormanPhones.map(dp=><div key={dp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>📞</div><div><div style={{fontSize:13,fontWeight:500,color:"#1A1A1A"}}>{dp.name||"Portaria"}</div><div style={{fontSize:11,color:"#A3A3A3"}}>{dp.label&&`${dp.label} · `}{dp.phone}</div></div></div>
+            {editingId===p.id&&<button onClick={()=>removePhone(p.id,dp.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Remover</button>}
+          </div>)}
+          {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Adicionar portaria</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              <input placeholder="(41) 99999-0000" value={form.phone} onChange={e=>setForm({...form,phone:maskPhone(e.target.value)})} inputMode="tel" style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
+              <input placeholder="Nome" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
+              <input placeholder="Rótulo (ex: Remota)" value={form.label} onChange={e=>setForm({...form,label:e.target.value})} style={{fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff"}}/>
+            </div>
+            <button onClick={()=>addPhone(p.id)} disabled={!form.phone||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:!form.phone||saving?0.5:1}}>{saving?"Salvando...":"+ Adicionar"}</button>
+          </div>}
+          {p.doormanPhones.length===0&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nenhuma portaria configurada</div>}
+        </> : (
+          <div style={{background:"#FAFAF9",borderRadius:10,padding:"14px 16px",border:"1px solid #F0F0F0",display:"flex",alignItems:"center",gap:12}}>
+            {p.condominium.photoUrl ? (
+              <img src={p.condominium.photoUrl} alt="" style={{width:40,height:40,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}} />
+            ) : (
+              <div style={{width:40,height:40,borderRadius:10,background:B.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:B.muted,flexShrink:0}}>🏢</div>
+            )}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{p.condominium.name}</div>
+              <div style={{fontSize:11,color:"#737373",marginTop:2}}>
+                {p.condominium.reportMode==="whatsapp"
+                  ? <>📱 WhatsApp: <strong>{p.condominium.doormanWhatsapp}</strong></>
+                  : <>🖥️ Dados via painel da portaria</>
+                }
+              </div>
+            </div>
           </div>
-          <button onClick={()=>addPhone(p.id)} disabled={!form.phone||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",alignSelf:"flex-start",opacity:!form.phone||saving?0.5:1}}>{saving?"Salvando...":"+ Adicionar"}</button>
-        </div>}
-        {p.doormanPhones.length===0&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nenhuma portaria configurada</div>}
+        )}
         {!p.unitNumber&&editingId!==p.id&&<div style={{fontSize:12,color:"#D97706",background:"#FFFBEB",borderRadius:8,padding:"8px 12px"}}>⚠️ Nº da Unidade não configurado — clique em Editar</div>}
       </div>
     </div>)}

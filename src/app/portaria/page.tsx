@@ -1,16 +1,17 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import BottomTabBarPortaria from "@/components/BottomTabBarPortaria";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", accent:"#059669" };
 
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface CheckIn { id:string; guestName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; confirmationCode:string|null; carPlate:string|null; carModel:string|null; property:{ id:string; name:string; unitNumber:string|null; parkingSpot:string|null }; guests:Guest[] }
+interface CheckIn { id:string; guestName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; confirmationCode:string|null; carPlate:string|null; carModel:string|null; hostName:string; hostPhone:string|null; property:{ id:string; name:string; unitNumber:string|null; parkingSpot:string|null }; guests:Guest[] }
 interface PropertyInfo { id:string; name:string; unitNumber:string|null; parkingSpot:string|null }
 interface Stats { today:number; upcoming:number; pending:number; totalProperties:number }
 interface CondoUser { id:string; name:string; email:string; role:string }
 interface Condo { id:string; name:string; code:string; address:string|null }
-interface CondoSettings { id:string; name:string; address:string|null; code:string; contactName:string|null; contactEmail:string|null; contactPhone:string|null; plan:string; active:boolean; users:Array<{id:string;name:string;email:string;role:string;active:boolean}>; totalProperties:number }
+interface CondoSettings { id:string; name:string; address:string|null; code:string; contactName:string|null; contactEmail:string|null; contactPhone:string|null; reportMode:string; doormanWhatsapp:string|null; photoUrl:string|null; plan:string; active:boolean; users:Array<{id:string;name:string;email:string;role:string;active:boolean}>; totalProperties:number }
 
 // ─── PORTARIA STATUS (simplified: 2 states) ─────────────────────
 function portariaStatus(status:string):{l:string;c:string;bg:string;icon:string}{
@@ -104,7 +105,7 @@ export default function PortariaDashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth:800, margin:"0 auto", padding:"20px 20px 40px" }}>
+      <div className="portaria-content" style={{ maxWidth:800, margin:"0 auto", padding:"20px 20px 40px" }}>
 
         {/* Tabs */}
         <div style={{ display:"flex", gap:0, borderBottom:"1px solid #E5E5E5", marginBottom:20 }}>
@@ -202,46 +203,74 @@ export default function PortariaDashboard() {
 
                     return (
                       <div key={c.id} style={{ background:"#fff", border:`1px solid ${expanded?"#D4D4D4":"#E5E5E5"}`, borderRadius:14, overflow:"hidden", transition:"border-color 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+                        {/* Summary row */}
                         <button onClick={() => setExpandedId(expanded ? null : c.id)} style={{
                           width:"100%", textAlign:"left", background:"none", border:"none", padding:"16px 18px", cursor:"pointer", display:"flex", alignItems:"center", gap:14, color:"#1A1A1A", fontFamily:"Outfit"
                         }}>
-                          {c.guestPhotoUrl ? (
-                            <img src={c.guestPhotoUrl} alt="" style={{ width:48, height:48, borderRadius:12, objectFit:"cover", flexShrink:0, border:"2px solid #F0F0F0" }} />
-                          ) : (
-                            <div style={{ width:48, height:48, borderRadius:12, background:B.light, border:"1px solid #E5E5E5", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, flexDirection:"column" }}>
-                              <div style={{ fontSize:8, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase" }}>Unid.</div>
-                              <div style={{ fontSize:16, fontWeight:800, color:B.primary, lineHeight:1 }}>{c.property.unitNumber || "?"}</div>
-                            </div>
+                          {/* Unit badge - always visible */}
+                          <div style={{ width:52, height:52, borderRadius:12, background:B.light, border:`1px solid ${B.muted}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, flexDirection:"column" }}>
+                            <div style={{ fontSize:8, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase" }}>Unid.</div>
+                            <div style={{ fontSize:18, fontWeight:800, color:B.primary, lineHeight:1 }}>{c.property.unitNumber || "?"}</div>
+                          </div>
+
+                          {/* Guest photo */}
+                          {c.guestPhotoUrl && (
+                            <img src={c.guestPhotoUrl} alt="" style={{ width:48, height:48, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"2px solid #F0F0F0" }} />
                           )}
 
+                          {/* Info */}
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                               <span style={{ fontSize:15, fontWeight:600, color:"#1A1A1A" }}>{c.guestName}</span>
                               <span style={{ fontSize:11, fontWeight:600, color:st.c, background:st.bg, padding:"2px 8px", borderRadius:10 }}>{st.icon} {st.l}</span>
                             </div>
                             <div style={{ fontSize:12, color:"#A3A3A3", marginTop:4 }}>
-                              Unid. {c.property.unitNumber || "?"} · {c.checkInTime} → {c.checkOutDate} · {c.numGuests} hóspede{c.numGuests!==1?"s":""}{c.nights ? ` · ${c.nights} noite${c.nights!==1?"s":""}` : ""}
-                              {c.property.parkingSpot && <span> · Vaga {c.property.parkingSpot}</span>}
+                              📅 {c.checkInDate} {c.checkInTime} → {c.checkOutDate} {c.checkOutTime} · 👥 {c.numGuests} hóspede{c.numGuests!==1?"s":""}
+                              {c.nights ? ` · ${c.nights} noite${c.nights!==1?"s":""}` : ""}
+                              {c.property.parkingSpot && <span> · 🅿️ Vaga {c.property.parkingSpot}</span>}
+                            </div>
+                            <div style={{ fontSize:11, color:"#B0B0B0", marginTop:2 }}>
+                              🏠 {c.hostName}{c.hostPhone ? ` · 📱 ${c.hostPhone}` : ""}
                             </div>
                           </div>
 
+                          {/* Expand arrow */}
                           <span style={{ fontSize:12, color:"#A3A3A3", transform: expanded ? "rotate(180deg)" : "", transition:"transform 0.2s" }}>▼</span>
                         </button>
 
+                        {/* Expanded details */}
                         {expanded && (
                           <div style={{ borderTop:"1px solid #F0F0F0", padding:"16px 18px" }}>
+                            {/* Key info grid */}
                             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
                               <div>
-                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Imóvel</div>
-                                <div style={{ fontSize:13, color:"#737373" }}>{c.property.name}</div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Entrada</div>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{c.checkInDate} às {c.checkInTime}</div>
                               </div>
-                              {c.carPlate && <div>
-                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Veículo</div>
-                                <div style={{ fontSize:13, color:"#737373" }}>{c.carModel && `${c.carModel} · `}{c.carPlate}</div>
-                              </div>}
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Saída</div>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{c.checkOutDate} às {c.checkOutTime}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Unidade</div>
+                                <div style={{ fontSize:14, fontWeight:600, color:B.primary }}>{c.property.unitNumber || "?"} — {c.property.name}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Hóspedes</div>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{c.numGuests}{c.nights ? ` · ${c.nights} noite${c.nights!==1?"s":""}` : ""}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Anfitrião</div>
+                                <div style={{ fontSize:13, color:"#1A1A1A" }}>{c.hostName}</div>
+                                {c.hostPhone && <div style={{ fontSize:12, color:"#737373" }}>📱 {c.hostPhone}</div>}
+                              </div>
                               {c.guestPhone && <div>
                                 <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Contato hóspede</div>
                                 <div style={{ fontSize:13, color:"#737373" }}>{c.guestPhone}</div>
+                              </div>}
+                              {c.carPlate && <div>
+                                <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Veículo</div>
+                                <div style={{ fontSize:13, color:"#737373" }}>{c.carModel && `${c.carModel} · `}{c.carPlate}</div>
                               </div>}
                               {c.confirmationCode && <div>
                                 <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Código</div>
@@ -249,6 +278,7 @@ export default function PortariaDashboard() {
                               </div>}
                             </div>
 
+                            {/* Guests */}
                             {hasGuests ? (
                               <div>
                                 <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:8 }}>Hóspedes ({c.guests.length})</div>
@@ -256,14 +286,22 @@ export default function PortariaDashboard() {
                                   {c.guests.map(g => (
                                     <div key={g.id} style={{ background:"#FAFAF9", border:"1px solid #E5E5E5", borderRadius:10, padding:"12px 14px" }}>
                                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                                        <div>
-                                          <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{g.fullName}</div>
-                                          <div style={{ fontSize:12, color:"#A3A3A3", marginTop:4 }}>
-                                            {g.birthDate && <span>Nasc: {g.birthDate}</span>}
-                                            {g.cpf && <span> · CPF: {g.cpf}</span>}
-                                            {g.rg && <span> · RG: {g.rg}</span>}
-                                            {g.foreign && g.passport && <span> · Passaporte: {g.passport}</span>}
-                                            {g.foreign && g.rne && <span> · RNE: {g.rne}</span>}
+                                        <div style={{ display:"flex", gap:12, alignItems:"flex-start", flex:1 }}>
+                                          {/* Guest document photo thumbnail */}
+                                          {g.documentUrl && (
+                                            <a href={g.documentUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
+                                              <img src={g.documentUrl} alt="Doc" style={{ width:48, height:48, borderRadius:8, objectFit:"cover", border:"1px solid #E5E5E5", background:"#fff" }} />
+                                            </a>
+                                          )}
+                                          <div>
+                                            <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{g.fullName} {g.foreign && <span style={{ fontSize:11, color:B.primary }}>🌍</span>}</div>
+                                            <div style={{ fontSize:12, color:"#A3A3A3", marginTop:4 }}>
+                                              {g.birthDate && <span>Nasc: {g.birthDate}</span>}
+                                              {g.cpf && <span> · CPF: {g.cpf}</span>}
+                                              {g.rg && <span> · RG: {g.rg}</span>}
+                                              {g.foreign && g.passport && <span> · Passaporte: {g.passport}</span>}
+                                              {g.foreign && g.rne && <span> · RNE: {g.rne}</span>}
+                                            </div>
                                           </div>
                                         </div>
                                         {g.documentUrl && (
@@ -295,6 +333,8 @@ export default function PortariaDashboard() {
 
         {tab === "settings" && <SettingsTab user={user} condominiumId={condo?.id || ""} />}
       </div>
+
+      <BottomTabBarPortaria tab={tab} onTabChange={setTab} isAdmin={user?.role === "admin"} />
     </div>
   );
 }
@@ -314,8 +354,55 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [reportMode, setReportMode] = useState("dashboard");
+  const [doormanWhatsapp, setDoormanWhatsapp] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const canEdit = user?.role === "admin";
+
+  // Invite host (admin only)
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSaving, setInviteSaving] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
+
+  // Password change (all roles)
+  const [portCurPw, setPortCurPw] = useState("");
+  const [portNewPw, setPortNewPw] = useState("");
+  const [portConfirmPw, setPortConfirmPw] = useState("");
+  const [portPwSaving, setPortPwSaving] = useState(false);
+  const [portPwMsg, setPortPwMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
+
+  const sendInvite = async () => {
+    if (!inviteEmail) return;
+    setInviteSaving(true); setInviteMsg(null);
+    try {
+      const res = await fetch("/api/portaria/invite", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) { setInviteMsg({ t: "ok", m: data.message }); setInviteEmail(""); }
+      else { setInviteMsg({ t: "err", m: data.error || "Erro ao enviar" }); }
+    } catch { setInviteMsg({ t: "err", m: "Erro de conexão" }); }
+    setInviteSaving(false);
+  };
+
+  const changePortPassword = async () => {
+    setPortPwMsg(null);
+    if (!portCurPw || !portNewPw) return setPortPwMsg({ t: "err", m: "Preencha todos os campos" });
+    if (portNewPw.length < 6) return setPortPwMsg({ t: "err", m: "Mínimo 6 caracteres" });
+    if (portNewPw !== portConfirmPw) return setPortPwMsg({ t: "err", m: "As senhas não coincidem" });
+    setPortPwSaving(true);
+    try {
+      const res = await fetch("/api/portaria/auth/password", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: portCurPw, newPassword: portNewPw }),
+      });
+      if (res.ok) { setPortPwMsg({ t: "ok", m: "Senha alterada com sucesso!" }); setPortCurPw(""); setPortNewPw(""); setPortConfirmPw(""); }
+      else { const data = await res.json(); setPortPwMsg({ t: "err", m: data.error || "Erro" }); }
+    } catch { setPortPwMsg({ t: "err", m: "Erro de conexão" }); }
+    setPortPwSaving(false);
+  };
 
   // Google Maps Autocomplete
   useEffect(() => {
@@ -407,17 +494,20 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
         setContactName(data.contactName || "");
         setContactEmail(data.contactEmail || "");
         setContactPhone(data.contactPhone || "");
+        setReportMode(data.reportMode || "dashboard");
+        setDoormanWhatsapp(data.doormanWhatsapp || "");
       }
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const save = async () => {
     if (!name.trim()) { setMsg({ t: "err", m: "Nome é obrigatório" }); return; }
+    if (reportMode === "whatsapp" && !doormanWhatsapp.trim()) { setMsg({ t: "err", m: "Informe o WhatsApp da portaria para usar o modo WhatsApp" }); return; }
     setSaving(true); setMsg(null);
     try {
       const res = await fetch("/api/portaria/settings", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), address: address.trim(), contactName: contactName.trim(), contactEmail: contactEmail.trim(), contactPhone: contactPhone.trim() }),
+        body: JSON.stringify({ name: name.trim(), address: address.trim(), contactName: contactName.trim(), contactEmail: contactEmail.trim(), contactPhone: contactPhone.trim(), reportMode, doormanWhatsapp: doormanWhatsapp.trim() }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Erro"); }
       const updated = await res.json();
@@ -426,6 +516,27 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
       setEditing(false);
     } catch (e: any) { setMsg({ t: "err", m: e.message || "Erro ao salvar" }); }
     finally { setSaving(false); }
+  };
+
+  const uploadPhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) { alert("Apenas imagens são aceitas"); return; }
+    if (file.size > 2 * 1024 * 1024) { alert("Imagem muito grande. Máximo 2MB."); return; }
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/portaria/settings/photo", { method: "POST", body: fd });
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro no upload"); return; }
+      const { url } = await res.json();
+      setSettings(s => s ? { ...s, photoUrl: url } : s);
+    } catch { alert("Erro de conexão"); }
+    finally { setUploadingPhoto(false); }
+  };
+
+  const removePhoto = async () => {
+    if (!confirm("Remover a foto do condomínio?")) return;
+    await fetch("/api/portaria/settings/photo", { method: "DELETE" });
+    setSettings(s => s ? { ...s, photoUrl: null } : s);
   };
 
   if (loading) return <div style={{ textAlign: "center", padding: 40, color: "#A3A3A3" }}>Carregando...</div>;
@@ -448,6 +559,29 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
 
         {!editing ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Condominium photo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 4, paddingBottom: 16, borderBottom: "1px solid #F0F0F0" }}>
+              {settings.photoUrl ? (
+                <img src={settings.photoUrl} alt="" style={{ width: 72, height: 72, borderRadius: 14, objectFit: "cover", border: "2px solid #E5E5E5" }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 14, background: B.light, border: `2px dashed ${B.muted}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: B.muted }}>🏢</div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{settings.photoUrl ? "Foto do condomínio" : "Adicionar foto"}</div>
+                <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 2 }}>Logo, fachada ou imagem de identificação</div>
+                {canEdit && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <label style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, padding: "5px 12px", background: B.primary, color: "#fff", borderRadius: 6, cursor: uploadingPhoto ? "wait" : "pointer", opacity: uploadingPhoto ? 0.5 : 1 }}>
+                      {uploadingPhoto ? "Enviando..." : settings.photoUrl ? "Trocar" : "Upload"}
+                      <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }} disabled={uploadingPhoto} />
+                    </label>
+                    {settings.photoUrl && (
+                      <button onClick={removePhoto} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 500, padding: "5px 12px", background: "none", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer" }}>Remover</button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             <div>
               <div style={labelStyle}>Nome do condomínio</div>
               <div style={readStyle}>{settings.name}</div>
@@ -456,6 +590,16 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
               <div style={labelStyle}>Código de vinculação</div>
               <div style={{ ...readStyle, fontFamily: "monospace", fontSize: 16, fontWeight: 700, color: B.primary, letterSpacing: "0.15em" }}>{settings.code}</div>
               <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 2 }}>Hosts usam este código para vincular imóveis ao condomínio</div>
+            </div>
+            {/* Report mode display */}
+            <div style={{ background: settings.reportMode === "whatsapp" ? "#F0FDF4" : B.light, border: `1px solid ${settings.reportMode === "whatsapp" ? "#BBF7D0" : B.muted}`, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={labelStyle}>Modo de comunicação com anfitriões</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: settings.reportMode === "whatsapp" ? "#059669" : B.primary, marginTop: 4 }}>
+                {settings.reportMode === "whatsapp" ? "📱 WhatsApp — anfitriões enviam dados via WhatsApp" : "🖥️ Painel — dados aparecem automaticamente aqui no painel"}
+              </div>
+              {settings.reportMode === "whatsapp" && settings.doormanWhatsapp && (
+                <div style={{ fontSize: 12, color: "#737373", marginTop: 4 }}>Número: {settings.doormanWhatsapp}</div>
+              )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
@@ -480,6 +624,27 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Condominium photo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 4, paddingBottom: 16, borderBottom: "1px solid #F0F0F0" }}>
+              {settings.photoUrl ? (
+                <img src={settings.photoUrl} alt="" style={{ width: 72, height: 72, borderRadius: 14, objectFit: "cover", border: "2px solid #E5E5E5" }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 14, background: B.light, border: `2px dashed ${B.muted}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: B.muted }}>🏢</div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>{settings.photoUrl ? "Foto do condomínio" : "Adicionar foto"}</div>
+                <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 2 }}>Logo, fachada ou imagem de identificação</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <label style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, padding: "5px 12px", background: B.primary, color: "#fff", borderRadius: 6, cursor: uploadingPhoto ? "wait" : "pointer", opacity: uploadingPhoto ? 0.5 : 1 }}>
+                    {uploadingPhoto ? "Enviando..." : settings.photoUrl ? "Trocar" : "Upload"}
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }} disabled={uploadingPhoto} />
+                  </label>
+                  {settings.photoUrl && (
+                    <button onClick={removePhoto} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 500, padding: "5px 12px", background: "none", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 6, cursor: "pointer" }}>Remover</button>
+                  )}
+                </div>
+              </div>
+            </div>
             <div>
               <label style={labelStyle}>Nome do condomínio *</label>
               <input value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
@@ -502,10 +667,40 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
               <label style={labelStyle}>Email para comunicação</label>
               <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="contato@condominio.com" type="email" style={inputStyle} />
             </div>
+
+            {/* Report mode selector */}
+            <div style={{ borderTop: "1px solid #F0F0F0", paddingTop: 14 }}>
+              <label style={{ ...labelStyle, color: B.primary }}>Modo de reporte dos anfitriões *</label>
+              <div style={{ fontSize: 12, color: "#737373", marginBottom: 10 }}>Define como os anfitriões comunicam os dados dos hóspedes à portaria.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label onClick={() => setReportMode("dashboard")} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: reportMode === "dashboard" ? B.light : "#FAFAF9", border: `1px solid ${reportMode === "dashboard" ? B.primary : "#E5E5E5"}`, borderRadius: 10, cursor: "pointer" }}>
+                  <input type="radio" checked={reportMode === "dashboard"} onChange={() => setReportMode("dashboard")} style={{ marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>🖥️ Painel da portaria</div>
+                    <div style={{ fontSize: 11, color: "#737373", marginTop: 2 }}>Os dados aparecem automaticamente neste painel. Anfitriões não precisam enviar nada manualmente.</div>
+                  </div>
+                </label>
+                <label onClick={() => setReportMode("whatsapp")} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: reportMode === "whatsapp" ? "#F0FDF4" : "#FAFAF9", border: `1px solid ${reportMode === "whatsapp" ? "#25D366" : "#E5E5E5"}`, borderRadius: 10, cursor: "pointer" }}>
+                  <input type="radio" checked={reportMode === "whatsapp"} onChange={() => setReportMode("whatsapp")} style={{ marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>📱 WhatsApp</div>
+                    <div style={{ fontSize: 11, color: "#737373", marginTop: 2 }}>Anfitriões enviam os dados por WhatsApp para o número da portaria definido abaixo.</div>
+                  </div>
+                </label>
+              </div>
+              {reportMode === "whatsapp" && (
+                <div style={{ marginTop: 10 }}>
+                  <label style={labelStyle}>WhatsApp da portaria para receber dados *</label>
+                  <input value={doormanWhatsapp} onChange={e => setDoormanWhatsapp(e.target.value)} placeholder="(41) 99999-0000" inputMode="tel" style={inputStyle} />
+                  <div style={{ fontSize: 11, color: "#A3A3A3", marginTop: 4 }}>Este número será usado por todos os anfitriões vinculados ao condomínio.</div>
+                </div>
+              )}
+            </div>
+
             {msg && <div style={{ background: msg.t === "ok" ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${msg.t === "ok" ? "#BBF7D0" : "#FECACA"}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: msg.t === "ok" ? "#059669" : "#DC2626" }}>{msg.m}</div>}
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={save} disabled={saving} style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 600, padding: "10px 20px", background: B.primary, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", opacity: saving ? 0.5 : 1 }}>{saving ? "Salvando..." : "Salvar"}</button>
-              <button onClick={() => { setEditing(false); setMsg(null); setName(settings.name || ""); setAddress(settings.address || ""); setContactName(settings.contactName || ""); setContactEmail(settings.contactEmail || ""); setContactPhone(settings.contactPhone || ""); }} style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 500, padding: "10px 20px", background: "none", color: "#A3A3A3", border: "1px solid #E5E5E5", borderRadius: 8, cursor: "pointer" }}>Cancelar</button>
+              <button onClick={() => { setEditing(false); setMsg(null); setName(settings.name || ""); setAddress(settings.address || ""); setContactName(settings.contactName || ""); setContactEmail(settings.contactEmail || ""); setContactPhone(settings.contactPhone || ""); setReportMode(settings.reportMode || "dashboard"); setDoormanWhatsapp(settings.doormanWhatsapp || ""); }} style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 500, padding: "10px 20px", background: "none", color: "#A3A3A3", border: "1px solid #E5E5E5", borderRadius: 8, cursor: "pointer" }}>Cancelar</button>
             </div>
           </div>
         )}
@@ -605,6 +800,64 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
             <div style={{ fontSize: 14, color: settings.active ? "#059669" : "#DC2626" }}>{settings.active ? "✅ Ativo" : "❌ Inativo"}</div>
           </div>
         </div>
+      </div>
+
+      {/* Invite Host (admin only) */}
+      {canEdit && (
+        <div style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: B.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>📨 Convidar Anfitrião</div>
+          <p style={{ fontSize: 13, color: "#737373", lineHeight: 1.6, marginBottom: 12, marginTop: 0 }}>
+            Envie um convite por email para um anfitrião do prédio. Ele receberá o código do condomínio e instruções para vincular o imóvel.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="email"
+              placeholder="email@anfitriao.com"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && sendInvite()}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <button
+              onClick={sendInvite}
+              disabled={inviteSaving || !inviteEmail}
+              style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 600, padding: "10px 20px", background: B.primary, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", opacity: inviteSaving || !inviteEmail ? 0.5 : 1, whiteSpace: "nowrap" }}
+            >
+              {inviteSaving ? "Enviando..." : "Enviar convite"}
+            </button>
+          </div>
+          {inviteMsg && (
+            <div style={{ marginTop: 10, fontSize: 12, padding: "8px 12px", borderRadius: 8, background: inviteMsg.t === "ok" ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${inviteMsg.t === "ok" ? "#BBF7D0" : "#FECACA"}`, color: inviteMsg.t === "ok" ? "#059669" : "#DC2626" }}>
+              {inviteMsg.m}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Change Password (all roles) */}
+      <div style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>🔑 Alterar Senha</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input type="password" placeholder="Senha atual" value={portCurPw} onChange={e => setPortCurPw(e.target.value)} style={inputStyle} />
+          <input type="password" placeholder="Nova senha (mín. 6 caracteres)" value={portNewPw} onChange={e => setPortNewPw(e.target.value)} style={inputStyle} />
+          <input
+            type="password" placeholder="Confirmar nova senha" value={portConfirmPw}
+            onChange={e => setPortConfirmPw(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && changePortPassword()}
+            style={{ ...inputStyle, borderColor: portConfirmPw && portConfirmPw !== portNewPw ? "#DC2626" : "#E5E5E5" }}
+          />
+          <button
+            onClick={changePortPassword} disabled={portPwSaving}
+            style={{ fontFamily: "Outfit", fontSize: 13, fontWeight: 600, padding: "10px 20px", background: B.primary, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", alignSelf: "flex-start", opacity: portPwSaving ? 0.5 : 1 }}
+          >
+            {portPwSaving ? "Salvando..." : "Alterar senha"}
+          </button>
+        </div>
+        {portPwMsg && (
+          <div style={{ marginTop: 10, fontSize: 12, padding: "8px 12px", borderRadius: 8, background: portPwMsg.t === "ok" ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${portPwMsg.t === "ok" ? "#BBF7D0" : "#FECACA"}`, color: portPwMsg.t === "ok" ? "#059669" : "#DC2626" }}>
+            {portPwMsg.m}
+          </div>
+        )}
       </div>
     </div>
   );

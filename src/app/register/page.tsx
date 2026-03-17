@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", shadow:"rgba(59,95,229,0.25)" };
 
@@ -27,6 +27,8 @@ const fieldInput:React.CSSProperties = { width: "100%", fontFamily: "Outfit", fo
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const condoParam = searchParams.get("condo");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +56,7 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      router.push(condoParam ? `/dashboard?condo=${encodeURIComponent(condoParam)}` : "/dashboard");
     } catch {
       setError("Erro de conexão");
       setLoading(false);
@@ -74,6 +76,11 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: "28px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          {condoParam && (
+            <div style={{ background: "#F0F4FF", border: "1px solid #D4DEFF", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#3B5FE5", textAlign: "center", lineHeight: 1.5 }}>
+              🏢 Você foi convidado por um condomínio! Crie sua conta para vincular seu imóvel.
+            </div>
+          )}
           {error && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#DC2626" }}>{error}</div>}
 
           <div style={{ marginBottom: 16 }}>
