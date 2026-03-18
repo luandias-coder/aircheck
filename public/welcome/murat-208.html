@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirCheck × Murat 208 — Check-in automatizado para anfitriões</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' rx='11' fill='url(%23g)'/%3E%3Cpath d='M10 19L20 11L30 19' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M13 18V28H27V18' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 22.5L19 25.5L25 19.5' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='42' y2='42' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%233B5FE5'/%3E%3Cstop offset='1' stop-color='%235E4FE5'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   VARIÁVEIS DO CONDOMÍNIO — troque aqui para replicar
+   ═══════════════════════════════════════════════════ */
+:root {
+  /* Brand AirCheck */
+  --ac-primary: #3B5FE5;
+  --ac-primary-dark: #2B47B0;
+  --ac-accent: #16A34A;
+  --ac-accent-light: #ECFDF5;
+  --ac-bg: #FAFAF9;
+  --ac-card: #FFFFFF;
+  --ac-text: #1A1A1A;
+  --ac-muted: #737373;
+  --ac-light: #A3A3A3;
+  --ac-border: #E5E5E5;
+  --ac-radius: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Outfit', -apple-system, sans-serif;
+  background: var(--ac-bg);
+  color: var(--ac-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 640px; margin: 0 auto; padding: 0 20px; }
+
+/* ─── BUILDING SHOWCASE ─── */
+.building-showcase {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 8px;
+  height: 280px;
+}
+.building-showcase-fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #0f172a 0%, #1e3a5f 40%, #1e293b 100%);
+  z-index: 0;
+  overflow: hidden;
+}
+.building-showcase-fallback-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 4px;
+  padding: 40px 30px 80px;
+  opacity: 0.12;
+}
+.fb-block {
+  background: #fff;
+  border-radius: 3px;
+}
+.building-showcase-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.building-showcase-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 32px 28px 28px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 60%, transparent 100%);
+  z-index: 2;
+}
+.building-showcase-name {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+.building-showcase-address {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 500;
+}
+.building-showcase-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ac-primary);
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 3;
+}
+.building-showcase-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ac-accent);
+  display: inline-block;
+}
+@media (max-width: 480px) {
+  .building-showcase { height: 220px; }
+  .building-showcase-name { font-size: 26px; }
+  .building-showcase-overlay { padding: 24px 20px 20px; }
+}
+
+/* ─── HEADER ─── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid var(--ac-border);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 6px; text-decoration: none; }
+.logo-text { font-size: 20px; font-weight: 800; color: var(--ac-text); letter-spacing: -0.03em; }
+.logo-text span { color: var(--ac-primary); }
+.badge-partner {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ac-primary);
+  background: #EEF2FF;
+  padding: 4px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── HERO ─── */
+.hero {
+  padding: 48px 0 40px;
+  text-align: center;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ac-accent-light);
+  border: 1px solid #BBF7D0;
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803D;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.hero h1 .highlight {
+  background: linear-gradient(135deg, var(--ac-primary), #6366F1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p {
+  font-size: 16px;
+  color: var(--ac-muted);
+  max-width: 480px;
+  margin: 0 auto 28px;
+  line-height: 1.65;
+}
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ac-primary);
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+.hero-cta:hover { background: var(--ac-primary-dark); transform: translateY(-1px); }
+
+/* ─── BUILDING INFO STRIP ─── */
+.building-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.building-stat {
+  background: var(--ac-card);
+  border: 1px solid var(--ac-border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+}
+.building-stat .value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ac-primary);
+  display: block;
+  letter-spacing: -0.02em;
+}
+.building-stat .label {
+  font-size: 12px;
+  color: var(--ac-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* ─── SECTIONS ─── */
+.section { padding: 40px 0; }
+.section-divider {
+  height: 1px;
+  background: var(--ac-border);
+  margin: 0 auto;
+  max-width: 120px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.section-subtitle {
+  font-size: 14px;
+  color: var(--ac-muted);
+  text-align: center;
+  margin-bottom: 32px;
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* ─── PAIN CARDS ─── */
+.pain-card {
+  background: var(--ac-card);
+  border: 1px solid var(--ac-border);
+  border-radius: var(--ac-radius);
+  padding: 24px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+.pain-card:hover { border-color: #D4D4D4; }
+.pain-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.pain-icon.red { background: #FEF2F2; }
+.pain-icon.orange { background: #FFF7ED; }
+.pain-icon.yellow { background: #FEFCE8; }
+.pain-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.pain-card p {
+  font-size: 13px;
+  color: var(--ac-muted);
+  line-height: 1.55;
+}
+
+/* ─── SOLUTION ─── */
+.solution-box {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%);
+  border: 1px solid #C7D2FE;
+  border-radius: var(--ac-radius);
+  padding: 32px 28px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.solution-box h3 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.solution-box p {
+  font-size: 14px;
+  color: var(--ac-muted);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.flow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.flow-chip {
+  background: #fff;
+  border: 1px solid var(--ac-border);
+  border-radius: 100px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ac-text);
+  white-space: nowrap;
+}
+.flow-arrow {
+  color: var(--ac-light);
+  font-size: 16px;
+}
+
+/* ─── STEPS ─── */
+.step-card {
+  background: var(--ac-card);
+  border: 1px solid var(--ac-border);
+  border-radius: var(--ac-radius);
+  padding: 24px 24px 20px 24px;
+  margin-bottom: 32px;
+  position: relative;
+}
+.step-number {
+  position: absolute;
+  top: -18px;
+  left: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ac-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: 'IBM Plex Mono', monospace;
+  box-shadow: 0 2px 8px rgba(59, 95, 229, 0.3);
+}
+.step-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.step-card p {
+  font-size: 13px;
+  color: var(--ac-muted);
+  line-height: 1.6;
+}
+.step-detail {
+  margin-top: 10px;
+  background: #FAFAF9;
+  border: 1px solid #F0F0F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--ac-muted);
+  line-height: 1.6;
+}
+.step-detail code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  background: #F0F0F0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--ac-text);
+}
+
+/* ─── BENEFITS ─── */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.benefit-card {
+  background: var(--ac-card);
+  border: 1px solid var(--ac-border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+.benefit-card .emoji {
+  font-size: 28px;
+  margin-bottom: 8px;
+  display: block;
+}
+.benefit-card h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.benefit-card p {
+  font-size: 12px;
+  color: var(--ac-muted);
+  line-height: 1.5;
+}
+
+/* ─── FINAL CTA ─── */
+.final-cta {
+  text-align: center;
+  padding: 56px 0 40px;
+}
+.final-cta h2 {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+.final-cta p {
+  font-size: 14px;
+  color: var(--ac-muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  text-align: center;
+  padding: 32px 0;
+  border-top: 1px solid var(--ac-border);
+  font-size: 12px;
+  color: var(--ac-light);
+}
+.footer a { color: var(--ac-primary); text-decoration: none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 480px) {
+  .hero h1 { font-size: 26px; }
+  .building-strip { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .building-stat { padding: 12px 8px; }
+  .building-stat .value { font-size: 20px; }
+  .benefits-grid { grid-template-columns: 1fr; }
+  .flow-steps { gap: 6px; }
+  .flow-chip { font-size: 12px; padding: 6px 12px; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  opacity: 0;
+  animation: fadeUp 0.5s ease-out forwards;
+}
+.fade-in:nth-child(1) { animation-delay: 0.1s; }
+.fade-in:nth-child(2) { animation-delay: 0.2s; }
+.fade-in:nth-child(3) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     DADOS DO CONDOMÍNIO — troque para replicar
+     ═══════════════════════════════════════════════════ -->
+
+<header class="header">
+  <div class="container header-inner">
+    <a href="https://aircheck.com.br" class="logo">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="11" fill="url(#lg)"/>
+        <path d="M10 19L20 11L30 19" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13 18V28H27V18" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 22.5L19 25.5L25 19.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="42" y2="42" gradientUnits="userSpaceOnUse"><stop stop-color="#3B5FE5"/><stop offset="1" stop-color="#5E4FE5"/></linearGradient></defs>
+      </svg>
+      <span class="logo-text">Air<span>Check</span></span>
+    </a>
+    <span class="badge-partner">Condomínio parceiro</span>
+  </div>
+</header>
+
+<!-- BUILDING SHOWCASE -->
+<div class="container" style="padding-top: 12px;">
+  <div class="building-showcase">
+    <!-- Fallback visual (always visible as base layer) -->
+    <div class="building-showcase-fallback">
+      <div class="building-showcase-fallback-grid">
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+        <div class="fb-block"></div><div class="fb-block"></div><div class="fb-block"></div>
+      </div>
+    </div>
+    <!-- Real image (loads on top when available) -->
+    <img
+      class="building-showcase-img"
+      src="https://vitraengenharia.com.br/wp-content/uploads/2024/11/img44.jpg"
+      alt="Fachada do Murat 208 — Vila Madalena, São Paulo"
+      loading="eager"
+      onload="this.style.opacity='1';"
+    />
+    <div class="building-showcase-overlay">
+      <div class="building-showcase-name">Murat 208</div>
+      <div class="building-showcase-address">R. Luís Murat, 208 — Vila Madalena, São Paulo/SP</div>
+    </div>
+    <div class="building-showcase-badge">Portaria digital ativa</div>
+  </div>
+</div>
+
+<main class="container">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span>✅</span>
+      Seu condomínio já está integrado ao AirCheck
+    </div>
+    <h1>
+      Check-in de hóspedes<br>
+      <span class="highlight">automatizado na portaria.</span>
+    </h1>
+    <p>
+      O <strong>Murat 208</strong> agora conta com o AirCheck — a ferramenta que
+      cadastra seus hóspedes do Airbnb e entrega os dados direto no
+      <strong>painel digital da portaria</strong>. Sem ligações, sem WhatsApp, sem estresse.
+    </p>
+    <a href="https://aircheck.com.br/register" class="hero-cta">
+      Criar minha conta grátis →
+    </a>
+  </section>
+
+  <!-- VALUE PROPS -->
+  <div class="building-strip">
+    <div class="building-stat fade-in">
+      <span class="value">Zero</span>
+      <span class="label">Ligações</span>
+    </div>
+    <div class="building-stat fade-in">
+      <span class="value">Zero</span>
+      <span class="label">WhatsApp</span>
+    </div>
+    <div class="building-stat fade-in">
+      <span class="value">100%</span>
+      <span class="label">Digital</span>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- DOR / PROBLEMA -->
+  <section class="section">
+    <h2 class="section-title">O problema que você já conhece</h2>
+    <p class="section-subtitle">
+      Avisar a portaria sobre hóspedes do Airbnb não deveria ser tão trabalhoso.
+    </p>
+
+    <div class="pain-card fade-in">
+      <div class="pain-icon red">🔥</div>
+      <div>
+        <h3>Cobrar documento de cada hóspede</h3>
+        <p>Nome completo, CPF, RG com foto, placa do carro — de cada pessoa da reserva. Você precisa pedir, cobrar, conferir e organizar tudo antes de repassar pra portaria. Toda reserva.</p>
+      </div>
+    </div>
+    <div class="pain-card fade-in">
+      <div class="pain-icon orange">🤯</div>
+      <div>
+        <h3>Quem mandou? Quem falta?</h3>
+        <p>O hóspede principal mandou o RG, mas e o acompanhante? E a placa? Você fica no escuro sobre o que já foi preenchido e o que ainda falta — e a portaria cobra.</p>
+      </div>
+    </div>
+    <div class="pain-card fade-in">
+      <div class="pain-icon yellow">📱</div>
+      <div>
+        <h3>WhatsApp virou arquivo morto</h3>
+        <p>Portarias diferentes, conversas misturadas, informação perdida no meio de centenas de mensagens. Nenhum porteiro vai encontrar o dado certo na hora certa.</p>
+      </div>
+    </div>
+    <div class="pain-card fade-in">
+      <div class="pain-icon red">😰</div>
+      <div>
+        <h3>Hóspede barrado na entrada</h3>
+        <p>A informação não chegou, chegou errada ou o porteiro trocou de turno. O hóspede espera, sua avaliação cai, e o síndico recebe reclamação.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- SOLUÇÃO -->
+  <section class="section">
+    <h2 class="section-title">Como o AirCheck resolve</h2>
+    <p class="section-subtitle">
+      Uma configuração única. Depois disso, cada reserva flui automaticamente até o painel da portaria.
+    </p>
+
+    <div class="solution-box">
+      <h3>O fluxo completo em 4 passos</h3>
+      <p>Da reserva confirmada até o porteiro — automático, sem intermediários.</p>
+
+      <div class="flow-steps">
+        <span class="flow-chip">📩 Reserva chega</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-chip">📋 Hóspede preenche</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-chip">✅ Dados formatados</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-chip">🖥️ Painel da portaria</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- PASSO A PASSO -->
+  <section class="section">
+    <h2 class="section-title">Guia de configuração</h2>
+    <p class="section-subtitle">
+      Siga esses passos uma única vez. Depois, o AirCheck cuida de tudo automaticamente.
+    </p>
+
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <h3>Crie sua conta</h3>
+      <p>Registre-se com seu email. É rápido e 100% gratuito.</p>
+      <a href="https://aircheck.com.br/register" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:var(--ac-primary);color:#fff;padding:10px 22px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none;transition:background 0.2s;">Criar minha conta →</a>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <h3>Informe seu email do Airbnb</h3>
+      <p>Diga qual email está vinculado à sua conta Airbnb. Usamos isso para identificar suas reservas.</p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <h3>Configure o encaminhamento de emails</h3>
+      <p>No Gmail, Outlook ou seu provedor de email, crie uma regra para encaminhar emails do Airbnb automaticamente. Tem tutorial guiado dentro da plataforma.</p>
+      <div class="step-detail">
+        💡 <strong>É uma configuração única.</strong> Depois de ativada, toda reserva nova chega automaticamente ao AirCheck. Se preferir, também é possível encaminhar manualmente cada email de confirmação.
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">4</div>
+      <h3>Complete seu imóvel e vincule ao Murat 208</h3>
+      <p>Adicione o número da unidade, vaga de garagem e informe o código <code>XXXXXX</code> do Murat 208 para vincular seu imóvel ao condomínio. Como o Murat 208 é condomínio parceiro, seus dados já vão direto pro painel da portaria — sem precisar de WhatsApp.</p>
+      <div class="step-detail">
+        💡 <strong>Integração direta.</strong> O porteiro acessa um painel próprio com todos os check-ins do prédio em tempo real. Nada de mensagem perdida.
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">5</div>
+      <h3>Configure a mensagem automática no Airbnb</h3>
+      <p>Dentro do Airbnb, crie uma mensagem programada que envia o link do formulário de check-in pro hóspede. Você faz isso uma vez e o Airbnb dispara sozinho a cada reserva.</p>
+      <div class="step-detail">
+        💡 <strong>O link é único por reserva.</strong> O hóspede preenche nome completo, documento (com foto), CPF e placa — tudo pelo celular.
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">6</div>
+      <h3>Pronto — a portaria já tem tudo</h3>
+      <p>Quando o hóspede preenche o formulário, os dados aparecem automaticamente no painel da portaria do Murat 208. Nome, documento com foto, CPF, placa, datas — tudo organizado. O porteiro só confere na hora da chegada.</p>
+      <div class="step-detail">
+        💡 <strong>Zero intervenção.</strong> Você não precisa enviar nada. A portaria acessa o painel digital e consulta os check-ins ativos a qualquer momento.
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- BENEFÍCIOS -->
+  <section class="section">
+    <h2 class="section-title">O que você ganha</h2>
+    <p class="section-subtitle">Menos trabalho. Mais segurança. Melhor experiência pro hóspede.</p>
+
+    <div class="benefits-grid">
+      <div class="benefit-card fade-in">
+        <span class="emoji">⏱️</span>
+        <h4>Zero trabalho manual</h4>
+        <p>Nada de digitar dados, ligar ou mandar WhatsApp. Os dados vão direto pro painel da portaria, automaticamente.</p>
+      </div>
+      <div class="benefit-card fade-in">
+        <span class="emoji">🔒</span>
+        <h4>Segurança real</h4>
+        <p>Documento com foto, CPF e dados completos — tudo registrado digitalmente.</p>
+      </div>
+      <div class="benefit-card fade-in">
+        <span class="emoji">⭐</span>
+        <h4>Melhor avaliação</h4>
+        <p>Hóspede chega e entra sem problema. Check-in smooth = review positiva.</p>
+      </div>
+      <div class="benefit-card fade-in">
+        <span class="emoji">🤝</span>
+        <h4>Portaria integrada</h4>
+        <p>O porteiro tem um painel digital próprio com todos os check-ins do prédio. Sem garimpar conversas de WhatsApp.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="final-cta">
+    <h2>Pronto pra simplificar?</h2>
+    <p>
+      O AirCheck é <strong>100% gratuito</strong> para anfitriões do Murat 208.<br>
+      A portaria já tem o painel digital. Só falta você configurar seu imóvel.
+    </p>
+    <a href="https://aircheck.com.br/register" class="hero-cta">
+      Começar agora — é grátis →
+    </a>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p style="margin-bottom: 8px;">
+      <strong style="color: var(--ac-text); font-weight: 700;">Air<span style="color: var(--ac-primary);">Check</span></strong>
+      — Check-in automatizado para anfitriões
+    </p>
+    <p>
+      <a href="https://aircheck.com.br">aircheck.com.br</a> ·
+      <a href="https://instagram.com/useaircheck">@useaircheck</a>
+    </p>
+    <p style="margin-top: 12px; font-size: 11px;">
+      Condomínio parceiro: Murat 208 · R. Luís Murat, 208 · Vila Madalena, São Paulo/SP
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
