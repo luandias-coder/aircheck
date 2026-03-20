@@ -37,6 +37,8 @@ type EmailProvider = {
   deeplink: string | null;
   steps: { text: string; highlight?: boolean }[];
   note?: string;
+  xmlDownload?: boolean;
+  manualFallbackSteps?: { text: string }[];
 };
 
 function getEmailProvider(email: string, mxOverride?: string | null): EmailProvider {
@@ -55,15 +57,19 @@ function getEmailProvider(email: string, mxOverride?: string | null): EmailProvi
       id: "gmail", name: "Gmail", icon: "📧", color: "#EA4335",
       deeplink: "https://mail.google.com/mail/u/0/#settings/fwdandpop",
       steps: [
-        { text: 'No computador, abra o Gmail e clique na ⚙️ engrenagem → "Ver todas as configurações"' },
-        { text: 'Vá na aba "Encaminhamento e POP/IMAP"' },
-        { text: 'Clique em "Adicionar um endereço de encaminhamento" e digite: reservas@aircheck.com.br — o Gmail vai pedir confirmação. Aguarde até 2 minutos e recarregue esta página do Gmail. Nós cuidamos da confirmação nos bastidores' },
-        { text: 'Agora vamos criar o filtro: volte para a caixa de entrada, clique na barra de pesquisa e depois em "Mostrar opções de pesquisa" (ícone de filtro)' },
-        { text: 'No campo "De", digite: automated@airbnb.com — clique em "Criar filtro"' },
-        { text: 'Marque "Encaminhar para reservas@aircheck.com.br" e marque também "Aplicar filtro às conversas correspondentes". Clique em "Criar filtro"' },
+        { text: 'No computador, abra o Gmail → ⚙️ engrenagem → "Ver todas as configurações" → aba "Encaminhamento e POP/IMAP"' },
+        { text: 'Clique em "Adicionar um endereço de encaminhamento" → digite: reservas@aircheck.com.br → "Avançar" → "Continuar" → "OK"' },
+        { text: 'Aguarde até 2 minutos e recarregue a página (nós confirmamos o endereço nos bastidores). O endereço deve aparecer como verificado' },
+        { text: 'Vá na aba "Filtros e endereços bloqueados" → clique "Importar filtros" → faça upload do arquivo XML (baixe abaixo) → marque "Aplicar filtro às conversas correspondentes" → "Criar filtros"' },
         { text: "Pronto! Toda reserva nova (e cancelamento) chega automaticamente no AirCheck.", highlight: true },
       ],
-      note: 'No passo 3, o Gmail pede confirmação do endereço. Nós cuidamos disso nos bastidores — basta aguardar até 2 minutos e recarregar a página de configurações do Gmail. Se após 5 minutos o endereço não aparecer como verificado, entre em contato: oi@aircheck.com.br',
+      note: 'No passo 2, o Gmail pede confirmação do endereço. Nós cuidamos disso nos bastidores — basta aguardar e recarregar. Precisa de ajuda? Veja nosso <a href="/blog/como-configurar-encaminhamento-email-airbnb-gmail" target="_blank" style="color:#3B5FE5;text-decoration:underline">guia completo com prints</a> ou entre em contato: oi@aircheck.com.br',
+      xmlDownload: true,
+      manualFallbackSteps: [
+        { text: 'Na caixa de entrada, clique na barra de pesquisa e depois em "Mostrar opções de pesquisa" (ícone de filtro)' },
+        { text: 'No campo "De", digite: automated@airbnb.com — clique em "Criar filtro"' },
+        { text: 'Marque "Encaminhar para reservas@aircheck.com.br" e "Aplicar filtro às conversas correspondentes". Clique em "Criar filtro"' },
+      ],
     };
   }
 
@@ -363,9 +369,17 @@ export default function OnboardingPage(){
               </p>
 
               {/* Deeplink button — before steps */}
-              {provider.deeplink&&<a href={provider.deeplink} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:B.primary,background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer",marginBottom:16}}>
+              {provider.deeplink&&<a href={provider.deeplink} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:B.primary,background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer",marginBottom:provider.xmlDownload?8:16}}>
                 Abrir configurações do {provider.name} ↗
               </a>}
+
+              {/* XML filter download — Gmail only */}
+              {provider.xmlDownload&&<div style={{marginBottom:16}}>
+                <a href="/aircheck-gmail-filter.xml" download="aircheck-gmail-filter.xml" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:"#059669",background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer"}}>
+                  ⬇ Baixar arquivo de filtro (XML)
+                </a>
+                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>Você vai usar este arquivo no passo 4</div>
+              </div>}
 
               <div style={{display:"flex",flexDirection:"column",gap:0}}>
                 {provider.steps.map((s,i)=>(
@@ -383,9 +397,32 @@ export default function OnboardingPage(){
                 ))}
               </div>
 
+              {/* Manual fallback — collapsed */}
+              {provider.manualFallbackSteps&&<details style={{marginTop:12}}>
+                <summary style={{fontSize:12,fontWeight:600,color:"#737373",cursor:"pointer",listStyle:"none",display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:14}}>🔧</span> Não conseguiu importar o filtro? Crie manualmente
+                </summary>
+                <div style={{marginTop:10,background:"#FAFAF9",borderRadius:10,padding:14}}>
+                  <div style={{fontSize:12,color:"#737373",marginBottom:10,lineHeight:1.5}}>Após completar os passos 1-3 acima (endereço verificado), faça:</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    {provider.manualFallbackSteps.map((s,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 0",borderBottom:i<(provider.manualFallbackSteps?.length||0)-1?"1px solid #E5E5E5":"none"}}>
+                        <div style={{minWidth:20,height:20,borderRadius:"50%",background:"#D4D4D4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>{i+1}</div>
+                        <span style={{fontSize:12,color:"#525252",lineHeight:1.5}} dangerouslySetInnerHTML={{__html:(()=>{
+                          let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
+                          html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:${B.primary};background:${B.light};padding:2px 6px;border-radius:3px">reservas@aircheck.com.br</code>`);
+                          html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:${B.primary};background:${B.light};padding:2px 6px;border-radius:3px">automated@airbnb.com</code>`);
+                          return html;
+                        })()}}/>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </details>}
+
               {/* Provider-specific note */}
               {provider.note&&<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#D97706",lineHeight:1.6,marginTop:12}}>
-                💡 <strong>Importante:</strong> {provider.note}
+                <span dangerouslySetInnerHTML={{__html:`💡 <strong>Importante:</strong> ${provider.note}`}}/>
               </div>}
 
               {/* Info about confirmations + cancellations */}
