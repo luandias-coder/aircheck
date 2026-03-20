@@ -57,13 +57,13 @@ function getEmailProvider(email: string, mxOverride?: string | null): EmailProvi
       steps: [
         { text: 'No computador, abra o Gmail e clique na ⚙️ engrenagem → "Ver todas as configurações"' },
         { text: 'Vá na aba "Encaminhamento e POP/IMAP"' },
-        { text: 'Clique em "Adicionar um endereço de encaminhamento" e digite: reservas@aircheck.com.br — o Gmail vai enviar um email de confirmação. Nós confirmamos automaticamente, aguarde alguns segundos e recarregue a página do Gmail' },
+        { text: 'Clique em "Adicionar um endereço de encaminhamento" e digite: reservas@aircheck.com.br — o Gmail vai pedir confirmação. Aguarde até 2 minutos e recarregue esta página do Gmail. Nós cuidamos da confirmação nos bastidores' },
         { text: 'Agora vamos criar o filtro: volte para a caixa de entrada, clique na barra de pesquisa e depois em "Mostrar opções de pesquisa" (ícone de filtro)' },
         { text: 'No campo "De", digite: automated@airbnb.com — clique em "Criar filtro"' },
         { text: 'Marque "Encaminhar para reservas@aircheck.com.br" e marque também "Aplicar filtro às conversas correspondentes". Clique em "Criar filtro"' },
         { text: "Pronto! Toda reserva nova (e cancelamento) chega automaticamente no AirCheck.", highlight: true },
       ],
-      note: 'No passo 3, o Gmail pede confirmação do endereço. Nós confirmamos automaticamente — basta aguardar alguns segundos e recarregar a página de configurações do Gmail. Se não confirmar, entre em contato: oi@aircheck.com.br',
+      note: 'No passo 3, o Gmail pede confirmação do endereço. Nós cuidamos disso nos bastidores — basta aguardar até 2 minutos e recarregar a página de configurações do Gmail. Se após 5 minutos o endereço não aparecer como verificado, entre em contato: oi@aircheck.com.br',
     };
   }
 
