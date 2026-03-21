@@ -120,7 +120,7 @@ export default function PortariaDashboard() {
 
         {tab === "checkins" && <>
           {/* Stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10, marginBottom:20 }}>
+          <div className="portaria-stats-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10, marginBottom:20 }}>
             {[
               { l:"Hoje", v:stats.today, icon:"📋", color: stats.today > 0 ? B.primary : undefined },
               { l:"Próximos", v:stats.upcoming, icon:"📅" },
@@ -242,7 +242,7 @@ export default function PortariaDashboard() {
                         {expanded && (
                           <div style={{ borderTop:"1px solid #F0F0F0", padding:"16px 18px" }}>
                             {/* Key info grid */}
-                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+                            <div className="portaria-settings-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
                               <div>
                                 <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:4 }}>Entrada</div>
                                 <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{c.checkInDate} às {c.checkInTime}</div>
@@ -545,7 +545,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
                 <div style={{ fontSize: 12, color: "#737373", marginTop: 4 }}>Número: {settings.doormanWhatsapp}</div>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="portaria-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <div style={labelStyle}>Endereço</div>
                 <div style={readStyle}>
@@ -597,7 +597,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
               <label style={labelStyle}>Endereço</label>
               <input ref={addressRef} value={address} onChange={e => setAddress(e.target.value)} placeholder="Comece a digitar o endereço..." style={inputStyle} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="portaria-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label style={labelStyle}>Contato principal</label>
                 <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Nome do responsável" style={inputStyle} />
@@ -665,7 +665,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
           <div style={{ background: "#FAFAF9", border: "1px solid #E5E5E5", borderRadius: 10, padding: 14, marginBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: B.primary, textTransform: "uppercase", marginBottom: 10 }}>Novo membro</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="portaria-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, color: "#A3A3A3", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Nome *</label>
                   <input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nome completo" style={inputStyle} />
@@ -675,7 +675,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
                   <input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="email@exemplo.com" type="email" style={inputStyle} />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="portaria-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, color: "#A3A3A3", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Senha inicial *</label>
                   <input value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mín. 6 caracteres" type="text" style={inputStyle} />
@@ -730,7 +730,7 @@ function SettingsTab({ user, condominiumId }: { user: CondoUser | null; condomin
       {/* Info */}
       <div style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: 20 }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Informações</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="portaria-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <div style={labelStyle}>Plano</div>
             <div style={{ fontSize: 14, color: "#1A1A1A" }}>{settings.plan === "pilot" ? "Piloto (gratuito)" : settings.plan}</div>
