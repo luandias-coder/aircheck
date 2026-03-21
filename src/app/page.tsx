@@ -321,7 +321,7 @@ export default function HomePage() {
           <div className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
             {[
               { step: "01", icon: "📧", title: "Reserva entra no sistema", desc: "O email de confirmação do Airbnb é encaminhado pro AirCheck. O sistema lê e cria a reserva automaticamente — nome do hóspede, datas, código da reserva." },
-              { step: "02", icon: "📱", title: "Hóspede preenche um formulário", desc: "No chat do Airbnb, o hóspede recebe automaticamente um link. Ele preenche nome, CPF, data de nascimento e tira foto do documento." },
+              { step: "02", icon: "📱", title: "Hóspede preenche um formulário", desc: "No chat do Airbnb, o hóspede recebe automaticamente um link. Ele preenche nome, CPF e data de nascimento — tudo pelo celular em menos de 1 minuto." },
               { step: "03", icon: "✅", title: "Portaria recebe tudo pronto", desc: "Com um toque, você envia a mensagem completa pro WhatsApp da portaria. Ou, se o prédio usa o AirCheck, os dados chegam automaticamente no painel." },
             ].map((s, i) => (
               <FadeIn key={i} delay={i * 0.15}>
@@ -444,7 +444,7 @@ export default function HomePage() {
                 <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>Tudo que o porteiro precisa,<br /><span className="grad-text">numa tela só.</span></h2>
                 <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, marginBottom: 24 }}>Sem depender do WhatsApp do anfitrião. Dados padronizados, organizados e acessíveis a qualquer turno.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {["Check-ins do dia com todos os dados", "Nome, CPF, RG e foto do documento", "Placa do veículo e vaga de garagem", "Filtros por unidade e por status", "Registro digital permanente"].map((t, i) => (
+                  {["Check-ins do dia com todos os dados", "Nome, CPF e RG de cada hóspede", "Placa do veículo e vaga de garagem", "Filtros por unidade e por status", "Registro digital permanente"].map((t, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: B.accent, fontWeight: 700, flexShrink: 0 }}>✓</div>
                       <span style={{ fontSize: 14, fontWeight: 500, color: B.dark }}>{t}</span>
@@ -468,7 +468,7 @@ export default function HomePage() {
           <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {[
               { icon: "📧", title: "Reserva lida automaticamente", desc: "O email de confirmação do Airbnb vira uma reserva organizada — sem você digitar nada." },
-              { icon: "📋", title: "Coleta padronizada de dados", desc: "Formulário padrão com nome, CPF, data de nascimento e foto do documento. Acabou o vai-e-volta." },
+              { icon: "📋", title: "Coleta padronizada de dados", desc: "Formulário padrão com nome, CPF e data de nascimento. Acabou o vai-e-volta." },
               { icon: "👁️", title: "Visibilidade total", desc: "Saiba em tempo real quem já mandou os dados, quem está pendente, e o que já foi pra portaria." },
               { icon: "💬", title: "WhatsApp ou painel digital", desc: "Envie via WhatsApp com um toque. Ou, em prédios parceiros, os dados chegam automaticamente no painel." },
               { icon: "👥", title: "Múltiplos hóspedes", desc: "Famílias e grupos preenchem dados individuais. Cada hóspede com seu documento e CPF." },
