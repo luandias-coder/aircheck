@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC" };
 
@@ -7,50 +7,8 @@ function maskCPF(v:string){return v.replace(/\D/g,"").slice(0,11).replace(/(\d{3
 function maskDate(v:string){return v.replace(/\D/g,"").slice(0,8).replace(/(\d{2})(\d)/,"$1/$2").replace(/(\d{2})(\d)/,"$1/$2")}
 function maskPhone(v:string){return v.replace(/\D/g,"").slice(0,13)}
 
-// Compress image to max 800KB JPEG using canvas with iterative quality reduction
-function compressImage(file:File,maxSizeKB=800):Promise<File>{
-  return new Promise((resolve)=>{
-    // PDFs: can't compress, check size
-    if(file.type==="application/pdf"){
-      if(file.size>3*1024*1024){
-        // Too large PDF - reject
-        resolve(new File([],"too-large.pdf",{type:"application/pdf"}));
-      }else{resolve(file)}
-      return;
-    }
-    if(!file.type.startsWith("image/")){resolve(file);return}
-    const img=new Image();
-    img.onload=()=>{
-      const canvas=document.createElement("canvas");
-      let w=img.width,h=img.height;
-      const maxDim=1200;
-      if(w>maxDim||h>maxDim){
-        if(w>h){h=Math.round(h*(maxDim/w));w=maxDim}
-        else{w=Math.round(w*(maxDim/h));h=maxDim}
-      }
-      canvas.width=w;canvas.height=h;
-      const ctx=canvas.getContext("2d")!;
-      ctx.drawImage(img,0,0,w,h);
-      // Iterative quality reduction
-      const tryQuality=(q:number)=>{
-        canvas.toBlob(blob=>{
-          if(!blob){resolve(file);return}
-          if(blob.size>maxSizeKB*1024&&q>0.3){
-            tryQuality(q-0.1);
-          }else{
-            resolve(new File([blob],file.name.replace(/\.\w+$/,".jpg"),{type:"image/jpeg"}));
-          }
-        },"image/jpeg",q);
-      };
-      tryQuality(0.7);
-    };
-    img.onerror=()=>resolve(file);
-    img.src=URL.createObjectURL(file);
-  });
-}
-
-interface GuestForm { fullName:string; birthDate:string; cpf:string; rg:string; foreign:boolean; passport:string; rne:string; file:File|null; preview:string|null; fileName:string|null }
-const emptyGuest=():GuestForm=>({fullName:"",birthDate:"",cpf:"",rg:"",foreign:false,passport:"",rne:"",file:null,preview:null,fileName:null});
+interface GuestForm { fullName:string; birthDate:string; cpf:string; rg:string; foreign:boolean; passport:string; rne:string }
+const emptyGuest=():GuestForm=>({fullName:"",birthDate:"",cpf:"",rg:"",foreign:false,passport:"",rne:""});
 
 interface ResData { propertyName:string; guestName:string; guestPhone:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; carPlate:string|null; carModel:string|null; condominiumName:string|null; condominiumAddress:string|null; guests:Array<{fullName:string;birthDate:string;cpf:string|null;rg:string|null;foreign:boolean;passport:string|null;rne:string|null;hasDocument:boolean}> }
 
@@ -80,8 +38,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
         // Pre-fill existing guests (e.g. when host reopened form to add more)
         const prefilled=d.guests.map((g:any):GuestForm=>({
           fullName:g.fullName||"",birthDate:g.birthDate||"",cpf:g.cpf||"",rg:g.rg||"",
-          foreign:g.foreign||false,passport:g.passport||"",rne:g.rne||"",
-          file:null,preview:null,fileName:g.hasDocument?"documento_anterior":null
+          foreign:g.foreign||false,passport:g.passport||"",rne:g.rne||""
         }));
         const extra=Math.max(0,d.numGuests-prefilled.length);
         setGuests([...prefilled,...Array.from({length:extra},emptyGuest)]);
@@ -99,54 +56,19 @@ export default function CheckInPage({params}:{params:{token:string}}){
 
   const updateGuest=(i:number,field:keyof GuestForm,val:any)=>{setGuests(p=>{const n=[...p];n[i]={...n[i],[field]:val};return n})};
 
-  const handleFile=async(i:number,rawFile:File)=>{
-    if(rawFile.size>15*1024*1024){alert("Arquivo muito grande. Máximo 15MB.");return}
-    if(rawFile.type==="application/pdf"&&rawFile.size>3*1024*1024){alert("PDF muito grande (máx 3MB). Tire uma foto do documento com a câmera.");return}
-    const file=await compressImage(rawFile);
-    if(file.size>4*1024*1024){alert("Não foi possível comprimir o suficiente. Tire uma foto do documento com a câmera.");return}
-    updateGuest(i,"file",file);
-    updateGuest(i,"fileName",rawFile.name);
-    if(file.type.startsWith("image/")){
-      const r=new FileReader();
-      r.onload=e=>updateGuest(i,"preview",e.target?.result as string);
-      r.readAsDataURL(file);
-    }else{
-      updateGuest(i,"preview",null);
-    }
-  };
-
-  const canSubmit=!!guestPhone&&guests.length>0&&guests.every((g,i)=>{
+  const canSubmit=!!guestPhone&&guests.length>0&&guests.every((g)=>{
     const hasName=!!g.fullName&&!!g.birthDate;
-    const hasDoc=!!g.file||(data?.guests[i]?.hasDocument===true);
     const hasIdDoc=g.foreign?!!g.passport:!!g.cpf;
-    return hasName&&hasDoc&&hasIdDoc;
+    return hasName&&hasIdDoc;
   });
-
-  const[uploadStatus,setUploadStatus]=useState("");
 
   const handleSubmit=async(e:React.FormEvent)=>{
     e.preventDefault();
     if(!canSubmit)return;
     setSubmitting(true);
     try{
-      // Upload documents individually first
-      const documentUrls:Record<number,string>={};
-      const toUpload=guests.map((g,i)=>({index:i,file:g.file})).filter(x=>x.file);
-      for(let j=0;j<toUpload.length;j++){
-        const{index,file}=toUpload[j];
-        setUploadStatus(`Enviando documento ${j+1} de ${toUpload.length}...`);
-        const uf=new FormData();
-        uf.append("file",file!);
-        uf.append("reservationId",params.token);
-        const res=await fetch("/api/upload-doc",{method:"POST",body:uf});
-        const d=await res.json().catch(()=>({error:`HTTP ${res.status}`}));
-        if(!res.ok)throw new Error(d.error||"Erro no upload do documento");
-        documentUrls[index]=d.url;
-      }
-      setUploadStatus("Salvando dados...");
-      // Submit form data with document URLs (no files)
       const fd=new FormData();
-      fd.append("guests",JSON.stringify(guests.map((g,i)=>({fullName:g.fullName,birthDate:g.birthDate,cpf:g.cpf,rg:g.rg,foreign:g.foreign,passport:g.passport,rne:g.rne,documentUrl:documentUrls[i]||undefined}))));
+      fd.append("guests",JSON.stringify(guests.map((g)=>({fullName:g.fullName,birthDate:g.birthDate,cpf:g.cpf,rg:g.rg,foreign:g.foreign,passport:g.passport,rne:g.rne}))));
       if(carPlate)fd.append("carPlate",carPlate);
       if(carModel)fd.append("carModel",carModel);
       const fullPhone=`${phoneCountry}${guestPhone}`;
@@ -154,7 +76,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
       const res=await fetch(`/api/checkin/${params.token}`,{method:"POST",body:fd});
       if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Erro ${res.status}`)}
       setSubmitted(true);
-    }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false);setUploadStatus("")}
+    }catch(e:any){alert(e?.message||"Erro ao enviar. Tente novamente.")}finally{setSubmitting(false)}
   };
 
   if(loading)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#FAFAF9"}}><div style={{fontFamily:"Outfit",fontSize:14,color:"#A3A3A3"}}>Carregando...</div></div>;
@@ -214,7 +136,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
 
       {/* Guest cards */}
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} total={guests.length} hasExistingDoc={data?.guests[i]?.hasDocument===true&&!g.file} onChange={updateGuest} onFile={handleFile}/>)}
+        {guests.map((g,i)=><GuestCard key={i} index={i} guest={g} total={guests.length} onChange={updateGuest}/>)}
       </div>
 
       {/* Vehicle */}
@@ -236,7 +158,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
         color:canSubmit?"#fff":"#A3A3A3",border:"none",borderRadius:14,cursor:canSubmit?"pointer":"not-allowed",
         boxShadow:canSubmit?"0 4px 20px rgba(0,0,0,0.15)":"none",
       }}>
-        {submitting?(uploadStatus||"Enviando..."):"Enviar dados para check-in"}
+        {submitting?"Enviando...":"Enviar dados para check-in"}
       </button>
       <p style={{textAlign:"center",fontSize:11,color:"#A3A3A3",marginTop:14,lineHeight:1.5}}>Seus dados são utilizados exclusivamente para registro na portaria.</p>
     </form>
@@ -244,20 +166,7 @@ export default function CheckInPage({params}:{params:{token:string}}){
 }
 
 // ─── GUEST CARD ─────────────────────────────────────────────────
-function GuestCard({index:i,guest:g,total,hasExistingDoc,onChange,onFile}:{index:number;guest:GuestForm;total:number;hasExistingDoc:boolean;onChange:(i:number,f:keyof GuestForm,v:any)=>void;onFile:(i:number,f:File)=>void}){
-  const fileRef=useRef<HTMLInputElement>(null);
-  const[uploading,setUploading]=useState(false);
-
-  const handleFileChange=async(e:React.ChangeEvent<HTMLInputElement>)=>{
-    const f=e.target.files?.[0];
-    if(!f)return;
-    setUploading(true);
-    try{await onFile(i,f)}catch{}
-    setUploading(false);
-    // Reset input so same file can be re-selected
-    e.target.value="";
-  };
-
+function GuestCard({index:i,guest:g,total,onChange}:{index:number;guest:GuestForm;total:number;onChange:(i:number,f:keyof GuestForm,v:any)=>void}){
   return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 16px"}}>
     <div style={{marginBottom:14}}>
       <span style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Hóspede {i+1}{total>1?` de ${total}`:""}</span>
@@ -298,7 +207,7 @@ function GuestCard({index:i,guest:g,total,hasExistingDoc,onChange,onFile}:{index
     </div>
 
     {/* RG or RNE */}
-    <div style={{marginBottom:12}}>
+    <div>
       {g.foreign?<>
         <label style={lblStyle}>RNE <span style={{fontWeight:400,color:"#A3A3A3"}}>(se houver)</span></label>
         <input value={g.rne} onChange={e=>onChange(i,"rne",e.target.value)} placeholder="Número do RNE" enterKeyHint="next" style={iStyle}/>
@@ -306,48 +215,6 @@ function GuestCard({index:i,guest:g,total,hasExistingDoc,onChange,onFile}:{index
         <label style={lblStyle}>RG</label>
         <input value={g.rg} onChange={e=>onChange(i,"rg",e.target.value)} placeholder="Número do RG" enterKeyHint="next" style={iStyle}/>
       </>}
-    </div>
-
-    {/* Document upload */}
-    <div>
-      <label style={lblStyle}>Documento com foto <span style={{color:B.primary}}>*</span></label>
-      <div onClick={()=>!uploading&&fileRef.current?.click()} style={{border:`2px dashed ${(g.file||hasExistingDoc)?"transparent":"#D4D4D4"}`,borderRadius:12,cursor:uploading?"wait":"pointer",overflow:"hidden",background:(g.file||hasExistingDoc)?"transparent":"#FAFAF9",WebkitTapHighlightColor:"transparent"}}>
-        {uploading
-          ?<div style={{padding:"28px 16px",textAlign:"center"}}>
-            <div style={{fontSize:14,fontWeight:500,color:"#737373"}}>Comprimindo imagem...</div>
-          </div>
-          :g.preview
-          ?<div style={{position:"relative"}}>
-            <img src={g.preview} alt="Doc" style={{width:"100%",maxHeight:280,objectFit:"contain",display:"block",borderRadius:10,background:"#F5F5F5"}}/>
-            <div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:12,fontWeight:600,padding:"6px 12px",borderRadius:8}}>Trocar</div>
-          </div>
-          :g.file&&g.fileName
-          ?<div style={{padding:"18px 16px",display:"flex",alignItems:"center",gap:12,background:"#ECFDF5",borderRadius:10,border:"1px solid #BBF7D0"}}>
-            <span style={{fontSize:24}}>📄</span>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:600,color:"#059669",marginBottom:2}}>Arquivo anexado</div>
-              <div style={{fontSize:12,color:"#737373",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.fileName}</div>
-            </div>
-            <span style={{fontSize:14,color:"#059669",fontWeight:700}}>✓</span>
-          </div>
-          :hasExistingDoc
-          ?<div style={{padding:"18px 16px",display:"flex",alignItems:"center",gap:12,background:"#ECFDF5",borderRadius:10,border:"1px solid #BBF7D0"}}>
-            <span style={{fontSize:24}}>✅</span>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:600,color:"#059669",marginBottom:2}}>Documento já enviado</div>
-              <div style={{fontSize:12,color:"#737373"}}>Toque para substituir (opcional)</div>
-            </div>
-          </div>
-          :<div style={{padding:"28px 16px",textAlign:"center"}}>
-            <div style={{fontSize:28,marginBottom:6,opacity:0.4}}>📄</div>
-            <div style={{fontSize:14,fontWeight:500,color:"#737373"}}>Toque para enviar</div>
-            <div style={{fontSize:14,fontWeight:500,color:"#737373"}}>foto do {g.foreign?"passaporte":"RG ou CNH"}</div>
-            <div style={{fontSize:12,color:"#A3A3A3",marginTop:8}}>Câmera, galeria ou arquivo PDF</div>
-          </div>
-        }
-      </div>
-      {/* accept order: specific types first, then wildcard - helps iOS show all options */}
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*,application/pdf" style={{display:"none"}} onChange={handleFileChange}/>
     </div>
   </div>
 }
