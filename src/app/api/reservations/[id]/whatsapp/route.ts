@@ -19,7 +19,6 @@ const E = {
   globe:    String.fromCodePoint(0x1F30D),
   car:      String.fromCodePoint(0x1F697),
   check:    String.fromCodePoint(0x2705),
-  doc:      String.fromCodePoint(0x1F4CE),
 };
 
 // Format name: trim, title case each word
@@ -84,9 +83,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       } else {
         if (g.cpf) l.push(`   ${E.id} CPF: ${g.cpf}`);
         if (g.rg) l.push(`   ${E.id} RG: ${g.rg}`);
-      }
-      if (r.property.includeDocLinks && g.documentUrl) {
-        l.push(`   ${E.doc} Doc: https://airchk.in/d/${g.id}`);
       }
     });
     if (r.carPlate || r.carModel) {
