@@ -451,6 +451,18 @@ export default function OnboardingPage(){
             </p>
           </div>
 
+          {/* Bulk forward tip for existing reservations */}
+          <div style={{background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:14,padding:"16px 20px",marginBottom:20}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0369A1",marginBottom:6}}>💡 Já tem reservas confirmadas?</div>
+            <p style={{fontSize:12,color:"#0C4A6E",lineHeight:1.6,margin:0}}>
+              O filtro só captura reservas <strong>novas</strong>. Para importar as que já estão no seu email, busque na caixa de entrada por{" "}
+              <code style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:B.primary,background:B.light,padding:"2px 6px",borderRadius:4}}>from:automated@airbnb.com Reserva confirmada</code>{" "}
+              e encaminhe todos os resultados para{" "}
+              <code style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:B.primary,background:B.light,padding:"2px 6px",borderRadius:4}}>reservas@aircheck.com.br</code>.{" "}
+              O AirCheck identifica e processa cada uma automaticamente — sem duplicatas.
+            </p>
+          </div>
+
           {/* CTA + Polling */}
           {!polling&&<button onClick={startPolling} style={btnStyle()}>Já encaminhei — aguardar reserva →</button>}
 
