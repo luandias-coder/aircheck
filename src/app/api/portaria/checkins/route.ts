@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     // Get all properties linked to this condominium
     const properties = await prisma.property.findMany({
       where: { condominiumId },
-      select: { id: true, name: true, unitNumber: true, parkingSpot: true },
+      select: { id: true, name: true, unitNumber: true, parkingSpot: true, photoUrl: true },
     });
 
     if (properties.length === 0) {
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         status: { notIn: ["archived", "cancelled"] },
       },
       include: {
-        property: { select: { id: true, name: true, unitNumber: true, parkingSpot: true } },
+        property: { select: { id: true, name: true, unitNumber: true, parkingSpot: true, photoUrl: true } },
         user: { select: { name: true, phone: true } },
         guests: {
           select: { id: true, fullName: true, birthDate: true, cpf: true, rg: true, foreign: true, passport: true, rne: true, documentUrl: true },
