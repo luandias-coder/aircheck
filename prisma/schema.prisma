@@ -89,6 +89,7 @@ model Property {
   unitNumber      String?
   parkingSpot     String?
   includeDocLinks Boolean  @default(false)
+  photoUrl        String?  // foto do imóvel extraída do email do Airbnb
   condominiumId   String?
   whatsappEnabled Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
   createdAt       DateTime @default(now())
