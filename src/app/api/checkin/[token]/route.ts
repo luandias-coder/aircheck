@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
 
     return NextResponse.json({
       propertyName: r.property.name,
-      propertyPhotoUrl: null, // TODO: Fase 15 — property photo from email parse or manual upload
+      propertyPhotoUrl: r.property.photoUrl || null,
       guestName: r.guestFullName,
       guestPhone: r.guestPhone,
       guestPhotoUrl: r.guestPhotoUrl || null,
