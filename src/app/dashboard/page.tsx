@@ -211,7 +211,7 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
         </div>
         <Badge status={r.status}/>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginTop:18,paddingTop:14,borderTop:"1px solid #F0F0F0"}}>
+      <div className="detail-stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginTop:18,paddingTop:14,borderTop:"1px solid #F0F0F0"}}>
         {[{l:"Check-in",v:r.checkInDate,s:r.checkInTime},{l:"Check-out",v:r.checkOutDate,s:r.checkOutTime},{l:"Hóspedes",v:String(r.numGuests)},{l:"Código",v:r.confirmationCode,m:true}].map((x,i)=><div key={i}><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>{x.l}</div><div style={{fontFamily:x.m?"'IBM Plex Mono'":"Outfit",fontSize:14,fontWeight:600,color:"#1A1A1A",marginTop:3}}>{x.v||"—"}</div>{x.s&&<div style={{fontSize:12,color:"#A3A3A3"}}>{x.s}</div>}</div>)}
       </div>
       {r.hostPayment&&<div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #F0F0F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:"#A3A3A3"}}>Pagamento do anfitrião</span><span style={{fontSize:16,fontWeight:700,color:"#059669"}}>{r.hostPayment}</span></div>}
@@ -323,7 +323,7 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Alterar senha</div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Senha atual</label><input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,boxSizing:"border-box"}}/></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div className="settings-password-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Nova senha</label><input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Mín. 6 caracteres" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:`1px solid ${newPw&&newPw.length<6?"#DC2626":"#E5E5E5"}`,borderRadius:8,boxSizing:"border-box"}}/></div>
           <div><label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Confirmar nova senha</label><input type="password" value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:`1px solid ${confirmPw&&confirmPw!==newPw?"#DC2626":"#E5E5E5"}`,borderRadius:8,boxSizing:"border-box"}}/></div>
         </div>
@@ -576,7 +576,7 @@ function PropertiesTab({properties,onRefresh,initialCondoCode}:{properties:Prope
           <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados do imóvel</div>
 
           {/* Unit number & parking spot */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div className="property-details-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             <div>
               <label style={{fontSize:11,fontWeight:500,color:"#737373",display:"block",marginBottom:4}}>Nº da Unidade *</label>
               <input value={details.unitNumber} onChange={e=>setDetails({...details,unitNumber:e.target.value})} placeholder="Ex: 501, Bloco A - 102" style={{width:"100%",fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
