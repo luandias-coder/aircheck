@@ -33,6 +33,7 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
   const router=useRouter();
+  const[condoFromUrl,setCondoFromUrl]=useState<string|null>(null);
   const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs"|"feedback">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
@@ -69,6 +70,10 @@ export default function Dashboard(){
     }catch(e){console.error(e)}finally{setLoading(false)}
   },[router]);
   useEffect(()=>{fetchData()},[fetchData]);
+  useEffect(()=>{
+    const p=new URLSearchParams(window.location.search).get("condo");
+    if(p){setCondoFromUrl(p);setTab("properties")}
+  },[]);
 
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
 
@@ -130,7 +135,7 @@ export default function Dashboard(){
           </div>
 
           {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
-          :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData}/>
+          :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
           :tab==="feedback"?<FeedbackTab/>
           :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
@@ -541,11 +546,11 @@ function LogsTab(){
 }
 
 // ─── PROPERTIES TAB ─────────────────────────────────────────────
-function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:()=>void}){
+function PropertiesTab({properties,onRefresh,initialCondoCode}:{properties:Property[];onRefresh:()=>void;initialCondoCode?:string}){
   const[editingId,setEditingId]=useState<string|null>(null);
   const[form,setForm]=useState({phone:"",name:"",label:""});
   const[details,setDetails]=useState({unitNumber:"",parkingSpot:""});
-  const[condoCode,setCondoCode]=useState("");
+  const[condoCode,setCondoCode]=useState(initialCondoCode||"");
   const[condoError,setCondoError]=useState("");
   const[condoSaving,setCondoSaving]=useState(false);
   const[saving,setSaving]=useState(false);
@@ -563,6 +568,7 @@ function PropertiesTab({properties,onRefresh}:{properties:Property[];onRefresh:(
 
   return<div style={{display:"flex",flexDirection:"column",gap:10}}>
     <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem, portarias e condomínio parceiro.</div>
+    {initialCondoCode&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#F0F4FF",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#3B5FE5",border:"1px solid #D4DEFF"}}><span>🏢</span>Você foi convidado por um condomínio! Edite um imóvel abaixo e vincule usando o código <strong>{initialCondoCode}</strong>.</div>}
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{!p.condominium&&p.includeDocLinks?<span style={{color:"#059669"}}> · 📎 Docs ativado</span>:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>

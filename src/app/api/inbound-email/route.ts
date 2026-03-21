@@ -69,6 +69,63 @@ export async function POST(req: NextRequest) {
 
     fromEmail = fromEmail.toLowerCase().trim();
 
+    // ── Gmail Forwarding Confirmation Auto-Handler ──────────────────
+    // When a host adds reservas@aircheck.com.br as a forwarding address in Gmail,
+    // Gmail sends a confirmation email from forwarding-noreply@google.com.
+    // We detect it, auto-click the confirmation link, and log it so the frontend
+    // polling endpoint (/api/gmail-verification) can tell the host it's confirmed.
+    if (fromEmail === "forwarding-noreply@google.com") {
+      const body = htmlBody || textBody || "";
+      
+      // Extract confirmation link from HTML/text
+      const linkMatch = body.match(/https:\/\/mail\.google\.com\/mail\/[^\s"'<>]+/);
+      
+      let confirmStatus = "gmail_confirmation";
+      let confirmError: string | null = null;
+
+      if (linkMatch) {
+        try {
+          const confirmRes = await fetch(linkMatch[0], {
+            redirect: "follow",
+            headers: { "User-Agent": "AirCheck/1.0" },
+          });
+          console.log(`[gmail-confirm] Fetched confirmation link, status: ${confirmRes.status}`);
+          
+          if (confirmRes.status >= 400) {
+            confirmError = `Confirmation link returned status ${confirmRes.status}`;
+          }
+        } catch (err: any) {
+          console.error("[gmail-confirm] Error fetching confirmation link:", err);
+          confirmError = err.message || "Failed to fetch confirmation link";
+        }
+      } else {
+        confirmError = "No confirmation link found in email";
+        console.log("[gmail-confirm] No link found in email body");
+      }
+
+      // Log the Gmail confirmation (even if it failed — frontend will still see the attempt)
+      await prisma.inboundEmailLog.create({
+        data: {
+          fromEmail,
+          toEmail: toEmail || null,
+          subject: subject || null,
+          textBody: textBody || null,
+          htmlBody: htmlBody ? htmlBody.slice(0, 50000) : null,
+          rawPayload: rawPayload ? rawPayload.slice(0, 100000) : null,
+          status: confirmStatus,
+          error: confirmError,
+        },
+      });
+
+      console.log(`[gmail-confirm] Processed. Status: ${confirmStatus}, error: ${confirmError || "none"}`);
+      return NextResponse.json({ 
+        success: true, 
+        type: "gmail_forwarding_confirmation",
+        confirmed: !confirmError,
+      });
+    }
+    // ── End Gmail Confirmation Handler ──────────────────────────────
+
     // Log the email immediately (even before parsing)
     const log = await prisma.inboundEmailLog.create({
       data: {

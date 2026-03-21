@@ -824,6 +824,130 @@ Vaga: [NÚMERO DA VAGA]</p>
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST 11 — GUIA GMAIL FORWARDING (central de ajuda)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  slug: "como-configurar-encaminhamento-email-airbnb-gmail",
+  title: "Como configurar o encaminhamento automático de reservas do Airbnb no Gmail",
+  description: "Guia completo com prints: configure o Gmail para encaminhar automaticamente os emails de reserva do Airbnb para o AirCheck em menos de 5 minutos.",
+  category: "checkin-portaria",
+  tags: ["gmail", "encaminhamento", "email", "airbnb", "configuração", "filtro", "tutorial", "passo a passo"],
+  author: "AirCheck",
+  publishedAt: "2026-03-20",
+  readingTime: 5,
+  content: `
+<p>Para o AirCheck funcionar automaticamente, ele precisa receber os emails de confirmação de reserva que o Airbnb envia pra você. A forma mais simples é criar um <strong>filtro de encaminhamento automático</strong> no seu email.</p>
+
+<p>Neste guia, mostramos passo a passo como configurar no <strong>Gmail</strong> — incluindo contas do Google Workspace (emails corporativos que usam a interface do Gmail). O processo leva menos de 5 minutos e você faz uma única vez.</p>
+
+<h2>Visão geral</h2>
+
+<p>São 3 etapas:</p>
+<ol>
+<li>Adicionar o endereço de encaminhamento do AirCheck no Gmail</li>
+<li>Aguardar a confirmação do endereço (nós cuidamos disso nos bastidores)</li>
+<li>Importar o filtro automático (via arquivo XML que fornecemos)</li>
+</ol>
+
+<p><strong>Versão rápida:</strong> se você já tem experiência com filtros do Gmail, pode <a href="/aircheck-gmail-filter.xml" download>baixar nosso arquivo de filtro XML</a> e importar em Configurações → Filtros → Importar filtros. Mas antes, complete as etapas 1 e 2 abaixo.</p>
+
+<h2>Etapa 1 — Adicionar o endereço de encaminhamento</h2>
+
+<p>Abra o Gmail <strong>no computador</strong> (este passo precisa ser feito no desktop). Clique no ícone de <strong>engrenagem ⚙️</strong> no canto superior direito e depois em <strong>"Ver todas as configurações"</strong>.</p>
+
+<p>Na barra de abas, clique em <strong>"Encaminhamento e POP/IMAP"</strong>.</p>
+
+<p><img src="/blog/gmail-setup/1.png" alt="Configurações do Gmail — aba Encaminhamento e POP/IMAP" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p>Clique no botão <strong>"Adicionar um endereço de encaminhamento"</strong>.</p>
+
+<p>No popup, digite:</p>
+
+<p style="text-align:center;font-size:18px;font-weight:700;color:#3B5FE5;padding:12px;background:#EBF0FF;border-radius:8px;margin:16px 0"><code>reservas@aircheck.com.br</code></p>
+
+<p>Clique em <strong>"Avançar"</strong>.</p>
+
+<p><img src="/blog/gmail-setup/2.png" alt="Popup de adicionar endereço de encaminhamento" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p>Uma janela de confirmação vai aparecer. Clique em <strong>"Continuar"</strong>.</p>
+
+<p><img src="/blog/gmail-setup/3.png" alt="Popup de confirmação" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<h2>Etapa 2 — Aguardar a confirmação</h2>
+
+<p>O Gmail vai exibir a mensagem: <em>"Um link de confirmação foi enviado a reservas@aircheck.com.br para verificar a permissão"</em>. Clique em <strong>OK</strong>.</p>
+
+<p><img src="/blog/gmail-setup/4.png" alt="Gmail informando que o link de confirmação foi enviado" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p><strong>Nós cuidamos da confirmação nos bastidores.</strong> Aguarde de 1 a 2 minutos e recarregue a página de configurações do Gmail (aperte F5). O endereço vai aparecer como verificado.</p>
+
+<p><img src="/blog/gmail-setup/5.png" alt="Endereço de encaminhamento verificado no Gmail" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p><strong>Importante:</strong> não é necessário ativar o encaminhamento geral (pode deixar em "Desativar encaminhamento"). Vamos usar um filtro específico — assim, apenas os emails do Airbnb serão encaminhados, não todos os seus emails.</p>
+
+<p><img src="/blog/gmail-setup/8.png" alt="Encaminhamento desativado mas endereço verificado" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p>Se o endereço não aparecer como verificado após 5 minutos, entre em contato conosco em <a href="mailto:oi@aircheck.com.br">oi@aircheck.com.br</a>.</p>
+
+<h2>Etapa 3 — Importar o filtro automático</h2>
+
+<p>Agora vamos configurar o Gmail para encaminhar automaticamente apenas os emails de reserva do Airbnb. A forma mais rápida é importar nosso filtro pronto:</p>
+
+<ol>
+<li><a href="/aircheck-gmail-filter.xml" download><strong>Baixe o arquivo de filtro do AirCheck</strong></a></li>
+<li>No Gmail, vá na aba <strong>"Filtros e endereços bloqueados"</strong></li>
+<li>Role até o final e clique em <strong>"Importar filtros"</strong></li>
+<li>Selecione o arquivo XML baixado e clique em <strong>"Abrir arquivo"</strong></li>
+<li>Marque <strong>"Aplicar filtro às conversas correspondentes"</strong> — isso processa reservas que já estão na sua caixa</li>
+<li>Clique em <strong>"Criar filtros"</strong></li>
+</ol>
+
+<p><strong>Pronto!</strong> O filtro foi criado. Confira na lista de filtros:</p>
+
+<p><img src="/blog/gmail-setup/9.png" alt="Filtro criado — from:(automated@airbnb.com), Encaminhar para reservas@aircheck.com.br" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<h2>Alternativa: criar o filtro manualmente</h2>
+
+<p>Se preferir criar o filtro sem importar o XML:</p>
+
+<ol>
+<li>Na caixa de entrada do Gmail, clique na <strong>barra de pesquisa</strong> e depois no ícone de <strong>"Mostrar opções de pesquisa"</strong> (ícone de filtro ao lado da barra)</li>
+<li>No campo <strong>"De"</strong>, digite: <code>automated@airbnb.com</code></li>
+<li>Clique em <strong>"Criar filtro"</strong></li>
+</ol>
+
+<p><img src="/blog/gmail-setup/6.png" alt="Opções de pesquisa com automated@airbnb.com" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<p>Na próxima tela, marque:</p>
+<ul>
+<li>✅ <strong>"Encaminhar para: reservas@aircheck.com.br"</strong></li>
+<li>✅ <strong>"Marcar como lida"</strong> (opcional, mas recomendado)</li>
+<li>✅ <strong>"Também aplicar filtro a X conversas correspondentes"</strong></li>
+</ul>
+
+<p>Clique em <strong>"Criar filtro"</strong>.</p>
+
+<p><img src="/blog/gmail-setup/7.png" alt="Configuração do filtro com encaminhamento e marcar como lida" style="max-width:100%;border-radius:8px;border:1px solid #E5E5E5;margin:16px 0" /></p>
+
+<h2>E os cancelamentos?</h2>
+
+<p>Os emails de confirmação e cancelamento do Airbnb vêm do mesmo remetente (<code>automated@airbnb.com</code>). Com esse filtro, ambos são encaminhados automaticamente — o AirCheck processa cancelamentos e atualiza o status da reserva no painel.</p>
+
+<h2>Google Workspace (email corporativo)</h2>
+
+<p>Se você usa um email corporativo hospedado no Google (ex: <code>voce@suaempresa.com.br</code> com interface do Gmail), o processo é idêntico. O Gmail é o mesmo — o que muda é só o domínio do seu email.</p>
+
+<h2>Usa outro provedor?</h2>
+
+<p>Se você usa <strong>Outlook/Hotmail</strong>, <strong>Yahoo Mail</strong> ou <strong>Zoho Mail</strong>, o processo é similar mas em telas diferentes. Durante o onboarding do AirCheck, mostramos o passo a passo específico pro seu provedor automaticamente.</p>
+
+<h2>Precisa de ajuda?</h2>
+
+<p>Se tiver qualquer dificuldade, entre em contato em <a href="mailto:oi@aircheck.com.br">oi@aircheck.com.br</a>. Vamos te ajudar pessoalmente a configurar.</p>
+`,
+},
+
 ];
 
 // ─── HELPERS ────────────────────────────────────────────────────

@@ -199,3 +199,49 @@ export function weeklyDigestEmail(d: DigestData) {
     `),
   };
 }
+
+// ─── INVITE HOST EMAIL (condomínio convida anfitrião) ──────────
+interface InviteHostData {
+  condoName: string;
+  condoCode: string;
+  condoAddress: string | null;
+  invitedBy: string;
+  hasAccount: boolean;
+}
+
+export function inviteHostEmail(d: InviteHostData) {
+  const dashboardUrl = `https://aircheck.com.br/dashboard?condo=${encodeURIComponent(d.condoCode)}`;
+  const registerUrl = `https://aircheck.com.br/register?condo=${encodeURIComponent(d.condoCode)}`;
+  const actionUrl = d.hasAccount ? dashboardUrl : registerUrl;
+  const actionLabel = d.hasAccount ? "Vincular meu imóvel →" : "Criar conta grátis →";
+
+  return {
+    subject: `${d.condoName} convidou você para o AirCheck`,
+    html: layout(`
+      <h1>Você foi convidado! 🏢</h1>
+      <p>Olá! O condomínio <strong style="color:#1A1A1A">${d.condoName}</strong> está usando o AirCheck para organizar o check-in de hóspedes e convidou você como anfitrião.</p>
+      
+      ${d.condoAddress ? `<p style="font-size:13px;color:#737373">📍 ${d.condoAddress}</p>` : ""}
+      
+      <div style="background:#F0F4FF;border:1px solid #D4DEFF;border-radius:12px;padding:20px;margin:20px 0;text-align:center">
+        <p style="font-size:12px;color:#737373;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px">Código do condomínio</p>
+        <p style="font-size:32px;font-weight:800;color:#3B5FE5;letter-spacing:0.1em;margin:0;font-family:monospace">${d.condoCode}</p>
+      </div>
+      
+      <p>Com o AirCheck, seus hóspedes preenchem um formulário padronizado com nome, CPF e documento — e a portaria recebe tudo automaticamente. Sem mensagens no WhatsApp, sem dado faltando.</p>
+      
+      <p style="text-align:center;margin:28px 0 24px">
+        <a href="${actionUrl}" class="btn">${actionLabel}</a>
+      </p>
+      
+      ${d.hasAccount
+        ? `<p style="font-size:13px;color:#A3A3A3;text-align:center">Você já tem conta no AirCheck. Basta acessar seu painel, ir em <strong style="color:#737373">Imóveis → Editar → Condomínio Parceiro</strong> e usar o código acima.</p>`
+        : `<p style="font-size:13px;color:#A3A3A3;text-align:center">Crie sua conta gratuita e o código do condomínio será preenchido automaticamente.</p>`
+      }
+      
+      <div class="divider"></div>
+      
+      <p style="font-size:12px;color:#A3A3A3;text-align:center;margin-bottom:0">Convite enviado por ${d.invitedBy} · ${d.condoName}</p>
+    `),
+  };
+}
