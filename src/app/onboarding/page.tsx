@@ -287,7 +287,7 @@ export default function OnboardingPage(){
         </div>
 
         {/* ═══════════════════ STEP 1 ═══════════════════ */}
-        {step===1&&<div style={cardStyle}>
+        {step===1&&<div className="onboarding-card" style={cardStyle}>
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:32,marginBottom:12}}>👋</div>
             <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Bem-vindo ao AirCheck!</h2>
@@ -311,7 +311,7 @@ export default function OnboardingPage(){
         {/* ═══════════════════ STEP 2 ═══════════════════ */}
         {step===2&&(()=>{
           const provider=getEmailProvider(airbnbEmail||user?.inboundEmails?.[0]?.email||"",detectedProvider);
-          return <div style={cardStyle}>
+          return <div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(1)}/>
           <StepBadge n={2}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Conecte suas reservas</h2>
@@ -464,7 +464,7 @@ export default function OnboardingPage(){
         </div>})()}
 
         {/* ═══════════════════ STEP 3 ═══════════════════ */}
-        {step===3&&reservation&&<div style={cardStyle}>
+        {step===3&&reservation&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(2)}/>
           <StepBadge n={3}/>
           <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:100,padding:"6px 14px",marginBottom:16}}>
@@ -488,7 +488,7 @@ export default function OnboardingPage(){
         </div>}
 
         {/* ═══════════════════ STEP 4 ═══════════════════ */}
-        {step===4&&reservation&&<div style={cardStyle}>
+        {step===4&&reservation&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(3)}/>
           <StepBadge n={4}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:4}}>{reservation.property.name}</h2>
@@ -553,7 +553,7 @@ export default function OnboardingPage(){
         </div>}
 
         {/* ═══════════════════ STEP 5 ═══════════════════ */}
-        {step===5&&reservation&&<div style={cardStyle}>
+        {step===5&&reservation&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(4)}/>
           <StepBadge n={5}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Formulário de check-in</h2>
@@ -577,7 +577,7 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 6 ═══════════════════ */}
         {step===6&&reservation&&(()=>{
-          return<div style={cardStyle}>
+          return<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(5)}/>
           <StepBadge n={6}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Mensagem automática no Airbnb</h2>
@@ -616,7 +616,7 @@ export default function OnboardingPage(){
         </div>})()}
 
         {/* ═══════════════════ STEP 7 ═══════════════════ */}
-        {step===7&&reservation&&<div style={cardStyle}>
+        {step===7&&reservation&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(6)}/>
           <StepBadge n={7}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>{condoLinked?"Pronto! A portaria já recebe tudo.":"Pronto! Envie para a portaria."}</h2>
