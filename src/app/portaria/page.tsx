@@ -6,8 +6,8 @@ import BottomTabBarPortaria from "@/components/BottomTabBarPortaria";
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", accent:"#059669" };
 
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface CheckIn { id:string; guestName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; confirmationCode:string|null; carPlate:string|null; carModel:string|null; hostName:string; hostPhone:string|null; property:{ id:string; name:string; unitNumber:string|null; parkingSpot:string|null }; guests:Guest[] }
-interface PropertyInfo { id:string; name:string; unitNumber:string|null; parkingSpot:string|null }
+interface CheckIn { id:string; guestName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; confirmationCode:string|null; carPlate:string|null; carModel:string|null; hostName:string; hostPhone:string|null; property:{ id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null }; guests:Guest[] }
+interface PropertyInfo { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null }
 interface Stats { today:number; upcoming:number; pending:number; totalProperties:number }
 interface CondoUser { id:string; name:string; email:string; role:string }
 interface Condo { id:string; name:string; code:string; address:string|null }
@@ -207,11 +207,20 @@ export default function PortariaDashboard() {
                         <button onClick={() => setExpandedId(expanded ? null : c.id)} style={{
                           width:"100%", textAlign:"left", background:"none", border:"none", padding:"16px 18px", cursor:"pointer", display:"flex", alignItems:"center", gap:14, color:"#1A1A1A", fontFamily:"Outfit"
                         }}>
-                          {/* Unit badge - always visible */}
-                          <div style={{ width:52, height:52, borderRadius:12, background:B.light, border:`1px solid ${B.muted}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, flexDirection:"column" }}>
-                            <div style={{ fontSize:8, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase" }}>Unid.</div>
-                            <div style={{ fontSize:18, fontWeight:800, color:B.primary, lineHeight:1 }}>{c.property.unitNumber || "?"}</div>
-                          </div>
+                          {/* Property photo or unit badge */}
+                          {c.property.photoUrl ? (
+                            <div style={{ width:52, height:52, borderRadius:12, overflow:"hidden", flexShrink:0, position:"relative" }}>
+                              <img src={c.property.photoUrl} alt="" style={{ width:52, height:52, objectFit:"cover" }}/>
+                              {c.property.unitNumber && <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(0,0,0,0.55)", padding:"2px 0", textAlign:"center" }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:"#fff", lineHeight:1 }}>{c.property.unitNumber}</div>
+                              </div>}
+                            </div>
+                          ) : (
+                            <div style={{ width:52, height:52, borderRadius:12, background:B.light, border:`1px solid ${B.muted}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, flexDirection:"column" }}>
+                              <div style={{ fontSize:8, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase" }}>Unid.</div>
+                              <div style={{ fontSize:18, fontWeight:800, color:B.primary, lineHeight:1 }}>{c.property.unitNumber || "?"}</div>
+                            </div>
+                          )}
 
                           {/* Guest photo */}
                           {c.guestPhotoUrl && (
