@@ -38,3 +38,39 @@ html, body {
     padding-bottom: 100px !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* MOBILE RESPONSIVE — 360px Android + small screens             */
+/* ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  /* Portaria: 4-col stats → 2x2 grid */
+  .portaria-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Dashboard: 4-col detail → 2x2 grid */
+  .detail-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Dashboard: password fields side by side → stack */
+  .settings-password-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dashboard: property unit/parking side by side → stack */
+  .property-details-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Portaria: settings 2-col forms → stack */
+  .portaria-settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Onboarding: reduce card padding */
+  .onboarding-card {
+    padding: 24px 18px !important;
+  }
+}
