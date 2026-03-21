@@ -42,6 +42,7 @@ export default function Dashboard(){
   const[view,setView]=useState<"list"|"detail">("list");
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
+  const[showBulkTip,setShowBulkTip]=useState(true);
 
   const fetchData=useCallback(async()=>{
     try{
@@ -124,6 +125,16 @@ export default function Dashboard(){
               </div>
             ))}
           </div>
+
+          {/* Bulk forward tip — shows when few reservations */}
+          {showBulkTip&&active.length<=3&&<div className="fade-up" style={{background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:12,alignItems:"flex-start"}}>
+            <span style={{fontSize:18,flexShrink:0,marginTop:1}}>💡</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#0369A1",marginBottom:4}}>Já tem reservas confirmadas no email?</div>
+              <div style={{fontSize:12,color:"#0C4A6E",lineHeight:1.6}}>Busque por <strong>from:automated@airbnb.com Reserva confirmada</strong> no seu email e encaminhe os resultados para <strong style={{color:"#3B5FE5"}}>reservas@aircheck.com.br</strong>. Reservas duplicadas são ignoradas automaticamente.</div>
+            </div>
+            <button onClick={()=>setShowBulkTip(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#0369A1",fontSize:18,padding:0,lineHeight:1,flexShrink:0,opacity:0.5}}>✕</button>
+          </div>}
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
