@@ -8,7 +8,7 @@ const C = {
   orange:"#F97316", cyan:"#06B6D4",
 };
 
-type Tab = "overview"|"users"|"reservations"|"properties"|"emails"|"guests"|"feedback";
+type Tab = "overview"|"users"|"reservations"|"properties"|"condominiums"|"emails"|"guests"|"feedback";
 
 const STATUS_LABELS:Record<string,{label:string;color:string}> = {
   pending_form:{label:"Aguardando form",color:C.yellow},
@@ -76,6 +76,7 @@ export default function AdminPage(){
     {id:"reservations",label:"Reservas",count:o.reservations.total},
     {id:"guests",label:"Hóspedes",count:o.guests.totalRegistered},
     {id:"properties",label:"Imóveis",count:o.properties.total},
+    {id:"condominiums",label:"Portarias",count:o.condominiums?.total||0},
     {id:"emails",label:"Emails",count:o.emails.total},
     {id:"feedback",label:"Feedback",count:o.feedback?.new||0},
   ];
@@ -99,6 +100,7 @@ export default function AdminPage(){
     {tab==="reservations"&&<ReservationsTab reservations={data.reservations}/>}
     {tab==="guests"&&<GuestsTab o={o}/>}
     {tab==="properties"&&<PropertiesTab properties={data.properties}/>}
+    {tab==="condominiums"&&<CondominiumsTab condominiums={data.condominiums||[]} stats={o.condominiums}/>}
     {tab==="emails"&&<EmailsTab logs={data.emailLogs} stats={o.emails}/>}
     {tab==="feedback"&&<FeedbackAdminTab feedbacks={data.feedbacks} stats={o.feedback}/>}
   </Shell>
@@ -167,7 +169,8 @@ function OverviewTab({o}:{o:any}){
       <Metric label="Hosts" value={o.users.total} sub={`${o.users.thisWeek} esta semana`} color={C.accent}/>
       <Metric label="Reservas" value={o.reservations.total} sub={`${o.reservations.today} hoje · ${o.reservations.thisMonth} mês`}/>
       <Metric label="Hóspedes (registrados)" value={o.guests.totalRegistered} sub={`${o.guests.totalExpected} esperados`} color={C.purple}/>
-      <Metric label="Imóveis" value={o.properties.total} sub={`${o.properties.withDoorman} c/ portaria`}/>
+      <Metric label="Imóveis" value={o.properties.total} sub={`${o.properties.linkedToCondo||0} vinculados · ${o.properties.whatsappOnly||0} WhatsApp`}/>
+      <Metric label="Portarias" value={o.condominiums?.total||0} sub={`${o.condominiums?.porteiros||0} porteiros · ${o.condominiums?.admins||0} admins`} color={C.orange}/>
       <Metric label="Emails" value={o.emails.total} sub={`${o.emails.today} hoje`} color={C.cyan}/>
       <Metric label="Satisfação" value={o.feedback?.avgRating?`${o.feedback.avgRating} ⭐`:"—"} sub={`NPS ${o.feedback?.nps||0} · ${o.feedback?.total||0} avaliações`} color={o.feedback?.nps>=50?C.green:o.feedback?.nps>=0?C.yellow:C.red}/>
     </div>
@@ -403,6 +406,63 @@ function PropertiesTab({properties}:{properties:any[]}){
     reservations:p.reservations,
     createdAt:shortDate(p.createdAt),
   }))}/>
+}
+
+// ─── CONDOMINIUMS TAB ────────────────────────────────────────────
+function CondominiumsTab({condominiums,stats}:{condominiums:any[];stats:any}){
+  return<div style={{display:"flex",flexDirection:"column",gap:20}}>
+    {/* Stats */}
+    <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+      <Metric label="Condomínios" value={stats?.total||0} color={C.orange}/>
+      <Metric label="Ativos" value={stats?.active||0} color={C.green}/>
+      <Metric label="Porteiros" value={stats?.porteiros||0} color={C.cyan}/>
+      <Metric label="Admins" value={stats?.admins||0} color={C.accent}/>
+      <Metric label="Imóveis vinculados" value={stats?.propertiesLinked||0} color={C.purple}/>
+    </div>
+
+    {/* Condo cards */}
+    {condominiums.length===0&&<div style={{textAlign:"center",padding:40,color:C.muted}}>Nenhum condomínio cadastrado</div>}
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {condominiums.map((c:any)=>(
+        <div key={c.id} style={{background:C.card,border:`1px solid ${c.active?C.cardBorder:C.red}`,borderRadius:12,padding:"18px 20px"}}>
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>🏢</span>
+                <span style={{fontSize:16,fontWeight:700,color:"#fff"}}>{c.name}</span>
+                <span style={{fontSize:11,fontWeight:600,fontFamily:"'IBM Plex Mono'",color:C.accent,background:"rgba(59,130,246,0.15)",padding:"2px 8px",borderRadius:6}}>{c.code}</span>
+                {!c.active&&<span style={{fontSize:10,fontWeight:600,color:C.red,background:"rgba(239,68,68,0.15)",padding:"2px 8px",borderRadius:6}}>INATIVO</span>}
+              </div>
+              {c.address&&<div style={{fontSize:12,color:C.muted,marginTop:4}}>📍 {c.address}</div>}
+              {(c.contactName||c.contactPhone)&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{c.contactName}{c.contactName&&c.contactPhone?" · ":""}{c.contactPhone}</div>}
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:10,fontWeight:600,color:C.muted,textTransform:"uppercase"}}>{c.plan}</div>
+              <div style={{fontSize:10,color:C.muted,marginTop:2}}>{shortDate(c.createdAt)}</div>
+            </div>
+          </div>
+
+          {/* Metrics row */}
+          <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+            {[
+              {l:"Imóveis",v:c.properties,color:C.purple},
+              {l:"Anfitriões",v:c.uniqueHosts,color:C.accent},
+              {l:"Reservas",v:c.reservations,color:C.cyan},
+              {l:"Admins",v:c.admins,color:C.green},
+              {l:"Porteiros",v:c.porteiros,color:C.orange},
+              {l:"Modo",v:c.reportMode==="dashboard"?"Painel":"WhatsApp",color:c.reportMode==="dashboard"?C.accent:C.green},
+            ].map((m,i)=>(
+              <div key={i} style={{textAlign:"center",minWidth:60}}>
+                <div style={{fontSize:20,fontWeight:800,color:m.color}}>{m.v}</div>
+                <div style={{fontSize:10,color:C.muted,marginTop:2}}>{m.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
 }
 
 // ─── EMAILS TAB ─────────────────────────────────────────────────
