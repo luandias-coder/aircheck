@@ -285,14 +285,8 @@ export default function PortariaDashboard() {
                                 <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                                   {c.guests.map(g => (
                                     <div key={g.id} style={{ background:"#FAFAF9", border:"1px solid #E5E5E5", borderRadius:10, padding:"12px 14px" }}>
-                                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                                        <div style={{ display:"flex", gap:12, alignItems:"flex-start", flex:1 }}>
-                                          {/* Guest document photo thumbnail */}
-                                          {g.documentUrl && (
-                                            <a href={g.documentUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
-                                              <img src={g.documentUrl} alt="Doc" style={{ width:48, height:48, borderRadius:8, objectFit:"cover", border:"1px solid #E5E5E5", background:"#fff" }} />
-                                            </a>
-                                          )}
+                                      <div>
+                                        <div>
                                           <div>
                                             <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{g.fullName} {g.foreign && <span style={{ fontSize:11, color:B.primary }}>🌍</span>}</div>
                                             <div style={{ fontSize:12, color:"#A3A3A3", marginTop:4 }}>
@@ -304,12 +298,6 @@ export default function PortariaDashboard() {
                                             </div>
                                           </div>
                                         </div>
-                                        {g.documentUrl && (
-                                          <a href={g.documentUrl} target="_blank" rel="noopener noreferrer"
-                                            style={{ fontSize:11, fontWeight:600, padding:"4px 10px", background:B.light, color:B.primary, border:`1px solid ${B.muted}`, borderRadius:6, textDecoration:"none", flexShrink:0 }}>
-                                            📄 Doc
-                                          </a>
-                                        )}
                                       </div>
                                     </div>
                                   ))}
