@@ -5,14 +5,23 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   try {
     const r = await prisma.reservation.findUnique({
       where: { formToken: params.token },
-      include: { property: true, guests: true },
+      include: {
+        property: {
+          include: {
+            condominium: { select: { name: true, address: true, photoUrl: true } },
+          },
+        },
+        guests: true,
+      },
     });
     if (!r) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
 
     return NextResponse.json({
       propertyName: r.property.name,
+      propertyPhotoUrl: null, // TODO: Fase 15 — property photo from email parse or manual upload
       guestName: r.guestFullName,
       guestPhone: r.guestPhone,
+      guestPhotoUrl: r.guestPhotoUrl || null,
       checkInDate: r.checkInDate,
       checkInTime: r.checkInTime,
       checkOutDate: r.checkOutDate,
@@ -22,6 +31,8 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       status: r.status,
       carPlate: r.carPlate,
       carModel: r.carModel,
+      condominiumName: r.property.condominium?.name || null,
+      condominiumAddress: r.property.condominium?.address || null,
       guests: r.guests.map((g) => ({
         fullName: g.fullName,
         birthDate: g.birthDate,
