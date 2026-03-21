@@ -34,7 +34,7 @@ function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/"
 export default function Dashboard(){
   const router=useRouter();
   const[condoFromUrl,setCondoFromUrl]=useState<string|null>(null);
-  const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"logs"|"feedback">("reservations");
+  const[tab,setTab]=useState<"reservations"|"properties"|"settings"|"feedback">("reservations");
   const[reservations,setReservations]=useState<Reservation[]>([]);
   const[properties,setProperties]=useState<Property[]>([]);
   const[user,setUser]=useState<User|null>(null);
@@ -127,7 +127,7 @@ export default function Dashboard(){
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
-            {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["feedback","Feedback",null],["logs","Logs",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
+            {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["feedback","Feedback",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
               <button key={id} onClick={()=>setTab(id as any)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
                 {l} {n!==null&&<span style={{marginLeft:4,fontSize:11,fontWeight:700,color:tab===id?B.primary:"#A3A3A3",background:tab===id?B.light:"#F5F5F5",padding:"2px 6px",borderRadius:10}}>{n}</span>}
               </button>
@@ -137,7 +137,6 @@ export default function Dashboard(){
           {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
           :tab==="feedback"?<FeedbackTab/>
-          :tab==="logs"?<LogsTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
@@ -487,61 +486,6 @@ function FeedbackTab(){
         })}
       </div>
     </div>}
-  </div>
-}
-
-// ─── LOGS TAB ───────────────────────────────────────────────────
-interface EmailLog { id:string; fromEmail:string; toEmail:string|null; subject:string|null; htmlBody:string|null; status:string; error:string|null; createdAt:string }
-
-function LogsTab(){
-  const[logs,setLogs]=useState<EmailLog[]>([]);
-  const[loading,setLoading]=useState(true);
-  const[expandedId,setExpandedId]=useState<string|null>(null);
-
-  useEffect(()=>{fetch("/api/logs").then(r=>r.json()).then(setLogs).finally(()=>setLoading(false))},[]);
-
-  const statusColors:Record<string,{c:string;bg:string;l:string}>={
-    received:{c:"#D97706",bg:"#FFFBEB",l:"Recebido"},
-    success:{c:"#059669",bg:"#ECFDF5",l:"Sucesso"},
-    error:{c:"#DC2626",bg:"#FEF2F2",l:"Erro"},
-    parse_failed:{c:"#DC2626",bg:"#FEF2F2",l:"Parse falhou"},
-    duplicate:{c:"#737373",bg:"#F5F5F5",l:"Duplicata"},
-    cancellation:{c:"#DC2626",bg:"#FEF2F2",l:"Cancelamento"},
-    cancellation_orphan:{c:"#D97706",bg:"#FFFBEB",l:"Cancel. órfão"},
-  };
-
-  if(loading)return<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando logs...</div>;
-  if(logs.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📧</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhum email recebido</div><div style={{fontSize:13,color:"#A3A3A3"}}>Quando um email chegar via webhook, aparecerá aqui.</div></div>;
-
-  return<div style={{display:"flex",flexDirection:"column",gap:8}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>📧</span>Últimos {logs.length} emails recebidos. Clique para ver o email original.</div>
-    {logs.map(log=>{
-      const st=statusColors[log.status]||statusColors.received;
-      const expanded=expandedId===log.id;
-      const date=new Date(log.createdAt);
-      const timeStr=`${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
-
-      return<div key={log.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-        <button onClick={()=>setExpandedId(expanded?null:log.id)} style={{width:"100%",textAlign:"left",padding:"14px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"Outfit"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{log.subject||"(sem assunto)"}</span>
-                <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:10,color:st.c,background:st.bg}}>{st.l}</span>
-              </div>
-              <div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>De: {log.fromEmail} · {timeStr}</div>
-            </div>
-            <span style={{fontSize:12,color:"#A3A3A3",transform:expanded?"rotate(180deg)":"",transition:"transform 0.2s"}}>▼</span>
-          </div>
-        </button>
-
-        {expanded&&<div style={{padding:"0 16px 16px",borderTop:"1px solid #F0F0F0"}}>
-          {log.error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",marginTop:10,fontSize:12,color:"#DC2626"}}>{log.error}</div>}
-          {log.htmlBody?<div style={{border:"1px solid #E5E5E5",borderRadius:10,overflow:"hidden",marginTop:10}}><div style={{maxHeight:500,overflow:"auto",padding:12}} dangerouslySetInnerHTML={{__html:log.htmlBody}}/></div>
-          :<div style={{marginTop:10,fontSize:13,color:"#A3A3A3",fontStyle:"italic"}}>Email sem conteúdo HTML.</div>}
-        </div>}
-      </div>
-    })}
   </div>
 }
 
