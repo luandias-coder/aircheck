@@ -32,7 +32,7 @@ export default function PortariaDashboard() {
   const [properties, setProperties] = useState<PropertyInfo[]>([]);
   const [stats, setStats] = useState<Stats>({ today:0, upcoming:0, pending:0, totalProperties:0 });
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState<"today"|"week"|"all">("week");
+  const [range, setRange] = useState<"today"|"week"|"all">("today");
   const [expandedId, setExpandedId] = useState<string|null>(null);
   const [tab, setTab] = useState<"checkins"|"settings">("checkins");
   const [filterUnit, setFilterUnit] = useState<string>("all");
