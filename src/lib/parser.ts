@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
-// AirCheck Parser v5.5
+// AirCheck Parser v5.6
 // - Fixes corrupted encoding (João, Estação, Fabrício, etc)
 // - Extracts Airbnb room ID, thread ID/URL, guest photo
 // - English email support (guests, dates, confirmation, property)
 // - Cancellation email detection (PT + EN, including EN "cancel reservation CODE")
+// - Property photo extraction (propertyPhotoUrl) — done in inbound-email route from HTML
 // ═══════════════════════════════════════════════════════════════
 
 const MONTH_MAP: Record<string, number> = {
@@ -88,6 +89,7 @@ export interface ParsedReservation {
   confirmationCode?: string;
   hostPayment?: string;
   guestPhotoUrl?: string;
+  propertyPhotoUrl?: string;
   airbnbRoomId?: string;
   airbnbThreadId?: string;
   airbnbThreadUrl?: string;
