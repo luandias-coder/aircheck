@@ -92,6 +92,26 @@ export async function GET() {
   const emailsTotal = await prisma.inboundEmailLog.count();
   const emailsToday = emailLogs.filter(e => e.createdAt >= todayStart).length;
 
+  // ── Condominiums ──
+  const allCondos = await prisma.condominium.findMany({
+    select: {
+      id: true, name: true, code: true, address: true, contactName: true, contactPhone: true,
+      reportMode: true, plan: true, active: true, createdAt: true,
+      users: { select: { id: true, role: true, active: true } },
+      properties: { select: { id: true, userId: true, _count: { select: { reservations: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const condosTotal = allCondos.length;
+  const condosActive = allCondos.filter(c => c.active).length;
+  const totalPorteiros = allCondos.reduce((s, c) => s + c.users.filter(u => u.role === "porteiro" && u.active).length, 0);
+  const totalAdmins = allCondos.reduce((s, c) => s + c.users.filter(u => u.role === "admin" && u.active).length, 0);
+
+  // Need condominiumId in properties query — fetch separately
+  const propsWithCondo = await prisma.property.count({ where: { condominiumId: { not: null } } });
+  const propsWhatsappOnly = propsTotal - propsWithCondo;
+
   // ── Funnel ──
   const funnel = {
     emailsReceived: emailsTotal,
@@ -123,7 +143,8 @@ export async function GET() {
       users: { total: usersTotal, thisWeek: usersThisWeek, thisMonth: usersThisMonth, onboarded: usersOnboarded },
       reservations: { total: resTotal, today: resToday, thisWeek: resThisWeek, thisMonth: resThisMonth, byStatus: statusCounts },
       guests: { totalExpected: totalGuestsExpected, totalRegistered: totalGuestsRegistered, thisWeek: guestsThisWeek, thisMonth: guestsThisMonth, distribution: guestDistribution },
-      properties: { total: propsTotal, withDoorman: propsWithDoorman, withUnit: propsWithUnit },
+      properties: { total: propsTotal, withDoorman: propsWithDoorman, withUnit: propsWithUnit, linkedToCondo: propsWithCondo, whatsappOnly: propsWhatsappOnly },
+      condominiums: { total: condosTotal, active: condosActive, porteiros: totalPorteiros, admins: totalAdmins, propertiesLinked: propsWithCondo },
       emails: { total: emailsTotal, today: emailsToday, byStatus: emailStatusCounts },
       feedback: { total: fbTotal, new: fbNew, avgRating: Math.round(avgRating * 10) / 10, nps, ratingDist, catDist },
       funnel,
@@ -153,6 +174,17 @@ export async function GET() {
       id: f.id, rating: f.rating, category: f.category, message: f.message,
       adminNote: f.adminNote, status: f.status, createdAt: f.createdAt,
       user: f.user.name || f.user.email,
+    })),
+    condominiums: allCondos.map(c => ({
+      id: c.id, name: c.name, code: c.code, address: c.address,
+      contactName: c.contactName, contactPhone: c.contactPhone,
+      reportMode: c.reportMode, plan: c.plan, active: c.active, createdAt: c.createdAt,
+      admins: c.users.filter(u => u.role === "admin" && u.active).length,
+      porteiros: c.users.filter(u => u.role === "porteiro" && u.active).length,
+      totalUsers: c.users.filter(u => u.active).length,
+      properties: c.properties.length,
+      reservations: c.properties.reduce((s, p) => s + p._count.reservations, 0),
+      uniqueHosts: new Set(c.properties.map(p => p.userId)).size,
     })),
   });
 }
