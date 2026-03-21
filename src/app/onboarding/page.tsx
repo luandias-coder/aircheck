@@ -28,215 +28,107 @@ function BackBtn({onClick}:{onClick:()=>void}){return(
   </button>
 )}
 
-// ─── EMAIL FORWARDING GUIDE COMPONENT ───────────────────────────
-function EmailForwardingGuide(){
-  const[provider,setProvider]=useState<"gmail"|"outlook"|"yahoo"|null>(null);
-  const[gmailConfirmed,setGmailConfirmed]=useState(false);
-  const[gmailPolling,setGmailPolling]=useState(false);
-  const gmailPollRef=useRef<NodeJS.Timeout|null>(null);
+// ─── EMAIL PROVIDER DETECTION ───────────────────────────
+type EmailProvider = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  deeplink: string | null;
+  steps: { text: string; highlight?: boolean }[];
+  note?: string;
+  xmlDownload?: boolean;
+  manualFallbackSteps?: { text: string }[];
+};
 
-  // Poll for Gmail forwarding auto-confirmation
-  useEffect(()=>{
-    if(provider!=="gmail"||gmailConfirmed){
-      if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
-      return;
-    }
-    setGmailPolling(true);
-    const check=async()=>{
-      try{
-        const res=await fetch("/api/gmail-verification");
-        if(res.ok){
-          const data=await res.json();
-          if(data.found){
-            setGmailConfirmed(true);
-            setGmailPolling(false);
-            if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}
-          }
-        }
-      }catch{}
-    };
-    check();
-    gmailPollRef.current=setInterval(check,4000);
-    return()=>{if(gmailPollRef.current){clearInterval(gmailPollRef.current);gmailPollRef.current=null}};
-  },[provider,gmailConfirmed]);
+function getEmailProvider(email: string, mxOverride?: string | null): EmailProvider {
+  const domain = email.split("@")[1]?.toLowerCase() || "";
 
-  const providers = [
-    { id:"gmail" as const, name:"Gmail", icon:"📧", color:"#EA4335", bg:"#FEE2E2" },
-    { id:"outlook" as const, name:"Outlook / Hotmail", icon:"📬", color:"#0078D4", bg:"#DBEAFE" },
-    { id:"yahoo" as const, name:"Yahoo Mail", icon:"📪", color:"#6001D2", bg:"#F5F3FF" },
-  ];
-
-  const stepStyle:React.CSSProperties = {display:"flex",gap:12,alignItems:"flex-start",padding:"12px 0",borderBottom:"1px solid #F0F0F0"};
-  const numStyle:React.CSSProperties = {width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0,marginTop:2};
-  const textStyle:React.CSSProperties = {fontSize:13,color:"#525252",lineHeight:1.6};
-  const highlightStyle:React.CSSProperties = {background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:6,padding:"2px 8px",fontSize:12,fontWeight:600,color:"#D97706",display:"inline-block"};
-  const codeStyle:React.CSSProperties = {fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:600,color:B.primary,background:B.light,padding:"3px 8px",borderRadius:4};
-
-  return(
-    <div style={{borderTop:"1px solid #F0F0F0",paddingTop:20,marginTop:4}}>
-      <div style={{fontSize:13,fontWeight:700,color:"#1A1A1A",marginBottom:4}}>🔄 Configure o encaminhamento automático</div>
-      <div style={{fontSize:12,color:"#A3A3A3",marginBottom:14,lineHeight:1.5}}>Assim todas as reservas futuras (confirmações e cancelamentos) entram no AirCheck sem você precisar encaminhar manualmente. Escolha seu provedor:</div>
-
-      {/* Provider selector */}
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {providers.map(p=>(
-          <button key={p.id} onClick={()=>setProvider(provider===p.id?null:p.id)} style={{
-            flex:1,fontFamily:"Outfit",fontSize:12,fontWeight:provider===p.id?700:500,
-            padding:"10px 8px",borderRadius:10,cursor:"pointer",transition:"all 0.2s",textAlign:"center",
-            background:provider===p.id?p.bg:"#FAFAF9",
-            color:provider===p.id?p.color:"#737373",
-            border:`1.5px solid ${provider===p.id?p.color:"#E5E5E5"}`,
-          }}>
-            <div style={{fontSize:18,marginBottom:4}}>{p.icon}</div>
-            {p.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Gmail guide */}
-      {provider==="gmail"&&(
-        <div style={{background:"#FAFAF9",borderRadius:12,padding:16}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#EA4335",marginBottom:12}}>Gmail — Passo a passo</div>
-          <div style={{display:"flex",flexDirection:"column",gap:0}}>
-            <div style={stepStyle}>
-              <div style={numStyle}>1</div>
-              <div style={textStyle}>No computador, abra o <strong style={{color:"#1A1A1A"}}>Gmail</strong> e clique no ícone de <strong style={{color:"#1A1A1A"}}>⚙️ engrenagem</strong> (canto superior direito) → <strong style={{color:"#1A1A1A"}}>"Ver todas as configurações"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>2</div>
-              <div style={textStyle}>Clique na aba <strong style={{color:"#1A1A1A"}}>"Encaminhamento e POP/IMAP"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>3</div>
-              <div style={{...textStyle,flex:1}}>
-                <div>Clique em <strong style={{color:"#1A1A1A"}}>"Adicionar um endereço de encaminhamento"</strong> e digite:<br/><span style={codeStyle}>reservas@aircheck.com.br</span></div>
-                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>O Gmail vai pedir uma confirmação. Nós confirmamos automaticamente pra você — basta aguardar alguns segundos.</div>
-                
-                {/* Auto-confirmation widget */}
-                {gmailConfirmed?(
-                  <div style={{marginTop:10,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:22}}>✅</span>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#059669"}}>Encaminhamento confirmado!</div>
-                      <div style={{fontSize:12,color:"#737373",marginTop:2}}>Já confirmamos automaticamente. Agora siga para o passo 4 para criar o filtro.</div>
-                    </div>
-                  </div>
-                ):gmailPolling?(
-                  <div style={{marginTop:10,background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:14,height:14,borderRadius:"50%",border:"2.5px solid #D97706",borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:600,color:"#D97706"}}>Aguardando confirmação do Gmail...</div>
-                      <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>Adicione o endereço no Gmail. Confirmaremos automaticamente em segundos.</div>
-                    </div>
-                  </div>
-                ):null}
-              </div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>4</div>
-              <div style={textStyle}>Agora vamos criar o filtro. Volte para a caixa de entrada, clique na <strong style={{color:"#1A1A1A"}}>barra de pesquisa</strong> e depois em <strong style={{color:"#1A1A1A"}}>"Mostrar opções de pesquisa"</strong> (ícone de filtro)</div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>5</div>
-              <div style={textStyle}>No campo <strong style={{color:"#1A1A1A"}}>"De"</strong>, digite:<br/><span style={codeStyle}>automated@airbnb.com</span><br/>Clique em <strong style={{color:"#1A1A1A"}}>"Criar filtro"</strong></div>
-            </div>
-            <div style={{...stepStyle,borderBottom:"none"}}>
-              <div style={numStyle}>6</div>
-              <div style={textStyle}>Marque <strong style={{color:"#1A1A1A"}}>"Encaminhar para reservas@aircheck.com.br"</strong><br/>Marque também <span style={highlightStyle}>Aplicar filtro às conversas correspondentes</span> pra pegar reservas que já estão na caixa.<br/>Clique em <strong style={{color:"#1A1A1A"}}>"Criar filtro"</strong>. Pronto!</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Outlook guide */}
-      {provider==="outlook"&&(
-        <div style={{background:"#FAFAF9",borderRadius:12,padding:16}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#0078D4",marginBottom:12}}>Outlook / Hotmail — Passo a passo</div>
-          <div style={{display:"flex",flexDirection:"column",gap:0}}>
-            <div style={stepStyle}>
-              <div style={numStyle}>1</div>
-              <div style={textStyle}>No computador, acesse <strong style={{color:"#1A1A1A"}}>outlook.live.com</strong> e faça login</div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>2</div>
-              <div style={textStyle}>Clique no ícone <strong style={{color:"#1A1A1A"}}>⚙️ engrenagem</strong> (canto superior direito) → <strong style={{color:"#1A1A1A"}}>"Exibir todas as configurações do Outlook"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>3</div>
-              <div style={textStyle}>Navegue: <strong style={{color:"#1A1A1A"}}>Email → Regras</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>4</div>
-              <div style={textStyle}>Clique em <strong style={{color:"#1A1A1A"}}>"+ Adicionar nova regra"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>5</div>
-              <div style={textStyle}>
-                Configure a regra:<br/>
-                <strong style={{color:"#1A1A1A"}}>Nome:</strong> AirCheck Airbnb<br/>
-                <strong style={{color:"#1A1A1A"}}>Condição:</strong> "De" → digite <span style={codeStyle}>automated@airbnb.com</span><br/>
-                <strong style={{color:"#1A1A1A"}}>Ação:</strong> "Encaminhar para" → <span style={codeStyle}>reservas@aircheck.com.br</span>
-              </div>
-            </div>
-            <div style={{...stepStyle,borderBottom:"none"}}>
-              <div style={numStyle}>6</div>
-              <div style={textStyle}>Clique em <strong style={{color:"#1A1A1A"}}>"Salvar"</strong>. Pronto! Todas as novas confirmações do Airbnb serão encaminhadas automaticamente.</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Yahoo guide */}
-      {provider==="yahoo"&&(
-        <div style={{background:"#FAFAF9",borderRadius:12,padding:16}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#6001D2",marginBottom:12}}>Yahoo Mail — Passo a passo</div>
-          <div style={{display:"flex",flexDirection:"column",gap:0}}>
-            <div style={stepStyle}>
-              <div style={numStyle}>1</div>
-              <div style={textStyle}>No computador, acesse <strong style={{color:"#1A1A1A"}}>mail.yahoo.com</strong> e faça login</div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>2</div>
-              <div style={textStyle}>Clique no ícone <strong style={{color:"#1A1A1A"}}>⚙️ engrenagem</strong> → <strong style={{color:"#1A1A1A"}}>"Mais configurações"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>3</div>
-              <div style={textStyle}>No menu lateral, clique em <strong style={{color:"#1A1A1A"}}>"Filtros"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>4</div>
-              <div style={textStyle}>Clique em <strong style={{color:"#1A1A1A"}}>"+ Adicionar novos filtros"</strong></div>
-            </div>
-            <div style={stepStyle}>
-              <div style={numStyle}>5</div>
-              <div style={textStyle}>
-                Configure:<br/>
-                <strong style={{color:"#1A1A1A"}}>Nome do filtro:</strong> AirCheck Airbnb<br/>
-                <strong style={{color:"#1A1A1A"}}>De contém:</strong> <span style={codeStyle}>automated@airbnb.com</span><br/>
-                <strong style={{color:"#1A1A1A"}}>Então:</strong> "Encaminhar para" → <span style={codeStyle}>reservas@aircheck.com.br</span>
-              </div>
-            </div>
-            <div style={{...stepStyle,borderBottom:"none"}}>
-              <div style={numStyle}>6</div>
-              <div style={textStyle}>Clique em <strong style={{color:"#1A1A1A"}}>"Salvar"</strong>. Pronto!</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {provider&&(
-        <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#2563EB",lineHeight:1.5}}>
-          💡 <strong>Confirmações e cancelamentos</strong> do Airbnb vêm do mesmo remetente (<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11}}>automated@airbnb.com</span>). Com essa regra, ambos serão processados automaticamente — reservas canceladas atualizam o status no AirCheck.
-        </div>
-      )}
-
-      {!provider&&(
-        <div style={{textAlign:"center",padding:"12px 0",fontSize:12,color:"#A3A3A3"}}>
-          Selecione seu provedor acima para ver o tutorial passo a passo.
-        </div>
-      )}
-    </div>
+  // Check MX-detected provider first (catches Google Workspace, Microsoft 365, etc.)
+  const effectiveProvider = mxOverride || (
+    (domain === "gmail.com" || domain === "googlemail.com") ? "gmail" :
+    ["outlook.com","hotmail.com","live.com","msn.com","hotmail.com.br","outlook.com.br"].includes(domain) ? "outlook" :
+    ["yahoo.com","yahoo.com.br","ymail.com"].includes(domain) ? "yahoo" :
+    ["zoho.com","zohomail.com","zohomail.eu"].includes(domain) ? "zoho" : null
   );
+
+  if (effectiveProvider === "gmail") {
+    return {
+      id: "gmail", name: "Gmail", icon: "📧", color: "#EA4335",
+      deeplink: "https://mail.google.com/mail/u/0/#settings/fwdandpop",
+      steps: [
+        { text: 'No computador, abra o Gmail → ⚙️ engrenagem → "Ver todas as configurações" → aba "Encaminhamento e POP/IMAP"' },
+        { text: 'Clique em "Adicionar um endereço de encaminhamento" → digite: reservas@aircheck.com.br → "Avançar" → "Continuar" → "OK"' },
+        { text: 'Aguarde até 2 minutos e recarregue a página (nós confirmamos o endereço nos bastidores). O endereço deve aparecer como verificado' },
+        { text: 'Vá na aba "Filtros e endereços bloqueados" → clique "Importar filtros" → faça upload do arquivo XML (baixe abaixo) → marque "Aplicar filtro às conversas correspondentes" → "Criar filtros"' },
+        { text: "Pronto! Toda reserva nova (e cancelamento) chega automaticamente no AirCheck.", highlight: true },
+      ],
+      note: 'No passo 2, o Gmail pede confirmação do endereço. Nós cuidamos disso nos bastidores — basta aguardar e recarregar. Precisa de ajuda? Veja nosso <a href="/blog/como-configurar-encaminhamento-email-airbnb-gmail" target="_blank" style="color:#3B5FE5;text-decoration:underline">guia completo com prints</a> ou entre em contato: oi@aircheck.com.br',
+      xmlDownload: true,
+      manualFallbackSteps: [
+        { text: 'Na caixa de entrada, clique na barra de pesquisa e depois em "Mostrar opções de pesquisa" (ícone de filtro)' },
+        { text: 'No campo "De", digite: automated@airbnb.com — clique em "Criar filtro"' },
+        { text: 'Marque "Encaminhar para reservas@aircheck.com.br" e "Aplicar filtro às conversas correspondentes". Clique em "Criar filtro"' },
+      ],
+    };
+  }
+
+  if (effectiveProvider === "outlook") {
+    return {
+      id: "outlook", name: "Outlook", icon: "📬", color: "#0078D4",
+      deeplink: "https://outlook.live.com/mail/0/options/mail/rules",
+      steps: [
+        { text: 'No computador, acesse outlook.live.com e faça login' },
+        { text: 'Clique na ⚙️ engrenagem → "Exibir todas as configurações do Outlook"' },
+        { text: 'Navegue: Email → Regras' },
+        { text: 'Clique em "+ Adicionar nova regra"' },
+        { text: 'Nome: "AirCheck Airbnb" — Condição: "De" → automated@airbnb.com — Ação: "Encaminhar para" → reservas@aircheck.com.br' },
+        { text: 'Clique em "Salvar". Pronto!', highlight: true },
+      ],
+    };
+  }
+
+  if (effectiveProvider === "yahoo") {
+    return {
+      id: "yahoo", name: "Yahoo Mail", icon: "📪", color: "#6001D2",
+      deeplink: null,
+      steps: [
+        { text: 'No computador, acesse mail.yahoo.com e faça login' },
+        { text: 'Clique na ⚙️ engrenagem → "Mais configurações"' },
+        { text: 'No menu lateral, clique em "Filtros"' },
+        { text: 'Clique em "+ Adicionar novos filtros"' },
+        { text: 'Nome: "AirCheck Airbnb" — De contém: automated@airbnb.com — Então: "Encaminhar para" → reservas@aircheck.com.br' },
+        { text: 'Clique em "Salvar". Pronto!', highlight: true },
+      ],
+    };
+  }
+
+  if (effectiveProvider === "zoho") {
+    return {
+      id: "zoho", name: "Zoho Mail", icon: "📧", color: "#D14836",
+      deeplink: "https://mail.zoho.com/zm/#settings/filters",
+      steps: [
+        { text: 'No computador, acesse mail.zoho.com e faça login' },
+        { text: 'Clique na ⚙️ engrenagem → "Configurações" → "Filtros de email"' },
+        { text: 'Clique em "Adicionar filtro"' },
+        { text: 'Nome: "AirCheck Airbnb" — Condição: "De" contém automated@airbnb.com' },
+        { text: 'Em ação, selecione "Encaminhar para" e digite: reservas@aircheck.com.br' },
+        { text: 'Clique em "Salvar". Pronto!', highlight: true },
+      ],
+    };
+  }
+
+  return {
+    id: "other", name: "seu provedor", icon: "📩", color: "#737373",
+    deeplink: null,
+    steps: [
+      { text: 'Acesse as configurações do seu email e procure "Filtros" ou "Regras"' },
+      { text: "Crie uma nova regra/filtro" },
+      { text: 'No campo "De" (remetente), digite: automated@airbnb.com' },
+      { text: 'Na ação, selecione "Encaminhar para" e digite: reservas@aircheck.com.br' },
+      { text: "Salve a regra — toda reserva nova chega automaticamente!", highlight: true },
+    ],
+  };
 }
 
 export default function OnboardingPage(){
@@ -254,6 +146,8 @@ export default function OnboardingPage(){
   const[polling,setPolling]=useState(false);
   const[reservation,setReservation]=useState<Reservation|null>(null);
   const pollRef=useRef<NodeJS.Timeout|null>(null);
+  const[showAutoGuide,setShowAutoGuide]=useState(true);
+  const[detectedProvider,setDetectedProvider]=useState<string|null>(null); // MX-based override
 
   // Step 4
   const[unitNumber,setUnitNumber]=useState("");
@@ -293,6 +187,15 @@ export default function OnboardingPage(){
     setEmailSaving(true);setEmailError("");
     const res=await fetch("/api/settings/inbound-emails",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:airbnbEmail})});
     if(!res.ok){setEmailError((await res.json()).error||"Erro ao salvar");setEmailSaving(false);return}
+    
+    // Detect provider via MX lookup (non-blocking — runs in background)
+    const domain=airbnbEmail.split("@")[1]?.toLowerCase()||"";
+    if(!["gmail.com","googlemail.com","outlook.com","hotmail.com","live.com","msn.com","hotmail.com.br","outlook.com.br","yahoo.com","yahoo.com.br","ymail.com","zoho.com","zohomail.com","zohomail.eu"].includes(domain)){
+      fetch(`/api/detect-provider?domain=${encodeURIComponent(domain)}`).then(r=>r.json()).then(d=>{
+        if(d.provider&&d.provider!=="other")setDetectedProvider(d.provider);
+      }).catch(()=>{});
+    }
+    
     setEmailSaving(false);setStep(2);
   };
 
@@ -403,18 +306,150 @@ export default function OnboardingPage(){
         </div>}
 
         {/* ═══════════════════ STEP 2 ═══════════════════ */}
-        {step===2&&<div style={cardStyle}>
+        {step===2&&(()=>{
+          const provider=getEmailProvider(airbnbEmail||user?.inboundEmails?.[0]?.email||"",detectedProvider);
+          return <div style={cardStyle}>
           <BackBtn onClick={()=>setStep(1)}/>
           <StepBadge n={2}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Encaminhe uma reserva</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Abra seu email e encaminhe um email de <strong style={{color:"#1A1A1A"}}>"Reserva confirmada"</strong> do Airbnb para o endereço abaixo. Se possível, escolha uma reserva futura. O AirCheck também processa emails de <strong style={{color:"#1A1A1A"}}>cancelamento</strong> automaticamente.</p>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Conecte suas reservas</h2>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Para o AirCheck receber suas reservas automaticamente, crie um filtro no seu email que encaminhe os emails do Airbnb. <strong style={{color:"#1A1A1A"}}>Configure uma vez e nunca mais precise fazer manualmente.</strong></p>
 
+          {/* Forwarding address box */}
           <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px 20px",marginBottom:20,textAlign:"center"}}>
             <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Encaminhe para</div>
             <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:600,color:B.primary,wordBreak:"break-all"}}>reservas@aircheck.com.br</div>
           </div>
 
-          {!polling&&<button onClick={startPolling} style={btnStyle()}>Já encaminhei →</button>}
+          {/* Provider detection badge */}
+          {provider.id!=="other"&&<div style={{display:"flex",alignItems:"center",gap:10,background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"10px 16px",marginBottom:16}}>
+            <span style={{fontSize:20}}>{provider.icon}</span>
+            <span style={{fontSize:13,fontWeight:600,color:"#059669"}}>Detectamos que você usa {provider.name}! Siga o guia abaixo.</span>
+          </div>}
+
+          {/* Manual provider selector — shown when provider is not auto-detected */}
+          {provider.id==="other"&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:600,color:"#1A1A1A",marginBottom:8}}>Qual provedor de email você usa?</div>
+            <div style={{display:"flex",gap:8}}>
+              {([
+                {id:"gmail",name:"Gmail",icon:"📧",color:"#EA4335",bg:"#FEE2E2"},
+                {id:"outlook",name:"Outlook",icon:"📬",color:"#0078D4",bg:"#DBEAFE"},
+                {id:"yahoo",name:"Yahoo",icon:"📪",color:"#6001D2",bg:"#F5F3FF"},
+                {id:"zoho",name:"Zoho",icon:"📧",color:"#D14836",bg:"#FEE2E2"},
+              ] as const).map(p=>(
+                <button key={p.id} onClick={()=>setDetectedProvider(detectedProvider===p.id?null:p.id)} style={{
+                  flex:1,fontFamily:"Outfit",fontSize:12,fontWeight:detectedProvider===p.id?700:500,
+                  padding:"10px 8px",borderRadius:10,cursor:"pointer",transition:"all 0.2s",textAlign:"center",
+                  background:detectedProvider===p.id?p.bg:"#FAFAF9",
+                  color:detectedProvider===p.id?p.color:"#737373",
+                  border:`1.5px solid ${detectedProvider===p.id?p.color:"#E5E5E5"}`,
+                }}>
+                  <div style={{fontSize:18,marginBottom:4}}>{p.icon}</div>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:11,color:"#A3A3A3",marginTop:8,lineHeight:1.5}}>
+              Se seu email é hospedado no Google (ex: Google Workspace), selecione Gmail. Se usa Microsoft 365, selecione Outlook. Se usa Zoho Mail, selecione Zoho.
+            </div>
+          </div>}
+
+          {/* Auto-forwarding guide (main path) */}
+          <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:14,overflow:"hidden",marginBottom:16}}>
+            <button onClick={()=>setShowAutoGuide(!showAutoGuide)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",background:"none",border:"none",cursor:"pointer",fontFamily:"Outfit"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#fff",background:`linear-gradient(135deg,${B.g1},${B.g2})`,borderRadius:6,padding:"2px 8px",letterSpacing:"0.05em",whiteSpace:"nowrap"}}>RECOMENDADO</span>
+                <span style={{fontSize:14,fontWeight:700,color:"#1A1A1A"}}>{provider.id!=="other"?`${provider.name} — Passo a passo`:"Configurar encaminhamento automático"}</span>
+              </div>
+              <span style={{fontSize:18,color:"#A3A3A3",transform:showAutoGuide?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",flexShrink:0}}>▾</span>
+            </button>
+
+            {showAutoGuide&&<div style={{padding:"0 18px 18px",borderTop:"1px solid #F0F0F0"}}>
+              <p style={{fontSize:12,color:"#737373",lineHeight:1.6,margin:"12px 0 16px"}}>
+                Crie um filtro no {provider.name} para encaminhar automaticamente os emails de reserva do Airbnb. Leva menos de 2 minutos:
+              </p>
+
+              {/* Deeplink button — before steps */}
+              {provider.deeplink&&<a href={provider.deeplink} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:B.primary,background:B.light,border:`1px solid ${B.muted}`,borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer",marginBottom:provider.xmlDownload?8:16}}>
+                Abrir configurações do {provider.name} ↗
+              </a>}
+
+              {/* XML filter download — Gmail only */}
+              {provider.xmlDownload&&<div style={{marginBottom:16}}>
+                <a href="/aircheck-gmail-filter.xml" download="aircheck-gmail-filter.xml" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:13,fontWeight:600,color:"#059669",background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 16px",textDecoration:"none",cursor:"pointer"}}>
+                  ⬇ Baixar arquivo de filtro (XML)
+                </a>
+                <div style={{fontSize:11,color:"#A3A3A3",marginTop:6}}>Você vai usar este arquivo no passo 4</div>
+              </div>}
+
+              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                {provider.steps.map((s,i)=>(
+                  <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 0",borderBottom:i<provider.steps.length-1?"1px solid #F0F0F0":"none"}}>
+                    <div style={{minWidth:24,height:24,borderRadius:"50%",background:s.highlight?B.accent:B.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>
+                      {s.highlight?"✓":i+1}
+                    </div>
+                    <span style={{fontSize:13,color:s.highlight?"#059669":"#525252",fontWeight:s.highlight?600:400,lineHeight:1.6}} dangerouslySetInnerHTML={{__html:(()=>{
+                      let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
+                      html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">reservas@aircheck.com.br</code>`);
+                      html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:${B.primary};background:${B.light};padding:3px 8px;border-radius:4px">automated@airbnb.com</code>`);
+                      return html;
+                    })()}}/>
+                  </div>
+                ))}
+              </div>
+
+              {/* Manual fallback — collapsed */}
+              {provider.manualFallbackSteps&&<details style={{marginTop:12}}>
+                <summary style={{fontSize:12,fontWeight:600,color:"#737373",cursor:"pointer",listStyle:"none",display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:14}}>🔧</span> Não conseguiu importar o filtro? Crie manualmente
+                </summary>
+                <div style={{marginTop:10,background:"#FAFAF9",borderRadius:10,padding:14}}>
+                  <div style={{fontSize:12,color:"#737373",marginBottom:10,lineHeight:1.5}}>Após completar os passos 1-3 acima (endereço verificado), faça:</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    {provider.manualFallbackSteps.map((s,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 0",borderBottom:i<(provider.manualFallbackSteps?.length||0)-1?"1px solid #E5E5E5":"none"}}>
+                        <div style={{minWidth:20,height:20,borderRadius:"50%",background:"#D4D4D4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0,marginTop:2}}>{i+1}</div>
+                        <span style={{fontSize:12,color:"#525252",lineHeight:1.5}} dangerouslySetInnerHTML={{__html:(()=>{
+                          let html=s.text.replace(/"([^"]+)"/g,'<strong style="color:#1A1A1A">"$1"</strong>');
+                          html=html.replace(/reservas@aircheck\.com\.br/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:${B.primary};background:${B.light};padding:2px 6px;border-radius:3px">reservas@aircheck.com.br</code>`);
+                          html=html.replace(/automated@airbnb\.com/g,`<code style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:${B.primary};background:${B.light};padding:2px 6px;border-radius:3px">automated@airbnb.com</code>`);
+                          return html;
+                        })()}}/>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </details>}
+
+              {/* Provider-specific note */}
+              {provider.note&&<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#D97706",lineHeight:1.6,marginTop:12}}>
+                <span dangerouslySetInnerHTML={{__html:`💡 <strong>Importante:</strong> ${provider.note}`}}/>
+              </div>}
+
+              {/* Info about confirmations + cancellations */}
+              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#2563EB",lineHeight:1.5,marginTop:12}}>
+                💡 <strong>Confirmações e cancelamentos</strong> do Airbnb vêm do mesmo remetente (<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11}}>automated@airbnb.com</span>). Com essa regra, ambos serão processados automaticamente.
+              </div>
+            </div>}
+          </div>
+
+          {/* Test section — after guide */}
+          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:20}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#1A1A1A",marginBottom:8}}>📨 Agora teste: encaminhe uma reserva</div>
+            <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:12}}>
+              {showAutoGuide
+                ?"Após configurar o filtro acima, encaminhe manualmente um email de \"Reserva confirmada\" do Airbnb para verificar que tudo funciona:"
+                :"Abra seu email e encaminhe um email de \"Reserva confirmada\" do Airbnb para o endereço abaixo:"}
+            </p>
+            <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"12px 16px",textAlign:"center",marginBottom:12}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:600,color:B.primary,wordBreak:"break-all"}}>reservas@aircheck.com.br</div>
+            </div>
+            <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.5}}>
+              Se possível, escolha uma reserva futura. O AirCheck processa confirmações e cancelamentos automaticamente.
+            </p>
+          </div>
+
+          {/* CTA + Polling */}
+          {!polling&&<button onClick={startPolling} style={btnStyle()}>Já encaminhei — aguardar reserva →</button>}
 
           {polling&&<div style={{textAlign:"center",padding:"20px 0"}}>
             <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 20px",marginBottom:16}}>
@@ -423,10 +458,7 @@ export default function OnboardingPage(){
             </div>
             <p style={{fontSize:12,color:"#A3A3A3"}}>Pode levar de 10 a 60 segundos. Não feche esta página.</p>
           </div>}
-
-          {/* ── VISUAL FORWARDING GUIDE ── */}
-          <EmailForwardingGuide/>
-        </div>}
+        </div>})()}
 
         {/* ═══════════════════ STEP 3 ═══════════════════ */}
         {step===3&&reservation&&<div style={cardStyle}>
