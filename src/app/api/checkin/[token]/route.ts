@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     
     let guests: Array<{
       fullName: string; birthDate: string; cpf?: string; rg?: string;
-      foreign?: boolean; passport?: string; rne?: string; documentUrl?: string;
+      foreign?: boolean; passport?: string; rne?: string;
     }>;
     try { guests = JSON.parse(guestsRaw); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
 
@@ -62,16 +62,12 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const carModel = formData.get("carModel") as string | null;
     const guestPhone = formData.get("guestPhone") as string | null;
 
-    // Fetch existing guests to preserve document URLs
-    const existingGuests = await prisma.guest.findMany({ where: { reservationId: r.id }, orderBy: { createdAt: "asc" } });
-
     // Delete existing guests for re-creation
     await prisma.guest.deleteMany({ where: { reservationId: r.id } });
 
-    // Create guests with document URLs (already uploaded individually)
+    // Create guests (document upload disabled for LGPD compliance)
     for (let i = 0; i < guests.length; i++) {
       const g = guests[i];
-      const documentUrl = g.documentUrl || existingGuests[i]?.documentUrl || null;
       await prisma.guest.create({
         data: {
           reservationId: r.id,
@@ -82,7 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
           foreign: g.foreign || false,
           passport: g.passport || null,
           rne: g.rne || null,
-          documentUrl,
+          documentUrl: null,
         },
       });
     }
