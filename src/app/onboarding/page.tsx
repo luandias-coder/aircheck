@@ -159,6 +159,7 @@ export default function OnboardingPage(){
   const[condoLinked,setCondoLinked]=useState(false);
   const[condoError,setCondoError]=useState("");
   const[condoSaving,setCondoSaving]=useState(false);
+  const[condoData,setCondoData]=useState<{name:string;address:string|null}|null>(null);
 
   // Step 5
   const[copied,setCopied]=useState(false);
@@ -224,6 +225,8 @@ export default function OnboardingPage(){
     setCondoSaving(true);setCondoError("");
     const res=await fetch(`/api/properties/${reservation.property.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"link_condominium",code:condoCode.trim()})});
     if(!res.ok){const d=await res.json();setCondoError(d.error||"Código inválido");setCondoSaving(false);return}
+    const data=await res.json().catch(()=>null);
+    if(data?.condominium){setCondoData({name:data.condominium.name,address:data.condominium.address})}
     setCondoLinked(true);setCondoSaving(false);setCondoError("");
   };
 
@@ -505,12 +508,18 @@ export default function OnboardingPage(){
             <div style={{borderTop:"1px solid #F0F0F0",paddingTop:14}}>
               <div style={{fontSize:12,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>🏢 Condomínio Parceiro</div>
               {condoLinked?(
-                <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:18}}>✅</span>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:600,color:"#059669"}}>Condomínio vinculado com sucesso!</div>
-                    <div style={{fontSize:12,color:"#737373",marginTop:2}}>A portaria será gerenciada pelo condomínio. Você não precisa preencher o WhatsApp da portaria.</div>
+                <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 16px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:condoData?8:0}}>
+                    <span style={{fontSize:18}}>✅</span>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:600,color:"#059669"}}>Condomínio vinculado com sucesso!</div>
+                      <div style={{fontSize:12,color:"#737373",marginTop:2}}>A portaria será gerenciada pelo condomínio. Você não precisa preencher o WhatsApp da portaria.</div>
+                    </div>
                   </div>
+                  {condoData&&<div style={{background:"#fff",border:"1px solid #D1FAE5",borderRadius:8,padding:"10px 14px",marginTop:8}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"#1A1A1A"}}>{condoData.name}</div>
+                    {condoData.address&&<div style={{fontSize:12,color:"#737373",marginTop:2}}>📍 {condoData.address}</div>}
+                  </div>}
                 </div>
               ):(
                 <div>
@@ -529,8 +538,8 @@ export default function OnboardingPage(){
             {!condoLinked&&<div style={{borderTop:"1px solid #F0F0F0",paddingTop:14}}>
               <label style={labelStyle}>WhatsApp da portaria *</label>
               <input value={doormanPhone} onChange={e=>setDoormanPhone(maskPhone(e.target.value))} placeholder="(41) 99999-0000" inputMode="tel" style={{...inputStyle,marginBottom:10}}/>
-              <label style={labelStyle}>Nome do contato</label>
-              <input value={doormanName} onChange={e=>setDoormanName(e.target.value)} placeholder="Ex: Portaria Central" style={inputStyle}/>
+              <label style={labelStyle}>Rótulo da portaria</label>
+              <input value={doormanName} onChange={e=>setDoormanName(e.target.value)} placeholder="Ex: Portaria Principal, Portaria Remota" style={inputStyle}/>
             </div>}
           </div>
 
@@ -548,7 +557,7 @@ export default function OnboardingPage(){
           <BackBtn onClick={()=>setStep(4)}/>
           <StepBadge n={5}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Formulário de check-in</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Este é o link que você envia ao hóspede. Ele preenche nome, CPF, data de nascimento e tira foto do documento.</p>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Este é o link que você envia ao hóspede. Ele preenche nome, CPF e data de nascimento para registro na portaria.</p>
 
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
             <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Link do formulário</div>
@@ -572,7 +581,14 @@ export default function OnboardingPage(){
           <BackBtn onClick={()=>setStep(5)}/>
           <StepBadge n={6}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Mensagem automática no Airbnb</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Configure uma mensagem programada no Airbnb para que <strong style={{color:"#1A1A1A"}}>cada novo hóspede receba automaticamente</strong> o link do formulário de check-in. Você faz isso uma única vez.</p>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:16}}>Configure uma mensagem programada no Airbnb para que <strong style={{color:"#1A1A1A"}}>cada novo hóspede receba automaticamente</strong> o link do formulário de check-in. Você faz isso uma única vez.</p>
+
+          <a href="https://www.airbnb.com.br/hosting/messages/settings/quick-replies?product=STAYS" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"14px 20px",background:"#FF385C",color:"#fff",borderRadius:12,textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:600,marginBottom:16,boxShadow:"0 2px 8px rgba(255,56,92,0.3)"}}>
+            <span style={{fontSize:18}}>🏠</span> Abrir configuração de mensagens no Airbnb ↗
+          </a>
+          <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#D97706",lineHeight:1.5,marginBottom:16}}>
+            ⚠️ Certifique-se de estar logado no Airbnb com a <strong>mesma conta</strong> vinculada ao email que você configurou no passo 1.
+          </div>
 
           {/* Message preview */}
           <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
@@ -587,13 +603,12 @@ export default function OnboardingPage(){
           </div>
 
           <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:14,padding:"16px 20px",marginBottom:20}}>
-            <div style={{fontSize:13,fontWeight:600,color:B.primary,marginBottom:8}}>📱 Como configurar no Airbnb:</div>
+            <div style={{fontSize:13,fontWeight:600,color:B.primary,marginBottom:8}}>📱 Como configurar:</div>
             <ol style={{margin:0,paddingLeft:20,fontSize:13,color:B.primary,lineHeight:1.8}}>
-              <li>Abra o app do Airbnb → <strong>Anúncios</strong> → seu imóvel</li>
-              <li>Vá em <strong>Mensagens programadas</strong></li>
-              <li>Crie uma nova com gatilho <strong>"Reserva confirmada"</strong></li>
+              <li>Clique no botão acima (ou acesse pelo app: <strong>Anúncios</strong> → seu imóvel → <strong>Mensagens programadas</strong>)</li>
+              <li>Crie uma nova resposta rápida com gatilho <strong>"Reserva confirmada"</strong></li>
               <li>Cole a mensagem acima (troque os campos em azul pelos atalhos do Airbnb)</li>
-              <li>Salve. Você não precisa enviar manualmente.</li>
+              <li>Salve. A partir de agora, cada hóspede recebe o link automaticamente.</li>
             </ol>
           </div>
 
@@ -604,10 +619,12 @@ export default function OnboardingPage(){
         {step===7&&reservation&&<div style={cardStyle}>
           <BackBtn onClick={()=>setStep(6)}/>
           <StepBadge n={7}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Pronto! Envie para a portaria.</h2>
-          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>Quando o hóspede preencher o formulário, você abre a reserva no painel e clica em <strong style={{color:"#1A1A1A"}}>"Enviar para portaria"</strong>. A mensagem formatada vai direto pro WhatsApp.</p>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>{condoLinked?"Pronto! A portaria já recebe tudo.":"Pronto! Envie para a portaria."}</h2>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>{condoLinked
+            ?"Como seu imóvel está vinculado a um condomínio parceiro, os dados dos hóspedes são enviados automaticamente para o painel da portaria. Você não precisa fazer mais nada."
+            :<>Quando o hóspede preencher o formulário, você abre a reserva no painel e clica em <strong style={{color:"#1A1A1A"}}>"Enviar para portaria"</strong>. A mensagem formatada vai direto pro WhatsApp.</>}</p>
 
-          {whatsappData?<div style={{marginBottom:20}}>
+          {!condoLinked&&whatsappData?<div style={{marginBottom:20}}>
             <div style={{background:"#E7DCCF",borderRadius:14,padding:14}}>
               <div style={{background:"#DCF8C6",borderRadius:10,padding:"10px 12px",fontSize:11,color:"#303030",lineHeight:1.6,whiteSpace:"pre-wrap",fontFamily:"system-ui"}}>{whatsappData.message}</div>
             </div>
@@ -617,18 +634,20 @@ export default function OnboardingPage(){
               </a>
             ))}
           </div>
-          :<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"20px",marginBottom:20,textAlign:"center"}}>
+          :!condoLinked?<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"20px",marginBottom:20,textAlign:"center"}}>
             <div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>
               {reservation.guests.length===0
                 ?"O formulário ainda não foi preenchido pelo hóspede. Quando ele preencher, a mensagem aparecerá aqui e no seu painel."
                 :"Carregando preview..."}
             </div>
-          </div>}
+          </div>:null}
 
           <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"20px",marginBottom:24,textAlign:"center"}}>
             <div style={{fontSize:28,marginBottom:8}}>🎉</div>
             <div style={{fontSize:18,fontWeight:800,color:B.accent,marginBottom:6}}>Setup completo!</div>
-            <div style={{fontSize:13,color:"#737373",lineHeight:1.6}}>Seu AirCheck está pronto. A partir de agora, basta encaminhar o email de cada reserva (ou configurar o encaminhamento automático) e repetir o processo. Cancelamentos também são processados automaticamente.</div>
+            <div style={{fontSize:13,color:"#737373",lineHeight:1.6}}>{condoLinked
+              ?"Seu AirCheck está pronto. Cada reserva gera automaticamente um check-in no painel da portaria do condomínio. Cancelamentos também são processados automaticamente."
+              :"Seu AirCheck está pronto. A partir de agora, basta encaminhar o email de cada reserva (ou configurar o encaminhamento automático) e repetir o processo. Cancelamentos também são processados automaticamente."}</div>
           </div>
 
           <button onClick={completeOnboarding} style={btnStyle()}>Ir para o painel →</button>
