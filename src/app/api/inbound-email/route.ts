@@ -362,6 +362,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── Extract property photo from HTML body ────────────────────
+    // Airbnb listing photos: a0.muscache.com/ac/pictures/miso/Hosting-{roomId}/original/{uuid}.jpeg
+    // Only in HTML (as background= or hidden img), not in text body.
+    if (htmlBody && property) {
+      const propertyPhotoMatch = htmlBody.match(/https:\/\/a0\.muscache\.com\/ac\/pictures\/miso\/Hosting-\d+\/original\/[^\s"'<>&]+(?:\?[^\s"'<>]*)?/);
+      if (propertyPhotoMatch) {
+        let photoUrl = propertyPhotoMatch[0].replace(/&amp;/g, "&").replace(/=3D/g, "=").replace(/\s+$/, "");
+        if (photoUrl && !property.photoUrl) {
+          property = await prisma.property.update({
+            where: { id: property.id },
+            data: { photoUrl },
+          });
+        }
+      }
+    }
+
     // Check duplicate
     if (results.confirmationCode) {
       const existing = await prisma.reservation.findFirst({
