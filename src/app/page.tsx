@@ -87,12 +87,10 @@ function WhatsAppMockup() {
           📅 Nasc: 01/01/1990<br/>
           🪪 CPF: 000.000.000-00<br/>
           🪪 RG: 12.345.678-9<br/>
-          📎 Doc: airchk.in/d/a1b2c3<br/>
           <br/>
           👤 <strong>João Souza</strong><br/>
           📅 Nasc: 15/06/1988<br/>
           🪪 CPF: 111.222.333-44<br/>
-          📎 Doc: airchk.in/d/d4e5f6<br/>
           <span style={{color:"#999"}}>--------------------------------------</span><br/>
           🚗 <strong>Veículo:</strong> HB20 Prata · ABC-1D23<br/>
           <br/>
@@ -352,7 +350,7 @@ export default function HomePage() {
                 <h2 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.15, marginBottom: 16 }}>De mensagens soltas<br />pra <span className="grad-text">um envio completo.</span></h2>
                 <p style={{ fontSize: 16, color: B.muted, lineHeight: 1.7, marginBottom: 24 }}>Agora, a portaria recebe tudo de uma vez — organizado e completo.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {["Nomes, CPF e documentos de todos os hóspedes", "Foto do RG, CNH ou passaporte", "Unidade, vaga e datas formatadas", "Pronto pra portaria liberar a entrada"].map((t, i) => (
+                  {["Nome, CPF e dados de cada hóspede", "Unidade, vaga de garagem e datas", "Placa e modelo do veículo", "Pronto pra portaria liberar a entrada"].map((t, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: B.accent, fontWeight: 700, flexShrink: 0 }}>✓</div>
                       <span style={{ fontSize: 14, fontWeight: 500, color: B.dark }}>{t}</span>
