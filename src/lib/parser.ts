@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-// AirCheck Parser v5.6
+// AirCheck Parser v5.7
 // - Fixes corrupted encoding (João, Estação, Fabrício, etc)
 // - Extracts Airbnb room ID, thread ID/URL, guest photo
 // - English email support (guests, dates, confirmation, property)
 // - Cancellation email detection (PT + EN, including EN "cancel reservation CODE")
-// - Property photo extraction (propertyPhotoUrl) — done in inbound-email route from HTML
+// - NEW: accepts optional htmlBody for photo extraction fallback
+//   (webmail forwards often strip image URLs from plain text)
+// - NEW: extracts propertyPhotoUrl from HTML body
 // ═══════════════════════════════════════════════════════════════
 
 const MONTH_MAP: Record<string, number> = {
@@ -101,7 +103,13 @@ export interface ParseResult {
   errors: string[];
 }
 
-export function parseAirbnbEmail(rawText: string): ParseResult {
+/**
+ * Parse an Airbnb reservation email.
+ * @param rawText - primary text body (plain text preferred, falls back to HTML)
+ * @param htmlBody - optional HTML body, used as fallback for photo URL extraction
+ *                   (webmail forwards often strip image URLs from plain text)
+ */
+export function parseAirbnbEmail(rawText: string, htmlBody?: string): ParseResult {
   const r: Record<string, any> = {};
   const errors: string[] = [];
 
@@ -137,6 +145,11 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   // ── Airbnb Room ID ─────────────────────────────────────────
   const roomMatch = rawText.match(/airbnb\.com(?:\.br)?\/rooms\/(\d+)/);
   if (roomMatch) r.airbnbRoomId = roomMatch[1];
+  // Fallback: try HTML if not found in text
+  if (!r.airbnbRoomId && htmlBody) {
+    const roomMatchHtml = htmlBody.match(/airbnb\.com(?:\.br)?\/rooms\/(\d+)/);
+    if (roomMatchHtml) r.airbnbRoomId = roomMatchHtml[1];
+  }
 
   // ── Airbnb Thread ID & URL ─────────────────────────────────
   const threadMatch = rawText.match(/(https:\/\/www\.airbnb\.com(?:\.br)?\/hosting\/thread\/(\d+))/);
@@ -144,10 +157,42 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
     r.airbnbThreadUrl = threadMatch[1];
     r.airbnbThreadId = threadMatch[2];
   }
+  // Fallback: try HTML
+  if (!r.airbnbThreadUrl && htmlBody) {
+    const threadMatchHtml = htmlBody.match(/(https:\/\/www\.airbnb\.com(?:\.br)?\/hosting\/thread\/(\d+))/);
+    if (threadMatchHtml) {
+      r.airbnbThreadUrl = threadMatchHtml[1];
+      r.airbnbThreadId = threadMatchHtml[2];
+    }
+  }
 
   // ── Guest photo URL ────────────────────────────────────────
-  const photoMatch = rawText.match(/https:\/\/a0\.muscache\.com\/im\/pictures\/user\/[^\s\]\[>]+/);
-  if (photoMatch) r.guestPhotoUrl = photoMatch[0].replace(/\]$/, "");
+  // Try text body first
+  const guestPhotoRe = /https:\/\/a0\.muscache\.com\/im\/pictures\/user\/[^\s\]\[>"']+/;
+  const photoMatch = rawText.match(guestPhotoRe);
+  if (photoMatch) {
+    r.guestPhotoUrl = photoMatch[0].replace(/\]$/, "");
+  }
+  // Fallback: try HTML body (webmail may strip image URLs from plain text)
+  if (!r.guestPhotoUrl && htmlBody) {
+    const photoMatchHtml = htmlBody.match(guestPhotoRe);
+    if (photoMatchHtml) {
+      r.guestPhotoUrl = photoMatchHtml[0].replace(/["'>]$/, "").replace(/\]$/, "");
+    }
+  }
+
+  // ── Property photo URL (listing photo) ─────────────────────
+  // Primary: HTML body (where Airbnb embeds <img> with listing photo)
+  const propPhotoRe = /https:\/\/a0\.muscache\.com\/ac\/pictures\/miso\/Hosting-\d+\/original\/[^\s"'<>&]+/;
+  if (htmlBody) {
+    const propPhotoMatch = htmlBody.match(propPhotoRe);
+    if (propPhotoMatch) r.propertyPhotoUrl = propPhotoMatch[0];
+  }
+  // Fallback: try text body (some clients preserve the URL in plain text)
+  if (!r.propertyPhotoUrl) {
+    const propPhotoMatchText = rawText.match(propPhotoRe);
+    if (propPhotoMatchText) r.propertyPhotoUrl = propPhotoMatchText[0];
+  }
 
   // ── Guest name ─────────────────────────────────────────────
   // PT: "Reserva confirmada — NAME chega em"
@@ -265,32 +310,38 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   const ciDay = ciMatch ? ciMatch[1] : ciMatchEN ? ciMatchEN[2] : null;
   const ciMonStr = ciMatch ? ciMatch[2] : ciMatchEN ? ciMatchEN[1] : null;
   const ciTime = ciMatch ? ciMatch[3] : ciMatchEN ? ciMatchEN[3] : null;
+
   if (ciData && ciDay && ciMonStr && ciTime) {
-    const mo = matchMonth(ciMonStr);
-    // Normalize EN time: "3:00 PM" → "15:00"
-    let time = ciTime;
-    const pmMatch = time.match(/^(\d{1,2}):(\d{2})\s*([APap][Mm])$/);
-    if (pmMatch) {
-      let h = parseInt(pmMatch[1]);
-      if (pmMatch[3].toLowerCase() === "pm" && h < 12) h += 12;
-      if (pmMatch[3].toLowerCase() === "am" && h === 12) h = 0;
-      time = `${String(h).padStart(2, "0")}:${pmMatch[2]}`;
+    const ciMon = matchMonth(ciMonStr);
+    if (ciMon !== null) {
+      let ciYear = emailYear;
+      if (emailMonth !== null && ciMon < emailMonth) ciYear++;
+      r.checkInDate = `${ciDay.padStart(2, "0")}/${String(ciMon + 1).padStart(2, "0")}/${ciYear}`;
+      r._ciMonth = ciMon;
+      r._ciYear = ciYear;
+      // Parse time (handle AM/PM)
+      let timeStr = ciTime.trim();
+      const ampm = timeStr.match(/([APap][Mm])$/);
+      if (ampm) {
+        timeStr = timeStr.replace(/\s*[APap][Mm]$/, "");
+        const [h, m] = timeStr.split(":").map(Number);
+        let hour = h;
+        if (ampm[1].toLowerCase() === "pm" && h < 12) hour += 12;
+        if (ampm[1].toLowerCase() === "am" && h === 12) hour = 0;
+        r.checkInTime = `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      } else {
+        r.checkInTime = timeStr;
+      }
     }
-    if (mo !== null) {
-      let y = emailYear;
-      if (emailMonth !== null && mo < emailMonth) y++;
-      r.checkInDate = `${ciDay.padStart(2, "0")}/${String(mo + 1).padStart(2, "0")}/${y}`;
-      r.checkInTime = time;
-      r._ciMonth = mo; r._ciYear = y;
-    } else errors.push(`Mês de check-in não reconhecido: "${ciMonStr}"`);
-  } else errors.push("Data de check-in não encontrada");
+  }
+  if (!r.checkInDate) errors.push("Check-in não encontrado");
 
   // ── Check-out ──────────────────────────────────────────────
-  // PT: "Check-out  18 de março  12:00"
+  // PT: "Checkout  18 de março  12:00"
   const coMatch = rawText.match(
     /Check[\s-]?out[\s\n]+(?:[^\d\n]{0,12}[.,]\s*)?(\d{1,2})\s+de\s+(\w{3,9})\.?[\s\n]+(\d{1,2}:\d{2})/i
   );
-  // EN: "Check-out  March 18  11:00 AM"
+  // EN: "Checkout  March 18  11:00 AM"
   const coMatchEN = !coMatch ? rawText.match(
     /Check[\s-]?out[\s\n]+(?:[^\d\n]{0,20}[.,]\s*)?(\w{3,9})\.?\s+(\d{1,2})[\s\n]+(\d{1,2}:\d{2}(?:\s*[APap][Mm])?)/i
   ) : null;
@@ -298,53 +349,38 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   const coDay = coMatch ? coMatch[1] : coMatchEN ? coMatchEN[2] : null;
   const coMonStr = coMatch ? coMatch[2] : coMatchEN ? coMatchEN[1] : null;
   const coTime = coMatch ? coMatch[3] : coMatchEN ? coMatchEN[3] : null;
-  if (coData && coDay && coMonStr && coTime) {
-    const mo = matchMonth(coMonStr);
-    let time = coTime;
-    const pmMatch = time.match(/^(\d{1,2}):(\d{2})\s*([APap][Mm])$/);
-    if (pmMatch) {
-      let h = parseInt(pmMatch[1]);
-      if (pmMatch[3].toLowerCase() === "pm" && h < 12) h += 12;
-      if (pmMatch[3].toLowerCase() === "am" && h === 12) h = 0;
-      time = `${String(h).padStart(2, "0")}:${pmMatch[2]}`;
-    }
-    if (mo !== null) {
-      let y = r._ciYear || emailYear;
-      if (r._ciMonth !== undefined && mo < r._ciMonth) y++;
-      r.checkOutDate = `${coDay.padStart(2, "0")}/${String(mo + 1).padStart(2, "0")}/${y}`;
-      r.checkOutTime = time;
-    } else errors.push(`Mês de check-out não reconhecido: "${coMonStr}"`);
-  } else errors.push("Data de check-out não encontrada");
 
-  // ── Guests ─────────────────────────────────────────────────
-  let guestFound = false;
-  // Try adults + children sum first (PT and EN)
-  const adultChildPT = rawText.match(/(\d+)\s+adultos?\s*[,\.]\s*(\d+)\s+crian.as?/i);
-  const adultChildEN = rawText.match(/(\d+)\s+adults?\s*[,\.]\s*(\d+)\s+children/i);
-  const adultChild = adultChildPT || adultChildEN;
-  if (adultChild) {
-    r.numGuests = parseInt(adultChild[1]) + parseInt(adultChild[2]);
-    guestFound = true;
-  }
-  if (!guestFound) {
-    const guestPats = [
-      /H.spedes[\s\n]+(\d+)\s+(?:adultos?|h.spedes?|pessoas?)/i,
-      /Guests[\s\n]+(\d+)\s+(?:guests?|adults?|people)/i,
-      /(\d+)\s+adultos?/i,
-      /(\d+)\s+guests?/i,
-      /(\d+)\s+adults?/i,
-    ];
-    for (const pat of guestPats) {
-      const m = rawText.match(pat);
-      if (m) { r.numGuests = parseInt(m[1]); guestFound = true; break; }
+  if (coData && coDay && coMonStr && coTime) {
+    const coMon = matchMonth(coMonStr);
+    if (coMon !== null) {
+      let coYear = r._ciYear || emailYear;
+      if (r._ciMonth !== undefined && coMon < r._ciMonth) coYear++;
+      r.checkOutDate = `${coDay.padStart(2, "0")}/${String(coMon + 1).padStart(2, "0")}/${coYear}`;
+      // Parse time (handle AM/PM)
+      let timeStr = coTime.trim();
+      const ampm = timeStr.match(/([APap][Mm])$/);
+      if (ampm) {
+        timeStr = timeStr.replace(/\s*[APap][Mm]$/, "");
+        const [h, m] = timeStr.split(":").map(Number);
+        let hour = h;
+        if (ampm[1].toLowerCase() === "pm" && h < 12) hour += 12;
+        if (ampm[1].toLowerCase() === "am" && h === 12) hour = 0;
+        r.checkOutTime = `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      } else {
+        r.checkOutTime = timeStr;
+      }
     }
   }
-  if (!guestFound) { r.numGuests = 1; errors.push("Nº de hóspedes não encontrado (assumindo 1)"); }
+  if (!r.checkOutDate) errors.push("Checkout não encontrado");
+
+  // ── Number of guests ───────────────────────────────────────
+  const gm = rawText.match(/(\d+)\s+(?:hóspedes?|h.spedes?|guests?)/i);
+  r.numGuests = gm ? parseInt(gm[1]) : 1;
 
   // ── Confirmation code ──────────────────────────────────────
   const codePats = [
-    /C.digo\s+de\s+confirma..o[\s\n]+([A-Z0-9]{8,12})/i,
-    /confirma(?:ção|..o|cao)[\s\S]{0,30}?([A-Z0-9]{10})/i,
+    /C[oó\uFFFD]digo\s+de\s+confirma[cç\uFFFD][aã\uFFFD]o[\s\n]+([A-Z0-9]{8,12})/i,
+    /confirma[cç\uFFFD][aã\uFFFD]o[\s\n]+([A-Z0-9]{10})/i,
     /Confirmation\s+code[\s\n]+([A-Z0-9]{8,12})/i,
     /confirmation[\s\S]{0,20}?([A-Z0-9]{10})/i,
     // EN cancellation: "cancel reservation HMHZXNNMN5" / "Canceled: Reservation HMHZXNNMN5"
@@ -404,4 +440,3 @@ export function parseAirbnbEmail(rawText: string): ParseResult {
   delete r._ciMonth; delete r._ciYear;
   return { results: r as ParsedReservation, errors };
 }
-
