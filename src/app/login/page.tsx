@@ -125,6 +125,9 @@ export default function LoginPage() {
             <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#A3A3A3" }}>
               Não tem conta? <a href="/register" style={{ color: B.primary, fontWeight: 600, textDecoration: "none" }}>Criar conta</a>
             </p>
+            <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#A3A3A3" }}>
+              É porteiro ou síndico? <a href="/portaria/login" style={{ color: B.primary, fontWeight: 600, textDecoration: "none" }}>Acesse o painel da portaria →</a>
+            </p>
           </>
         )}
 
