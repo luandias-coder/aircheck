@@ -576,7 +576,7 @@ function PropertiesTab({properties,onRefresh,initialCondoCode}:{properties:Prope
               <div>
                 <div style={{fontSize:12,color:"#737373",marginBottom:6}}>Se seu prédio é parceiro do AirCheck, insira o código fornecido pela administração.</div>
                 <div style={{display:"flex",gap:8}}>
-                  <input placeholder="Ex: AK3F7B" value={condoCode} onChange={e=>setCondoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} maxLength={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:600,padding:"8px 12px",border:`1px solid ${condoError?"#DC2626":"#E5E5E5"}`,borderRadius:8,background:"#fff",width:120,textAlign:"center",letterSpacing:"0.15em",boxSizing:"border-box"}}/>
+                  <input placeholder="Ex: AK3F7B" value={condoCode} onChange={e=>setCondoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} maxLength={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:600,padding:"8px 12px",border:`1px solid ${condoError?"#DC2626":"#E5E5E5"}`,borderRadius:8,background:"#fff",width:160,textAlign:"center",letterSpacing:"0.15em",boxSizing:"border-box"}}/>
                   <button onClick={()=>linkCondo(p.id)} disabled={condoSaving||condoCode.length<4} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:condoSaving||condoCode.length<4?0.5:1}}>{condoSaving?"Verificando...":"Vincular"}</button>
                 </div>
                 {condoError&&<div style={{fontSize:12,color:"#DC2626",marginTop:6}}>{condoError}</div>}
