@@ -971,3 +971,548 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, limit);
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 10 NOVOS POSTS — FOCO: CONDOMÍNIOS & PORTARIAS (B2B)
+// Colar no array BLOG_POSTS[] em src/lib/blog-posts.ts
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// POST 11
+{
+  slug: "condominio-como-controlar-airbnb-sem-proibir",
+  title: "Como o condomínio pode controlar o Airbnb sem proibir",
+  description: "Estratégias práticas para síndicos e administradoras que querem organizar a hospedagem por temporada no prédio sem entrar em conflito com a lei.",
+  category: "condominios",
+  tags: ["condomínio", "síndico", "airbnb", "regulamentação", "controle de acesso", "administradora"],
+  author: "AirCheck",
+  publishedAt: "2026-03-22",
+  readingTime: 8,
+  content: `
+<p>Quando o assunto é Airbnb em condomínios, a primeira reação de muitos síndicos é tentar proibir. Mas a realidade jurídica no Brasil — especialmente após o posicionamento do STF — torna a proibição total arriscada e frequentemente ilegal.</p>
+
+<p>A boa notícia: proibir não é a única opção. Existe um caminho mais inteligente — e juridicamente seguro — que é <strong>regulamentar</strong>. Neste artigo, mostramos como o condomínio pode manter o controle sem precisar impedir o aluguel por temporada.</p>
+
+<h2>Por que proibir o Airbnb é um problema</h2>
+
+<p>A locação por temporada é um direito do proprietário, previsto na Lei do Inquilinato (Lei 8.245/91) e reforçado por decisões do STF. Quando um condomínio aprova uma proibição em assembleia, ele corre risco real de ser questionado judicialmente — e perder.</p>
+
+<p>Além disso, proibir raramente resolve o problema de fato. Moradores continuam hospedando, só que agora de forma clandestina, sem nenhum registro ou aviso à portaria. O resultado é menos controle, não mais.</p>
+
+<h2>O que o condomínio pode (e deve) regulamentar</h2>
+
+<p>Em vez de proibir, o condomínio pode criar regras claras que protejam a segurança e a convivência. Algumas das medidas mais eficazes são:</p>
+
+<h3>1. Cadastro prévio obrigatório de hóspedes</h3>
+<p>Exigir que o anfitrião envie à portaria, com antecedência mínima de 24 horas, os dados completos dos hóspedes: nome, documento, período de estadia e número de pessoas. Esse é o controle mais importante e mais fácil de implementar.</p>
+
+<h3>2. Horários de check-in e checkout</h3>
+<p>Definir janelas de horário para entrada e saída de hóspedes ajuda a reduzir transtornos para outros moradores. Faixas comuns são das 8h às 22h para check-in e até 11h para checkout.</p>
+
+<h3>3. Regras de uso de áreas comuns</h3>
+<p>Hóspedes de curta temporada podem usar áreas como piscina, academia e salão de festas? Definir isso de forma clara evita conflitos. Muitos condomínios optam por permitir com restrições (sem reserva de churrasqueira, por exemplo).</p>
+
+<h3>4. Limite de ocupação por unidade</h3>
+<p>Restringir o número máximo de hóspedes por apartamento é legítimo e ajuda a evitar a sensação de "hotel" no prédio.</p>
+
+<h3>5. Responsabilidade do anfitrião</h3>
+<p>O regulamento deve deixar claro que o proprietário ou locatário que faz Airbnb é responsável por danos causados por seus hóspedes às áreas comuns, assim como pelo cumprimento das regras internas.</p>
+
+<h2>Como aprovar essas regras</h2>
+
+<p>As regras sobre locação por temporada devem ser aprovadas em assembleia, preferencialmente com inclusão no regulamento interno. É recomendável consultar o advogado do condomínio para garantir que as restrições sejam proporcionais e compatíveis com a legislação vigente.</p>
+
+<p>O quórum necessário varia conforme a convenção do condomínio, mas a maioria dos especialistas recomenda maioria simples para alterações no regulamento interno — diferente de mudanças na convenção, que exigem dois terços.</p>
+
+<h2>Tecnologia como aliada da regulamentação</h2>
+
+<p>Criar regras é o primeiro passo. Fazer com que elas funcionem no dia a dia é o desafio real. É aí que a tecnologia faz diferença.</p>
+
+<p>Com ferramentas como o <a href="/">AirCheck</a>, o condomínio ganha um painel próprio onde pode acompanhar todos os check-ins programados, com dados completos dos hóspedes — sem depender de mensagens informais ou ligações de última hora. O anfitrião cadastra, o sistema organiza, e a portaria recebe tudo padronizado.</p>
+
+<h2>Conclusão</h2>
+
+<p>Controlar o Airbnb no condomínio não exige proibição. Exige processo. Com regras claras, aprovadas em assembleia, e ferramentas que automatizam o cumprimento dessas regras, é possível manter a segurança, a convivência e os direitos dos proprietários — tudo ao mesmo tempo.</p>
+
+<p>Se você é síndico ou administradora e quer organizar o Airbnb no seu condomínio, <a href="/register/condominio">cadastre seu condomínio gratuitamente</a> e veja como funciona.</p>
+`,
+},
+
+// POST 12
+{
+  slug: "portaria-inteligente-acesso-hospedes-airbnb",
+  title: "Portaria inteligente: como organizar o acesso de hóspedes do Airbnb",
+  description: "Saiba como modernizar a portaria do condomínio para lidar com hóspedes do Airbnb de forma segura, padronizada e sem depender de papel.",
+  category: "condominios",
+  tags: ["portaria", "controle de acesso", "hóspedes", "airbnb", "condomínio", "tecnologia"],
+  author: "AirCheck",
+  publishedAt: "2026-03-20",
+  readingTime: 7,
+  content: `
+<p>A portaria de um condomínio é a primeira linha de defesa. É ali que visitantes, prestadores de serviço e — cada vez mais — hóspedes do Airbnb precisam ser identificados antes de entrar. O problema é que muitas portarias ainda funcionam com caderninho, ligação telefônica e boa vontade.</p>
+
+<p>Quando um prédio tem moradores que hospedam pelo Airbnb, a demanda sobre a portaria aumenta. São rostos novos toda semana, dados que precisam ser conferidos, e um fluxo que não existia há poucos anos. Neste artigo, mostramos como transformar a portaria do condomínio para lidar com essa realidade de forma organizada.</p>
+
+<h2>Os problemas da portaria tradicional</h2>
+
+<p>Na maioria dos condomínios, o fluxo de hóspedes do Airbnb funciona assim: o morador liga ou manda WhatsApp para o porteiro, informa que "vai chegar alguém" e passa o nome. Às vezes esquece o documento. Às vezes o porteiro troca de turno e a informação se perde. Às vezes o hóspede chega e ninguém sabe de nada.</p>
+
+<p>Esse modelo tem falhas evidentes: informações incompletas, falta de padronização, dependência da memória humana e nenhum registro auditável.</p>
+
+<h2>O que muda com uma portaria inteligente</h2>
+
+<p>Uma portaria inteligente não é necessariamente high-tech. É uma portaria com <strong>processo definido e informações organizadas</strong>. Na prática, isso significa três coisas:</p>
+
+<h3>1. Dados padronizados e completos</h3>
+<p>Cada hóspede que vai entrar no prédio precisa ter nome completo, documento, período de estadia e apartamento de destino registrados antes da chegada. Sem exceção. Quando o formato é sempre o mesmo, o porteiro não precisa interpretar — só conferir.</p>
+
+<h3>2. Canal único de recebimento</h3>
+<p>Se cada morador avisa a portaria de um jeito — um por WhatsApp, outro por ligação, outro deixa bilhete — a chance de informação se perder é enorme. O ideal é que exista um canal único e digital onde todos os avisos de hóspedes cheguem no mesmo formato.</p>
+
+<h3>3. Registro acessível por todos os turnos</h3>
+<p>A informação do check-in precisa sobreviver à troca de turno. Se o aviso foi dado para o porteiro da manhã, o porteiro da noite precisa ter acesso ao mesmo dado. Um painel digital resolve isso de forma simples.</p>
+
+<h2>Como implementar na prática</h2>
+
+<p>Existem diferentes níveis de modernização. O mais básico é padronizar o formato de comunicação (um modelo de mensagem que todos os anfitriões devem seguir). O nível intermediário é usar uma ferramenta que centralize os dados. O nível avançado é integrar com o sistema de controle de acesso do prédio.</p>
+
+<p>Para a maioria dos condomínios, o nível intermediário já resolve 90% dos problemas. O <a href="/">AirCheck</a> oferece exatamente isso: um painel da portaria onde todos os check-ins aparecem organizados, com filtro por data, dados completos do hóspede e do apartamento, sem que o porteiro precise fazer nada além de consultar.</p>
+
+<h2>Benefícios para o porteiro</h2>
+
+<p>Com um sistema organizado, o porteiro deixa de ser o "gargalo" da operação. Ele não precisa anotar dados em papel, não precisa ligar para o morador confirmando informações e não precisa lembrar quem falou o quê. A informação está ali, na tela — clara, completa e acessível.</p>
+
+<p>Isso reduz o estresse do porteiro e diminui as chances de erro, especialmente nos horários de maior movimento e nas trocas de turno.</p>
+
+<h2>Conclusão</h2>
+
+<p>A portaria inteligente não é um luxo — é uma necessidade em prédios onde o Airbnb faz parte da realidade. Com processos claros e ferramentas simples, é possível manter a segurança do condomínio sem sobrecarregar a equipe da portaria e sem criar atrito com os moradores que hospedam.</p>
+
+<p>Quer modernizar a portaria do seu condomínio? <a href="/register/condominio">Cadastre-se gratuitamente no AirCheck</a> e veja o painel da portaria em ação.</p>
+`,
+},
+
+// POST 13
+{
+  slug: "administradora-condominio-airbnb-multiplos-predios",
+  title: "Administradora de condomínio e Airbnb: como gerenciar múltiplos prédios",
+  description: "Guia para administradoras que gerenciam condomínios com Airbnb: como padronizar processos, escalar o controle e reduzir reclamações.",
+  category: "condominios",
+  tags: ["administradora", "condomínio", "airbnb", "gestão", "múltiplos prédios", "síndico"],
+  author: "AirCheck",
+  publishedAt: "2026-03-18",
+  readingTime: 8,
+  content: `
+<p>Se você administra condomínios, provavelmente já ouviu a mesma reclamação em mais de uma assembleia: "tem gente estranha entrando no prédio por causa do Airbnb". O desafio da administradora não é lidar com um prédio — é lidar com dezenas, cada um com suas regras, seus síndicos e suas particularidades.</p>
+
+<p>A locação por temporada não vai desaparecer. O que muda é como a administradora se posiciona: como quem tem a solução, ou como quem fica apagando incêndios.</p>
+
+<h2>O cenário atual para administradoras</h2>
+
+<p>O Airbnb já é uma realidade em boa parte dos condomínios urbanos brasileiros. Em prédios bem localizados — perto de centros comerciais, hospitais, universidades ou áreas turísticas — é comum que pelo menos alguns moradores hospedem por temporada.</p>
+
+<p>Para a administradora, isso cria demandas que não existiam antes: reclamações sobre barulho e desconhecidos, pressão dos moradores para "fazer alguma coisa", e síndicos pedindo orientação sobre o que pode e o que não pode ser regulamentado.</p>
+
+<h2>Por que padronizar é mais importante que proibir</h2>
+
+<p>Administradoras que tentam simplesmente proibir o Airbnb em seus condomínios administrados descobrem rapidamente que essa abordagem gera mais problemas: processos judiciais, anfitriões insatisfeitos, e a prática continua de forma clandestina — agora sem nenhum controle.</p>
+
+<p>A alternativa é oferecer um <strong>processo padronizado</strong> que funcione em todos os prédios da carteira. Quando a administradora tem um sistema único de cadastro de hóspedes, ela pode replicar em cada condomínio sem reinventar a roda.</p>
+
+<h2>O que uma boa gestão de Airbnb em condomínio precisa ter</h2>
+
+<h3>1. Modelo de regulamento interno</h3>
+<p>A administradora pode oferecer um modelo de cláusulas para o regulamento interno que trate da locação por temporada: cadastro prévio, horários de acesso, uso de áreas comuns, responsabilidade do anfitrião. Ter um modelo pronto agiliza a aprovação em assembleia.</p>
+
+<h3>2. Sistema de cadastro centralizado</h3>
+<p>Em vez de cada porteiro receber informações de um jeito diferente, a administradora pode implementar um sistema único onde os anfitriões cadastram os hóspedes e a portaria de cada prédio acessa os dados de forma padronizada.</p>
+
+<h3>3. Visão consolidada dos prédios</h3>
+<p>Para a administradora, o ideal é ter uma visão agregada: quantos check-ins acontecem por mês em cada prédio, quais unidades hospedam com mais frequência, se há padrões que merecem atenção. Esses dados ajudam a antecipar problemas e reportar aos síndicos de forma objetiva.</p>
+
+<h3>4. Comunicação proativa com síndicos</h3>
+<p>Quando a administradora tem dados concretos, ela pode se antecipar: "No Edifício Aurora, tivemos 12 check-ins este mês, todos cadastrados e sem incidentes." Isso transmite controle e profissionalismo — e reduz drasticamente o volume de reclamações.</p>
+
+<h2>Como o AirCheck ajuda administradoras</h2>
+
+<p>O <a href="/">AirCheck</a> foi pensado para escalar. Cada condomínio da carteira pode ter seu próprio painel da portaria, com equipe independente e dados isolados. A administradora terá acesso a uma visão consolidada de todos os prédios, com relatórios de check-ins por período.</p>
+
+<p>O anfitrião faz o trabalho pesado (cadastrar hóspedes), o sistema organiza, e a portaria de cada prédio recebe tudo pronto. A administradora só precisa garantir que o processo exista — a ferramenta cuida da execução.</p>
+
+<h2>Conclusão</h2>
+
+<p>Para administradoras, o Airbnb nos condomínios é uma oportunidade de agregar valor ao serviço. Quem oferece um processo organizado e ferramentas modernas se diferencia. Quem só proíbe, fica para trás.</p>
+
+<p>Se você é administradora e quer um piloto gratuito em um dos seus condomínios, <a href="/register/condominio">cadastre-se no AirCheck</a> e comece hoje.</p>
+`,
+},
+
+// POST 14
+{
+  slug: "regras-convivencia-condominio-airbnb",
+  title: "Regras de convivência para condomínios com Airbnb: o que incluir no regulamento",
+  description: "Modelo de regras de convivência para regulamento interno de condomínio que tem moradores hospedando pelo Airbnb. Prático e direto.",
+  category: "condominios",
+  tags: ["regras", "convivência", "regulamento interno", "condomínio", "airbnb", "síndico"],
+  author: "AirCheck",
+  publishedAt: "2026-03-16",
+  readingTime: 7,
+  content: `
+<p>Um dos maiores focos de atrito em condomínios com Airbnb não é a hospedagem em si — são as expectativas desencontradas. Moradores fixos esperam silêncio às 22h. Hóspedes de férias querem curtir a noite. O porteiro não sabe se libera a piscina. O síndico recebe reclamação de todos os lados.</p>
+
+<p>A solução é simples na teoria e trabalhosa na prática: <strong>regras claras, aprovadas em assembleia, comunicadas a todos</strong>. Neste artigo, oferecemos um modelo de cláusulas que você pode adaptar para o regulamento interno do seu condomínio.</p>
+
+<h2>Por que as regras existentes geralmente não bastam</h2>
+
+<p>A maioria dos regulamentos internos foi escrita antes do Airbnb existir. Eles tratam de visitantes eventuais, não de uma rotação semanal de hóspedes. Quando o regulamento é silente sobre a locação por temporada, cada situação vira uma negociação caso a caso — e ninguém fica satisfeito.</p>
+
+<h2>Quais regras incluir no regulamento</h2>
+
+<h3>Cadastro prévio de hóspedes</h3>
+<p>O anfitrião deve comunicar à portaria, com no mínimo 24 horas de antecedência, os dados completos de cada hóspede: nome, documento de identidade, período de estadia e número de pessoas. A comunicação deve ser feita por canal oficial definido pelo condomínio.</p>
+
+<h3>Horários de check-in e checkout</h3>
+<p>O check-in de hóspedes por temporada será permitido entre 8h e 22h. O checkout deve ocorrer até as 11h. Chegadas ou saídas fora desses horários dependem de autorização prévia da administração.</p>
+
+<h3>Limite de ocupação</h3>
+<p>Cada unidade pode receber no máximo um número de hóspedes compatível com sua metragem e com o bom senso. Uma referência comum é duas pessoas por quarto, mais duas adicionais na sala.</p>
+
+<h3>Uso de áreas comuns</h3>
+<p>Hóspedes de curta temporada podem utilizar as áreas comuns do condomínio nas mesmas condições que visitantes de moradores, salvo restrições específicas como reserva de espaços (churrasqueira, salão de festas) que permanece exclusiva dos condôminos.</p>
+
+<h3>Barulho e horário de silêncio</h3>
+<p>Aplicam-se aos hóspedes as mesmas regras de silêncio do regulamento interno: proibido ruído excessivo entre 22h e 8h. O anfitrião é responsável por comunicar essa regra aos hóspedes antes da chegada.</p>
+
+<h3>Responsabilidade por danos</h3>
+<p>Danos causados por hóspedes às áreas comuns do condomínio são de responsabilidade do proprietário ou locatário da unidade que realizou a hospedagem. O condomínio poderá cobrar o reparo diretamente do condômino responsável.</p>
+
+<h3>Mudanças e transporte de bagagens</h3>
+<p>O transporte de malas e pertences dos hóspedes pelo elevador social é permitido, desde que em quantidade razoável. Mudanças ou transporte de volumes grandes devem utilizar o elevador de serviço, quando disponível.</p>
+
+<h3>Estacionamento</h3>
+<p>O hóspede só pode utilizar a vaga vinculada à unidade do anfitrião. O anfitrião deve informar à portaria a placa do veículo do hóspede com antecedência.</p>
+
+<h2>Como aprovar e comunicar</h2>
+
+<p>Essas cláusulas devem ser votadas em assembleia geral, com registro em ata. Após aprovação, recomenda-se que o anfitrião seja obrigado a enviar uma cópia resumida das regras a cada hóspede antes do check-in — o que pode ser automatizado com ferramentas como o <a href="/">AirCheck</a>, que já padroniza toda a comunicação entre anfitrião e portaria.</p>
+
+<h2>Conclusão</h2>
+
+<p>Regras claras reduzem conflitos. Quando todos sabem o que é permitido e o que não é — moradores, anfitriões e hóspedes — a convivência melhora. E quando o processo de comunicação é automatizado, o cumprimento das regras deixa de depender da boa vontade.</p>
+
+<p>Quer implementar esse processo no seu condomínio? <a href="/register/condominio">Cadastre-se no AirCheck</a> — é gratuito durante o período piloto.</p>
+`,
+},
+
+// POST 15
+{
+  slug: "como-porteiro-deve-lidar-hospedes-airbnb",
+  title: "Como o porteiro deve lidar com hóspedes do Airbnb: guia prático",
+  description: "Orientações práticas para porteiros de condomínios sobre como receber hóspedes do Airbnb: conferência de dados, postura e procedimentos.",
+  category: "checkin-portaria",
+  tags: ["porteiro", "hóspedes", "airbnb", "portaria", "condomínio", "procedimentos"],
+  author: "AirCheck",
+  publishedAt: "2026-03-14",
+  readingTime: 6,
+  content: `
+<p>Se você é porteiro de um condomínio onde moradores hospedam pelo Airbnb, sabe que o fluxo de pessoas mudou. Antes, os rostos eram conhecidos — moradores, familiares, prestadores de serviço fixos. Agora, chegam pessoas novas toda semana, com malas, pedindo para subir.</p>
+
+<p>Isso não precisa ser um problema. Com orientações claras, o porteiro pode lidar com hóspedes do Airbnb de forma profissional e segura — sem stress e sem risco.</p>
+
+<h2>O que esperar de um hóspede do Airbnb</h2>
+
+<p>Hóspedes do Airbnb geralmente chegam com malas, estão em trânsito (viagem de negócios, turismo, tratamento médico) e têm pouca familiaridade com o prédio. Eles não conhecem as regras do condomínio, não sabem qual elevador usar e muitas vezes não falam português.</p>
+
+<p>O ponto mais importante: eles não são invasores. São pessoas que pagaram para se hospedar em um apartamento com autorização do proprietário. Tratar o hóspede com respeito e profissionalismo é parte do trabalho — e faz diferença na experiência de todos.</p>
+
+<h2>Procedimento recomendado na chegada</h2>
+
+<h3>1. Verifique se o hóspede está cadastrado</h3>
+<p>Antes de liberar o acesso, confira se o nome do hóspede consta na lista de check-ins autorizados. Se o condomínio usa um painel digital, basta consultar a tela. Se usa WhatsApp ou papel, verifique a mensagem mais recente do morador.</p>
+
+<h3>2. Peça um documento de identificação</h3>
+<p>Compare o nome do documento com o nome cadastrado. Não é necessário reter o documento — apenas conferir. Para estrangeiros, o passaporte é o documento padrão.</p>
+
+<h3>3. Oriente sobre o prédio</h3>
+<p>Informe o hóspede sobre itens básicos: qual elevador usar, andar do apartamento, regras de estacionamento (se aplicável) e horário de silêncio. Uma orientação rápida de 30 segundos evita muitos problemas depois.</p>
+
+<h3>4. Registre a entrada</h3>
+<p>Se o condomínio exige registro, anote horário de entrada e número de pessoas. Em sistemas digitais, essa informação já está disponível automaticamente.</p>
+
+<h2>O que fazer quando algo não bate</h2>
+
+<p>Se um hóspede chega e não está na lista, o procedimento é simples: não libere o acesso e entre em contato com o morador responsável pela unidade. Nunca permita a entrada por "bom senso" ou porque a pessoa parece confiável. O protocolo existe para proteger todos — inclusive você.</p>
+
+<p>Se o hóspede estiver com mais pessoas do que o cadastrado, registre a situação e comunique ao síndico ou à administradora. Não é papel do porteiro barrar ou confrontar — é registrar e informar.</p>
+
+<h2>Dicas para o dia a dia</h2>
+
+<p>Manter uma postura acolhedora faz parte. Hóspedes bem recebidos na portaria tendem a respeitar mais as regras do prédio. Um "bem-vindo, o apartamento é no 12º andar, elevador à direita" já muda o tom da experiência.</p>
+
+<p>Nos horários de troca de turno, certifique-se de que as informações de check-in estejam acessíveis para o próximo porteiro. Se o condomínio usa o <a href="/">AirCheck</a>, o painel digital já mostra todos os check-ins do dia com dados completos — então a transição de turno não depende de anotações manuais.</p>
+
+<h2>Conclusão</h2>
+
+<p>O porteiro é peça-chave na segurança e na experiência dos hóspedes. Com procedimentos claros e informações acessíveis, o trabalho fica mais simples — e o condomínio, mais seguro.</p>
+`,
+},
+
+// POST 16
+{
+  slug: "papel-sindico-regulamentacao-airbnb-condominio",
+  title: "O papel do síndico na regulamentação do Airbnb no condomínio",
+  description: "O que o síndico pode e deve fazer para regulamentar o Airbnb no prédio: da assembleia à implementação. Guia completo e prático.",
+  category: "condominios",
+  tags: ["síndico", "regulamentação", "airbnb", "condomínio", "assembleia", "gestão"],
+  author: "AirCheck",
+  publishedAt: "2026-03-12",
+  readingTime: 8,
+  content: `
+<p>O síndico é quem está no meio de tudo. Moradores reclamam do barulho. Anfitriões querem hospedar em paz. A portaria não sabe o que fazer. E todo mundo espera que o síndico resolva.</p>
+
+<p>A verdade é que o síndico tem um papel estratégico na questão do Airbnb — mas não é o papel que muitos pensam. Não cabe ao síndico proibir ou permitir. Cabe a ele <strong>liderar o processo de regulamentação</strong> e garantir que as regras sejam cumpridas.</p>
+
+<h2>O que o síndico pode fazer</h2>
+
+<h3>1. Levantar a pauta na assembleia</h3>
+<p>O primeiro passo é trazer o assunto para discussão formal. Muitos condomínios evitam falar sobre o Airbnb até que um conflito force a conversa. O síndico proativo pauta o tema antes que vire problema — com dados, propostas e um modelo de regulamento pronto para votação.</p>
+
+<h3>2. Propor um regulamento equilibrado</h3>
+<p>O síndico deve propor regras que equilibrem o direito do proprietário de locar por temporada com o direito dos demais moradores à segurança e ao sossego. As cláusulas mais comuns incluem cadastro prévio de hóspedes, horários de check-in, uso de áreas comuns e responsabilidade por danos.</p>
+
+<h3>3. Implementar o processo na portaria</h3>
+<p>Aprovar regras é metade do trabalho. A outra metade é garantir que a portaria tenha condições de executá-las. Isso significa definir como os anfitriões devem comunicar os check-ins, garantir que todos os turnos tenham acesso às informações e acompanhar se o processo está funcionando.</p>
+
+<h3>4. Acompanhar e ajustar</h3>
+<p>Nenhum regulamento é perfeito na primeira versão. O síndico deve acompanhar a execução, coletar feedback da portaria e dos moradores, e propor ajustes quando necessário — preferencialmente na assembleia ordinária seguinte.</p>
+
+<h2>O que o síndico NÃO deve fazer</h2>
+
+<p>Proibir por conta própria, sem assembleia, é abuso de autoridade. Multar anfitriões sem base no regulamento é passível de contestação. Ignorar o tema e deixar que a portaria improvise é omissão.</p>
+
+<p>O papel do síndico é de gestor e mediador — não de legislador solitário.</p>
+
+<h2>Como se preparar para a assembleia</h2>
+
+<p>Antes de pautar o Airbnb, o síndico deve se preparar com três itens: um resumo da legislação aplicável (Lei do Inquilinato, posicionamento do STF), uma proposta de cláusulas para o regulamento e, idealmente, uma solução prática para implementar o controle — como uma ferramenta de gestão de check-ins.</p>
+
+<p>Chegar à assembleia com problema e solução é a melhor forma de conduzir o debate de forma produtiva.</p>
+
+<h2>Ferramentas que facilitam o trabalho do síndico</h2>
+
+<p>O <a href="/">AirCheck</a> oferece ao condomínio um painel onde o síndico pode visualizar todos os check-ins, verificar se os anfitriões estão seguindo o processo e compartilhar relatórios com a administradora. É uma camada de controle que não exige esforço operacional do síndico — o sistema faz o trabalho.</p>
+
+<h2>Conclusão</h2>
+
+<p>O síndico que lidera a regulamentação do Airbnb — em vez de apenas reagir a reclamações — conquista o respeito dos moradores, reduz conflitos e posiciona o condomínio de forma moderna e profissional. O segredo é processo, não proibição.</p>
+
+<p>Quer levar uma proposta concreta para a próxima assembleia? <a href="/register/condominio">Cadastre o condomínio no AirCheck</a> e teste o painel gratuitamente.</p>
+`,
+},
+
+// POST 17
+{
+  slug: "controle-acesso-condominio-whatsapp-nao-basta",
+  title: "Controle de acesso em condomínios: por que o WhatsApp não basta",
+  description: "Entenda os riscos de usar WhatsApp como canal principal de controle de acesso de hóspedes e descubra alternativas mais seguras e organizadas.",
+  category: "condominios",
+  tags: ["controle de acesso", "whatsapp", "portaria", "condomínio", "segurança", "airbnb"],
+  author: "AirCheck",
+  publishedAt: "2026-03-10",
+  readingTime: 6,
+  content: `
+<p>Em nove entre dez condomínios brasileiros, o WhatsApp é o canal oficial (ou não oficial) de comunicação entre moradores e portaria. Funciona para o dia a dia: avisar que vai chegar uma encomenda, pedir para abrir a garagem, informar que um parente está a caminho.</p>
+
+<p>Mas quando o assunto é <strong>controle de acesso de hóspedes do Airbnb</strong>, o WhatsApp mostra suas limitações. E elas são sérias.</p>
+
+<h2>Os problemas do WhatsApp como sistema de controle</h2>
+
+<h3>Informações se perdem na conversa</h3>
+<p>O WhatsApp é uma ferramenta de conversa, não de registro. Uma mensagem com dados de um hóspede, enviada às 14h entre fotos de encomenda e avisos de manutenção, facilmente passa despercebida — especialmente em grupos com dezenas de mensagens por dia.</p>
+
+<h3>Não sobrevive à troca de turno</h3>
+<p>Se o porteiro da manhã recebeu a mensagem, o porteiro da noite precisa rolar a conversa para encontrar a informação. Na prática, poucos fazem isso. O resultado: o hóspede chega e ninguém sabe que ele foi autorizado.</p>
+
+<h3>Formato inconsistente</h3>
+<p>Cada morador manda os dados de um jeito. Um envia "chega João amanhã apt 1201". Outro manda nome, CPF, RG, placa do carro e horário previsto. O porteiro precisa interpretar cada mensagem — e quando falta informação, precisa pedir de volta, gerando vai e vem.</p>
+
+<h3>Sem histórico auditável</h3>
+<p>Se acontecer um incidente de segurança e o condomínio precisar verificar quem foi autorizado a entrar em determinada data, vasculhar o histórico do WhatsApp é um pesadelo. Não existe busca por data, por apartamento ou por nome do hóspede de forma organizada.</p>
+
+<h3>Dados pessoais expostos em grupo</h3>
+<p>Muitos condomínios usam grupos de WhatsApp onde todos os moradores veem as mensagens. Enviar CPF, documento e dados pessoais de hóspedes em um grupo aberto levanta questões sérias de privacidade — e pode configurar violação da LGPD.</p>
+
+<h2>O que funciona melhor</h2>
+
+<p>A solução não é eliminar o WhatsApp — ele continua útil para comunicação rápida e informal. A solução é <strong>separar comunicação de controle de acesso</strong>.</p>
+
+<p>O controle de acesso de hóspedes precisa de três coisas que o WhatsApp não oferece: padronização dos dados, persistência entre turnos e registro auditável. Qualquer ferramenta que ofereça esses três itens já é uma melhoria significativa.</p>
+
+<p>O <a href="/">AirCheck</a>, por exemplo, coleta os dados dos hóspedes de forma padronizada (via formulário que o próprio hóspede preenche), organiza tudo em um painel acessível por todos os turnos da portaria e mantém histórico completo por data, apartamento e hóspede. O WhatsApp continua existindo — mas como complemento, não como sistema principal.</p>
+
+<h2>Conclusão</h2>
+
+<p>O WhatsApp é excelente para conversar. Mas conversa não é controle de acesso. Condomínios que tratam a segurança com a seriedade que ela merece precisam de ferramentas que garantam padronização, persistência e rastreabilidade — tudo que o WhatsApp, por design, não foi feito para fazer.</p>
+
+<p>Quer ver a diferença na prática? <a href="/register/condominio">Cadastre seu condomínio no AirCheck</a> e compare.</p>
+`,
+},
+
+// POST 18
+{
+  slug: "assembleia-condominio-airbnb-como-pautar-aprovar",
+  title: "Assembleia de condomínio e Airbnb: como pautar e aprovar regras",
+  description: "Passo a passo para síndicos e administradoras que querem pautar o Airbnb na assembleia do condomínio e aprovar regras de forma legal.",
+  category: "legislacao",
+  tags: ["assembleia", "condomínio", "airbnb", "regulamento", "síndico", "votação", "legislação"],
+  author: "AirCheck",
+  publishedAt: "2026-03-08",
+  readingTime: 7,
+  content: `
+<p>Pautar o Airbnb na assembleia do condomínio é uma daquelas situações que todo síndico sabe que precisa enfrentar, mas poucos sabem como conduzir. O assunto é polêmico, divide opiniões e pode facilmente sair de controle se não houver preparo.</p>
+
+<p>Neste artigo, mostramos o passo a passo para levar o tema à assembleia de forma organizada e aprovar regras que funcionem — sem conflitos desnecessários e dentro da legalidade.</p>
+
+<h2>Antes da assembleia: preparação é tudo</h2>
+
+<h3>1. Entenda a legislação</h3>
+<p>Antes de propor qualquer regra, o síndico precisa conhecer os limites legais. A locação por temporada é um direito do proprietário (Lei 8.245/91), e o STF já se manifestou no sentido de que condomínios não podem proibir de forma genérica o aluguel por temporada. Isso não significa que não se pode regulamentar — significa que as regras precisam ser proporcionais e focadas em segurança e convivência.</p>
+
+<h3>2. Prepare uma proposta concreta</h3>
+<p>Ir para a assembleia apenas com o tema "Airbnb" na pauta, sem proposta, é receita para uma discussão improdutiva. Prepare um texto com as cláusulas que você quer incluir no regulamento: cadastro de hóspedes, horários, uso de áreas comuns, responsabilidade por danos. Distribua a proposta aos condôminos com antecedência.</p>
+
+<h3>3. Consulte o advogado do condomínio</h3>
+<p>Peça ao advogado que revise a proposta antes da assembleia. Isso evita que cláusulas abusivas sejam aprovadas e depois contestadas judicialmente. Também dá mais segurança ao síndico durante a discussão.</p>
+
+<h2>Durante a assembleia: como conduzir</h2>
+
+<h3>Apresente fatos, não opiniões</h3>
+<p>Comece apresentando o cenário: quantas unidades hospedam por temporada, se houve reclamações, qual é o posicionamento legal. Dados objetivos reduzem a carga emocional do debate.</p>
+
+<h3>Separe "regulamentar" de "proibir"</h3>
+<p>Deixe claro desde o início que a proposta é de regulamentação, não de proibição. Essa distinção é fundamental para manter a conversa produtiva e evitar que proprietários que hospedam se sintam atacados.</p>
+
+<h3>Vote cláusula por cláusula, se necessário</h3>
+<p>Se a proposta tiver muitos itens, considere votar cada cláusula separadamente. Isso permite que a assembleia aprove o que é consenso e discuta mais os pontos polêmicos, sem travar a votação inteira.</p>
+
+<h2>Qual quórum é necessário</h2>
+
+<p>Para alterações no <strong>regulamento interno</strong>, a maioria dos condomínios exige maioria simples dos presentes na assembleia (50% + 1). Para alterações na <strong>convenção do condomínio</strong>, o quórum é de dois terços de todos os condôminos — um patamar muito mais alto. Por isso, é preferível incluir as regras sobre locação por temporada no regulamento interno, não na convenção.</p>
+
+<h2>Após a aprovação: implementação</h2>
+
+<p>Regra aprovada precisa ser comunicada e executada. Envie o regulamento atualizado a todos os condôminos. Oriente a portaria sobre os novos procedimentos. E implemente as ferramentas necessárias para que o processo funcione na prática — como um sistema de cadastro de hóspedes que padronize a comunicação entre anfitriões e portaria.</p>
+
+<p>O <a href="/">AirCheck</a> pode ser parte dessa implementação: com o painel da portaria, os check-ins ficam organizados e acessíveis, tornando o cumprimento das regras aprovadas algo natural, não burocrático.</p>
+
+<h2>Conclusão</h2>
+
+<p>A assembleia é o lugar certo para resolver a questão do Airbnb no condomínio. Com preparação, proposta concreta e condução imparcial, é possível aprovar regras que protejam todos — moradores, anfitriões e portaria. O resultado é um condomínio mais seguro e menos conflituoso.</p>
+`,
+},
+
+// POST 19
+{
+  slug: "reclamacoes-moradores-airbnb-como-resolver-sindico",
+  title: "Reclamações de moradores sobre Airbnb: como resolver como síndico",
+  description: "Guia prático para síndicos que recebem reclamações sobre Airbnb no prédio: como ouvir, mediar e resolver sem escalar conflitos.",
+  category: "condominios",
+  tags: ["reclamações", "moradores", "airbnb", "síndico", "conflito", "condomínio", "mediação"],
+  author: "AirCheck",
+  publishedAt: "2026-03-06",
+  readingTime: 7,
+  content: `
+<p>Você é síndico e acabou de receber a terceira reclamação do mês sobre o Airbnb no prédio. Um morador reclama de barulho. Outro diz que viu "gente estranha" no elevador. O terceiro quer que o Airbnb seja proibido imediatamente. E o anfitrião jura que seus hóspedes são exemplares.</p>
+
+<p>Esse cenário é cada vez mais comum. E a forma como o síndico lida com essas reclamações define o clima do condomínio por meses — para o bem ou para o mal.</p>
+
+<h2>Primeiro: separe fato de percepção</h2>
+
+<p>Nem toda reclamação sobre o Airbnb é sobre o Airbnb. Muitas vezes, o que incomoda o morador é a <strong>sensação de falta de controle</strong>: "eu não sei quem são essas pessoas". Quando o morador vê rostos desconhecidos sem nenhuma informação, ele se sente inseguro — e projeta essa insegurança no Airbnb.</p>
+
+<p>Antes de agir, o síndico precisa entender: a reclamação é sobre um incidente concreto (barulho, dano, comportamento inadequado) ou sobre a existência do Airbnb em si? A resposta muda completamente a abordagem.</p>
+
+<h2>Como lidar com incidentes concretos</h2>
+
+<h3>Barulho e perturbação</h3>
+<p>Se a reclamação é sobre barulho, trate como trataria qualquer infração ao regulamento — independentemente de ser hóspede ou morador. Notifique o condômino responsável pela unidade (o anfitrião), registre a ocorrência e, se houver reincidência, aplique as penalidades previstas no regulamento.</p>
+
+<h3>Dano a áreas comuns</h3>
+<p>Qualquer dano causado por hóspede é responsabilidade do anfitrião. Documente com fotos, notifique o responsável e cobre o reparo. Se o regulamento prevê multa, aplique-a.</p>
+
+<h3>Comportamento inadequado</h3>
+<p>Festas não autorizadas, uso indevido de áreas comuns, desrespeito a funcionários — tudo isso segue o mesmo tratamento: registro, notificação ao anfitrião e aplicação do regulamento.</p>
+
+<h2>Como lidar com a insegurança geral</h2>
+
+<p>Quando a reclamação não é sobre um incidente específico, mas sobre o desconforto com a rotatividade de pessoas, a solução é transparência. Moradores se sentem mais seguros quando sabem que existe um processo de controle — mesmo que não vejam os detalhes.</p>
+
+<p>O síndico pode comunicar, por exemplo: "Todos os hóspedes são cadastrados com antecedência, com nome e documento. A portaria tem acesso aos dados de todos os check-ins programados." Esse tipo de comunicação reduz a ansiedade e as reclamações genéricas.</p>
+
+<h2>O que NÃO fazer</h2>
+
+<p>Alguns erros comuns dos síndicos quando recebem reclamações sobre o Airbnb: tomar partido de um lado sem ouvir o outro, prometer proibir o Airbnb sem base legal, ignorar as reclamações esperando que passem e confrontar o anfitrião publicamente em grupo de WhatsApp.</p>
+
+<p>Cada um desses erros escala o conflito em vez de resolvê-lo.</p>
+
+<h2>A melhor defesa é o processo</h2>
+
+<p>Condomínios que têm um processo claro de cadastro de hóspedes recebem menos reclamações. Não porque os hóspedes são melhores — mas porque os moradores se sentem seguros sabendo que existe controle.</p>
+
+<p>Com o <a href="/">AirCheck</a>, o condomínio tem um painel onde todos os check-ins estão registrados, com dados completos e acessíveis à portaria em tempo real. Quando um morador pergunta "quem é essa pessoa?", a portaria tem a resposta. E quando o síndico precisa prestar contas, tem os dados em mãos.</p>
+
+<h2>Conclusão</h2>
+
+<p>Reclamações sobre o Airbnb fazem parte da realidade dos condomínios modernos. O síndico que trata cada reclamação com seriedade, separa fato de percepção e implementa processos claros transforma um ponto de atrito em demonstração de boa gestão.</p>
+`,
+},
+
+// POST 20
+{
+  slug: "condominio-pode-cobrar-taxa-extra-airbnb",
+  title: "Condomínio pode cobrar taxa extra de quem faz Airbnb?",
+  description: "Entenda se o condomínio pode criar taxas ou cobranças específicas para unidades que hospedam pelo Airbnb, e quais são os limites legais.",
+  category: "legislacao",
+  tags: ["taxa", "cobrança", "condomínio", "airbnb", "legislação", "síndico", "assembleia"],
+  author: "AirCheck",
+  publishedAt: "2026-03-04",
+  readingTime: 7,
+  content: `
+<p>Uma das propostas que volta e meia aparece em assembleias de condomínio é a criação de uma taxa extra para unidades que hospedam pelo Airbnb. A lógica parece razoável: "se o apartamento recebe mais pessoas, gera mais desgaste das áreas comuns, então deveria pagar mais." Mas será que isso é legal?</p>
+
+<p>A resposta, como quase tudo no direito condominial, é: depende. Neste artigo, explicamos o que pode e o que não pode ser cobrado — e como o condomínio deve proceder se quiser criar algum tipo de contribuição extra.</p>
+
+<h2>A taxa condominial é proporcional à fração ideal</h2>
+
+<p>No sistema condominial brasileiro, a cota condominial é calculada com base na fração ideal de cada unidade — ou, em alguns casos, por rateio igualitário, conforme a convenção. O que define o valor é a fração, não o uso que o proprietário faz do apartamento.</p>
+
+<p>Isso significa que, em regra, o condomínio não pode aumentar a cota condominial de uma unidade específica simplesmente porque ela hospeda pelo Airbnb. Não existe base legal para cobrar "taxa de Airbnb" sobre a cota ordinária.</p>
+
+<h2>O que pode ser cobrado</h2>
+
+<h3>Fundo de reserva para desgaste de áreas comuns</h3>
+<p>Se a assembleia entender que a locação por temporada gera desgaste adicional às áreas comuns (elevador, hall, limpeza), ela pode aprovar uma contribuição extra destinada a cobrir esses custos. Mas essa contribuição precisa ser aprovada em assembleia com quórum adequado, ser proporcional e razoável, e ter destinação específica (não pode ser punitiva).</p>
+
+<h3>Multas por descumprimento de regras</h3>
+<p>Se o regulamento interno tem regras sobre locação por temporada e o anfitrião descumpre — não cadastra hóspedes, excede o limite de ocupação, permite festas —, o condomínio pode aplicar multa nos termos do regulamento. Isso não é uma "taxa do Airbnb", é uma penalidade por infração, como qualquer outra.</p>
+
+<h3>Cauções ou depósitos</h3>
+<p>Alguns condomínios estudam a possibilidade de exigir caução do anfitrião para cobrir eventuais danos causados por hóspedes às áreas comuns. Essa medida é mais controversa e deve ser avaliada com cuidado jurídico, mas não é necessariamente ilegal se aprovada em assembleia com as devidas garantias.</p>
+
+<h2>O que NÃO pode ser cobrado</h2>
+
+<p>O condomínio não pode criar taxas com caráter punitivo disfarçadas de contribuição. Exemplos que já foram contestados judicialmente: cobrar valor fixo por hóspede por noite, dobrar a cota condominial de quem faz Airbnb, ou cobrar "taxa de uso" das áreas comuns de forma discriminatória — ou seja, apenas para hóspedes de curta temporada e não para visitantes comuns de moradores.</p>
+
+<p>A jurisprudência tende a considerar essas cobranças abusivas quando não há proporcionalidade clara entre o custo adicional gerado e o valor cobrado.</p>
+
+<h2>Como fazer da forma correta</h2>
+
+<p>Se o condomínio entende que a hospedagem por temporada gera custos adicionais, o caminho é: levantar dados concretos sobre esses custos (aumento na limpeza de áreas comuns, manutenção de elevador, etc.), propor uma contribuição proporcional com destinação específica, aprovar em assembleia com registro em ata e aplicar de forma igualitária a todas as unidades que hospedam, não a uma unidade específica.</p>
+
+<p>Contar com dados organizados ajuda. Se o condomínio usa uma ferramenta como o <a href="/">AirCheck</a>, ele tem registro de todos os check-ins por unidade e por período — dados que podem embasar a discussão na assembleia de forma objetiva e imparcial.</p>
+
+<h2>Conclusão</h2>
+
+<p>Cobrar taxa extra de quem faz Airbnb no condomínio é um terreno delicado. Existem caminhos legítimos, mas eles exigem aprovação em assembleia, proporcionalidade e fundamentação. O síndico que quer ir por esse caminho deve se munir de dados, consultar o advogado do condomínio e evitar medidas que possam ser interpretadas como discriminatórias ou punitivas.</p>
+`,
+},
+
