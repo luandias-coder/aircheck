@@ -537,7 +537,7 @@ export default function OnboardingPage(){
                 <div>
                   <div style={{fontSize:13,color:"#737373",lineHeight:1.5,marginBottom:8}}>Se seu condomínio é parceiro do AirCheck e te enviou um código de vinculação, insira abaixo.</div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <input placeholder="Ex: AK3F7B" value={condoCode} onChange={e=>setCondoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} maxLength={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:600,padding:"10px 14px",border:`1px solid ${condoError?"#DC2626":"#E5E5E5"}`,borderRadius:10,background:"#fff",width:130,textAlign:"center",letterSpacing:"0.15em",boxSizing:"border-box"}}/>
+                    <input placeholder="Ex: AK3F7B" value={condoCode} onChange={e=>setCondoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} maxLength={6} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:600,padding:"10px 14px",border:`1px solid ${condoError?"#DC2626":"#E5E5E5"}`,borderRadius:10,background:"#fff",width:170,textAlign:"center",letterSpacing:"0.15em",boxSizing:"border-box"}}/>
                     <button onClick={linkCondo} disabled={condoSaving||condoCode.length<4} style={{...btnStyle(true),fontSize:13,padding:"10px 18px",opacity:condoSaving||condoCode.length<4?0.5:1,cursor:condoSaving||condoCode.length<4?"not-allowed":"pointer"}}>{condoSaving?"Verificando...":"Vincular"}</button>
                   </div>
                   {condoError&&<div style={{fontSize:12,color:"#DC2626",marginTop:6}}>{condoError}</div>}
