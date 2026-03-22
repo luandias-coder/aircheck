@@ -65,6 +65,9 @@ export default function PortariaLogin() {
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#A3A3A3" }}>
           Acesso exclusivo para portarias de condomínios parceiros.
         </div>
+        <p style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#A3A3A3" }}>
+          É anfitrião? <a href="/login" style={{ color: "#3B5FE5", fontWeight: 600, textDecoration: "none" }}>Acesse o painel do anfitrião →</a>
+        </p>
       </div>
     </div>
   );
