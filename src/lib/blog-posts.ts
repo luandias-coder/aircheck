@@ -948,36 +948,9 @@ Vaga: [NÚMERO DA VAGA]</p>
 `,
 },
 
-];
-
-// ─── HELPERS ────────────────────────────────────────────────────
-export function getPostBySlug(slug: string): BlogPost | undefined {
-  return BLOG_POSTS.find(p => p.slug === slug);
-}
-
-export function getPostsByCategory(category: string): BlogPost[] {
-  return BLOG_POSTS.filter(p => p.category === category).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-}
-
-export function getAllPosts(): BlogPost[] {
-  return [...BLOG_POSTS].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-}
-
-export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
-  const post = getPostBySlug(slug);
-  if (!post) return [];
-  return BLOG_POSTS
-    .filter(p => p.slug !== slug && (p.category === post.category || p.tags.some(t => post.tags.includes(t))))
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, limit);
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 10 NOVOS POSTS — FOCO: CONDOMÍNIOS & PORTARIAS (B2B)
-// Colar no array BLOG_POSTS[] em src/lib/blog-posts.ts
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 // POST 11
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "condominio-como-controlar-airbnb-sem-proibir",
   title: "Como o condomínio pode controlar o Airbnb sem proibir",
@@ -1037,7 +1010,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 12
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "portaria-inteligente-acesso-hospedes-airbnb",
   title: "Portaria inteligente: como organizar o acesso de hóspedes do Airbnb",
@@ -1091,7 +1066,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 13
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "administradora-condominio-airbnb-multiplos-predios",
   title: "Administradora de condomínio e Airbnb: como gerenciar múltiplos prédios",
@@ -1146,7 +1123,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 14
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "regras-convivencia-condominio-airbnb",
   title: "Regras de convivência para condomínios com Airbnb: o que incluir no regulamento",
@@ -1203,7 +1182,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 15
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "como-porteiro-deve-lidar-hospedes-airbnb",
   title: "Como o porteiro deve lidar com hóspedes do Airbnb: guia prático",
@@ -1256,7 +1237,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 16
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "papel-sindico-regulamentacao-airbnb-condominio",
   title: "O papel do síndico na regulamentação do Airbnb no condomínio",
@@ -1309,7 +1292,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 17
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "controle-acesso-condominio-whatsapp-nao-basta",
   title: "Controle de acesso em condomínios: por que o WhatsApp não basta",
@@ -1357,7 +1342,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 18
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "assembleia-condominio-airbnb-como-pautar-aprovar",
   title: "Assembleia de condomínio e Airbnb: como pautar e aprovar regras",
@@ -1410,7 +1397,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 19
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "reclamacoes-moradores-airbnb-como-resolver-sindico",
   title: "Reclamações de moradores sobre Airbnb: como resolver como síndico",
@@ -1466,7 +1455,9 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // POST 20
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   slug: "condominio-pode-cobrar-taxa-extra-airbnb",
   title: "Condomínio pode cobrar taxa extra de quem faz Airbnb?",
@@ -1516,3 +1507,26 @@ export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
 `,
 },
 
+];
+
+// ─── HELPERS ────────────────────────────────────────────────────
+export function getPostBySlug(slug: string): BlogPost | undefined {
+  return BLOG_POSTS.find(p => p.slug === slug);
+}
+
+export function getPostsByCategory(category: string): BlogPost[] {
+  return BLOG_POSTS.filter(p => p.category === category).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+export function getAllPosts(): BlogPost[] {
+  return [...BLOG_POSTS].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
+  const post = getPostBySlug(slug);
+  if (!post) return [];
+  return BLOG_POSTS
+    .filter(p => p.slug !== slug && (p.category === post.category || p.tags.some(t => post.tags.includes(t))))
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, limit);
+}
