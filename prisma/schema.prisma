@@ -19,10 +19,11 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  properties    Property[]
-  reservations  Reservation[]
-  inboundEmails UserInboundEmail[]
-  feedbacks     Feedback[]
+  properties           Property[]
+  reservations         Reservation[]
+  inboundEmails        UserInboundEmail[]
+  feedbacks            Feedback[]
+  hospitableConnection HospitableConnection?
 }
 
 model UserInboundEmail {
@@ -82,18 +83,20 @@ model CondominiumUser {
 // ─── END CONDOMINIUM MODULE ───
 
 model Property {
-  id              String   @id @default(cuid())
-  userId          String
-  name            String
-  airbnbRoomId    String?
-  unitNumber      String?
-  parkingSpot     String?
-  includeDocLinks Boolean  @default(false)
-  photoUrl        String?  // foto do imóvel extraída do email do Airbnb
-  condominiumId   String?
-  whatsappEnabled Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  userId                String
+  name                  String
+  airbnbRoomId          String?
+  unitNumber            String?
+  parkingSpot           String?
+  includeDocLinks       Boolean  @default(false)
+  photoUrl              String?  // foto do imóvel extraída do email do Airbnb
+  condominiumId         String?
+  whatsappEnabled       Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
+  hospitablePropertyId  String?  // Hospitable Connect: property ID
+  hospitableListingId   String?  // Hospitable Connect: listing ID
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   condominium   Condominium?  @relation(fields: [condominiumId], references: [id], onDelete: SetNull)
@@ -104,6 +107,8 @@ model Property {
   @@index([userId])
   @@index([airbnbRoomId])
   @@index([condominiumId])
+  @@index([hospitablePropertyId])
+  @@index([hospitableListingId])
 }
 
 model DoormanPhone {
@@ -120,29 +125,31 @@ model DoormanPhone {
 }
 
 model Reservation {
-  id               String    @id @default(cuid())
-  userId           String
-  propertyId       String
-  guestFullName    String
-  guestPhone       String?
-  guestPhotoUrl    String?
-  checkInDate      String
-  checkInTime      String    @default("15:00")
-  checkOutDate     String
-  checkOutTime     String    @default("12:00")
-  numGuests        Int       @default(1)
-  nights           Int?
-  confirmationCode String?
-  hostPayment      String?
-  airbnbThreadId   String?
-  airbnbThreadUrl  String?
-  formToken        String    @unique @default(cuid())
-  status           String    @default("pending_form")
-  carPlate         String?
-  carModel         String?
-  sentToDoormanAt  DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  userId                  String
+  propertyId              String
+  guestFullName           String
+  guestPhone              String?
+  guestPhotoUrl           String?
+  checkInDate             String
+  checkInTime             String    @default("15:00")
+  checkOutDate            String
+  checkOutTime            String    @default("12:00")
+  numGuests               Int       @default(1)
+  nights                  Int?
+  confirmationCode        String?
+  hostPayment             String?
+  airbnbThreadId          String?
+  airbnbThreadUrl         String?
+  formToken               String    @unique @default(cuid())
+  status                  String    @default("pending_form")
+  carPlate                String?
+  carModel                String?
+  source                  String    @default("email") // email, hospitable, manual
+  hospitableReservationId String?   @unique           // Hospitable Connect: reservation ID
+  sentToDoormanAt         DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   property Property      @relation(fields: [propertyId], references: [id])
@@ -153,6 +160,7 @@ model Reservation {
   @@index([formToken])
   @@index([status])
   @@index([confirmationCode])
+  @@index([source])
 }
 
 model Guest {
@@ -205,6 +213,41 @@ model Feedback {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+// ─── HOSPITABLE CONNECT ───
+
+model HospitableConnection {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  accessToken           String
+  refreshToken          String
+  expiresAt             DateTime?
+  hospitableAccountId   String?
+  scopes                String?   // comma-separated: "reservations:read,properties:read"
+  status                String    @default("active") // active, revoked, expired
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model WebhookLog {
+  id            String   @id @default(cuid())
+  source        String   @default("hospitable") // hospitable, stripe, etc.
+  action        String   // reservation.created, reservation.changed, etc.
+  payload       String?  // raw JSON payload
+  reservationId String?
+  status        String   @default("received") // received, processed, error, duplicate
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@index([source])
+  @@index([action])
   @@index([createdAt])
   @@index([status])
 }
