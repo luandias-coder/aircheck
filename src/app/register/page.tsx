@@ -25,6 +25,10 @@ function maskPhone(v:string){const d=v.replace(/\D/g,"").slice(0,11);if(d.length
 const fieldLbl:React.CSSProperties = { fontSize: 10, fontWeight: 600, color: "#737373", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 };
 const fieldInput:React.CSSProperties = { width: "100%", fontFamily: "Outfit", fontSize: 16, padding: "12px 14px", border: "1px solid #E5E5E5", borderRadius: 10, background: "#fff", boxSizing: "border-box" };
 
+const EyeIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+const EyeOffIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A3A3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>;
+const toggleBtnStyle: React.CSSProperties = { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", alignItems: "center" };
+
 export default function RegisterPage() {
   const router = useRouter();
   const [condoParam, setCondoParam] = useState<string|null>(null);
@@ -35,6 +39,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("condo");
@@ -107,14 +113,24 @@ export default function RegisterPage() {
 
           <div style={{ marginBottom: 16 }}>
             <label style={fieldLbl}>Senha</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required minLength={6} enterKeyHint="next"
-              style={fieldInput} />
+            <div style={{ position: "relative" }}>
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required minLength={6} enterKeyHint="next"
+                style={{ ...fieldInput, paddingRight: 44 }} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} style={toggleBtnStyle}>
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           <div style={{ marginBottom: 24 }}>
             <label style={fieldLbl}>Confirmar senha</label>
-            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" required minLength={6} enterKeyHint="done"
-              style={{ ...fieldInput, borderColor: confirmPassword && confirmPassword !== password ? "#FCA5A5" : "#E5E5E5" }} />
+            <div style={{ position: "relative" }}>
+              <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" required minLength={6} enterKeyHint="done"
+                style={{ ...fieldInput, paddingRight: 44, borderColor: confirmPassword && confirmPassword !== password ? "#FCA5A5" : "#E5E5E5" }} />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"} style={toggleBtnStyle}>
+                {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
             {confirmPassword && confirmPassword !== password && <div style={{ fontSize: 11, color: "#DC2626", marginTop: 4 }}>As senhas não coincidem</div>}
           </div>
 
