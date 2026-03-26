@@ -42,7 +42,6 @@ export default function Dashboard(){
   const[view,setView]=useState<"list"|"detail">("list");
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
-  const[showBulkTip,setShowBulkTip]=useState(true);
   const[hospToast,setHospToast]=useState<{type:"success"|"error";msg:string}|null>(null);
 
   const fetchData=useCallback(async()=>{
@@ -105,7 +104,7 @@ export default function Dashboard(){
       window.history.replaceState({},"","/dashboard");
       setTimeout(()=>setHospToast(null),8000);
     }else if(hosp==="already_connected"){
-      setHospToast({type:"success",msg:"Seu Airbnb já está conectado via Hospitable."});
+      setHospToast({type:"success",msg:"Seu Airbnb já está conectado."});
       setTab("settings");
       window.history.replaceState({},"","/dashboard");
       setTimeout(()=>setHospToast(null),4000);
@@ -171,16 +170,6 @@ export default function Dashboard(){
             ))}
           </div>
 
-          {/* Bulk forward tip — shows when few reservations */}
-          {showBulkTip&&active.length<=3&&<div className="fade-up" style={{background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:12,alignItems:"flex-start"}}>
-            <span style={{fontSize:18,flexShrink:0,marginTop:1}}>💡</span>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:600,color:"#0369A1",marginBottom:4}}>Já tem reservas confirmadas no email?</div>
-              <div style={{fontSize:12,color:"#0C4A6E",lineHeight:1.6}}>Busque por <strong>from:automated@airbnb.com Reserva confirmada</strong> no seu email e encaminhe os resultados para <strong style={{color:"#3B5FE5"}}>reservas@aircheck.com.br</strong>. Reservas duplicadas são ignoradas automaticamente.</div>
-            </div>
-            <button onClick={()=>setShowBulkTip(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#0369A1",fontSize:18,padding:0,lineHeight:1,flexShrink:0,opacity:0.5}}>✕</button>
-          </div>}
-
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
             {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["feedback","Feedback",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
@@ -225,7 +214,7 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
       </div>
     </div>
   </button>};
-  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber reservas automaticamente, ou encaminhe um email de confirmação para <strong style={{color:"#1A1A1A"}}>reservas@aircheck.com.br</strong>.</div></div>;
+  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber suas reservas automaticamente.</div></div>;
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
     {active.map(r=><RCard key={r.id} r={r}/>)}
     {archived.length>0&&<>
@@ -393,48 +382,9 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
         <button onClick={changePw} disabled={pwSaving||!curPw||!newPw||!confirmPw} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:pwSaving||!curPw||!newPw||!confirmPw?0.5:1,alignSelf:"flex-start"}}>{pwSaving?"Alterando...":"Alterar senha"}</button>
       </div>
     </div>
-
-    {/* Recebimento automático */}
-    <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Recebimento automático via email</div>
-      <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Método alternativo: encaminhe emails de confirmação do Airbnb. Se você já conectou o Airbnb acima, esse passo é opcional.</p>
-
-      {(user?.inboundEmails||[]).map(ie=><div key={ie.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0",marginBottom:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📧</span><span style={{fontSize:13,color:"#1A1A1A"}}>{ie.email}</span></div>
-        <button onClick={()=>removeEmail(ie.id)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:500,padding:"4px 10px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:6,cursor:"pointer"}}>Remover</button>
-      </div>)}
-
-      {error&&<div style={{background:"#FEF2F2",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#DC2626",marginBottom:8}}>{error}</div>}
-      <div style={{marginTop:8}}>
-        <label style={{fontSize:10,fontWeight:600,color:"#737373",textTransform:"uppercase",letterSpacing:"0.06em",display:"block",marginBottom:6}}>Email onde você recebe reservas do Airbnb</label>
-        <div style={{display:"flex",gap:8}}>
-          <input value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="seuemail@gmail.com" type="email" style={{flex:1,fontFamily:"Outfit",fontSize:13,padding:"8px 12px",border:"1px solid #E5E5E5",borderRadius:8,background:"#fff",boxSizing:"border-box"}}/>
-          <button onClick={addEmail} disabled={!newEmail||saving} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"8px 16px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:!newEmail||saving?0.5:1}}>{saving?"...":"+ Adicionar"}</button>
-        </div>
-      </div>
-    </div>
-
-    {/* Instruções de encaminhamento */}
-    <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:16,padding:"20px"}}>
-      <div style={{fontSize:10,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Como ativar o recebimento automático</div>
-      <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>1</div>
-          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>Cadastre acima o email onde você recebe as confirmações do Airbnb <span style={{fontSize:12,color:"rgba(59,95,229,0.6)"}}>(ex: seuemail@gmail.com)</span></div>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>2</div>
-          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>No seu provedor de email (Gmail, Outlook, etc.), configure o <strong>encaminhamento automático</strong> de emails do Airbnb para:<br/><span style={{fontFamily:"'IBM Plex Mono'",fontSize:13,fontWeight:500,background:"#fff",padding:"4px 10px",borderRadius:6,display:"inline-block",marginTop:6}}>reservas@aircheck.com.br</span></div>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-          <div style={{width:24,height:24,borderRadius:"50%",background:B.primary,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>3</div>
-          <div style={{fontSize:13,color:B.primary,lineHeight:1.5}}>Pronto! As reservas serão criadas automaticamente no seu painel assim que o Airbnb enviar a confirmação.</div>
-        </div>
-      </div>
-    </div>
   </div>}
 
-// ─── HOSPITABLE CONNECT SECTION ─────────────────────────────────
+// ─── AIRBNB CONNECT SECTION ─────────────────────────────────────
 function HospitableConnectSection(){
   const[status,setStatus]=useState<{connected:boolean;connectedAt?:string;linkedProperties?:number;hospReservations?:number}|null>(null);
   const[loading,setLoading]=useState(true);
@@ -448,7 +398,7 @@ function HospitableConnectSection(){
   useEffect(()=>{loadStatus()},[]);
 
   const disconnect=async()=>{
-    if(!confirm("Desconectar Airbnb? Novas reservas não serão mais recebidas automaticamente."))return;
+    if(!confirm("Desconectar Airbnb? Novas reservas não serão mais importadas automaticamente."))return;
     setDisconnecting(true);
     await fetch("/api/auth/hospitable/status",{method:"DELETE"});
     setStatus({connected:false});
@@ -486,13 +436,13 @@ function HospitableConnectSection(){
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
           <div style={{width:40,height:40,borderRadius:10,background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🔗</div>
           <div>
-            <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Airbnb conectado via Hospitable</div>
-            <div style={{fontSize:12,color:"#737373",marginTop:2}}>Reservas chegam automaticamente via webhook</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Airbnb conectado</div>
+            <div style={{fontSize:12,color:"#737373",marginTop:2}}>Reservas são importadas automaticamente</div>
           </div>
         </div>
         <div style={{display:"flex",gap:16,marginBottom:12}}>
           <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.linkedProperties||0}</strong> imóveis</div>
-          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas via API</div>
+          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas importadas</div>
         </div>
         {syncMsg&&<div style={{background:"#ECFDF5",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#059669",marginBottom:10}}>{syncMsg}</div>}
         <div style={{display:"flex",gap:8}}>
@@ -502,11 +452,11 @@ function HospitableConnectSection(){
       </div>
     ):(
       <div>
-        <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Conecte sua conta do Airbnb para receber reservas automaticamente — sem precisar encaminhar emails.</p>
+        <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Conecte sua conta do Airbnb para importar seus imóveis e receber reservas automaticamente no AirCheck.</p>
         <a href="/api/auth/hospitable/connect" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:14,fontWeight:600,padding:"11px 22px",background:B.primary,color:"#fff",border:"none",borderRadius:10,textDecoration:"none",cursor:"pointer",boxShadow:`0 2px 8px ${B.shadow}`}}>
-          🔗 Conectar Airbnb
+          🔗 Conectar meu Airbnb
         </a>
-        <div style={{fontSize:11,color:"#A3A3A3",marginTop:10}}>Gratuito · Não é PMS · Não altera seu calendário</div>
+        <div style={{fontSize:11,color:"#A3A3A3",marginTop:10}}>Gratuito · Não altera seu calendário ou preços</div>
       </div>
     )}
   </div>;
