@@ -39,6 +39,7 @@ export default function OnboardingPage(){
   // Step 1 — Connect
   const[connecting,setConnecting]=useState(false);
   const[connected,setConnected]=useState(false);
+  const[connectError,setConnectError]=useState<string|null>(null);
   const[syncing,setSyncing]=useState(false);
   const[syncResult,setSyncResult]=useState<{imported:number;skipped:number}|null>(null);
   const[properties,setProperties]=useState<Property[]>([]);
@@ -96,6 +97,8 @@ export default function OnboardingPage(){
         });
     }else if(hosp==="error"){
       window.history.replaceState({},"","/onboarding");
+      const reason=params.get("reason")||"Erro ao conectar";
+      setConnectError(reason);
       setConnecting(false);
     }
   },[]);
@@ -108,6 +111,7 @@ export default function OnboardingPage(){
 
   const handleConnect=()=>{
     setConnecting(true);
+    setConnectError(null);
     window.location.href="/api/auth/hospitable/connect";
   };
 
@@ -179,6 +183,9 @@ export default function OnboardingPage(){
               <div style={{textAlign:"center",marginTop:14}}>
                 <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.6}}>Gratuito · Não altera seu calendário ou preços</p>
               </div>
+              {connectError&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,padding:"12px 16px",marginTop:12}}>
+                <div style={{fontSize:13,color:"#DC2626",lineHeight:1.5}}>⚠️ Erro ao conectar. Tente novamente. Se o problema persistir, entre em contato: <strong>oi@aircheck.com.br</strong></div>
+              </div>}
             </div>
           ):(
             <div>
