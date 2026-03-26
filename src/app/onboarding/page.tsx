@@ -44,20 +44,20 @@ export default function OnboardingPage(){
   const[properties,setProperties]=useState<Property[]>([]);
   const[reservations,setReservations]=useState<Reservation[]>([]);
 
-  // Step 2 — Property config
-  const[selectedPropId,setSelectedPropId]=useState<string|null>(null);
+  // Step 2 — Property config (first property only)
   const[unitNumber,setUnitNumber]=useState("");
   const[parkingSpot,setParkingSpot]=useState("");
   const[doormanPhone,setDoormanPhone]=useState("");
-  const[doormanName,setDoormanName]=useState("");
+  const[doormanLabel,setDoormanLabel]=useState("");
   const[propSaving,setPropSaving]=useState(false);
   const[condoCode,setCondoCode]=useState("");
   const[condoLinked,setCondoLinked]=useState(false);
   const[condoError,setCondoError]=useState("");
   const[condoSaving,setCondoSaving]=useState(false);
 
-  // Step 3 — Demo
-  const[copied,setCopied]=useState(false);
+  // Step 3 — Message
+  const[copiedMsg,setCopiedMsg]=useState(false);
+  const[copiedLink,setCopiedLink]=useState(false);
 
   useEffect(()=>{
     fetch("/api/auth/me").then(async r=>{
@@ -65,7 +65,6 @@ export default function OnboardingPage(){
       const u=await r.json();
       setUser(u);
       if(u.onboardingCompleted){router.push("/dashboard");return}
-      // Check if already connected
       const statusRes=await fetch("/api/auth/hospitable/status");
       if(statusRes.ok){
         const st=await statusRes.json();
@@ -79,32 +78,17 @@ export default function OnboardingPage(){
     }).catch(()=>router.push("/login"));
   },[router]);
 
-  const loadData=async()=>{
-    const[pr,rr]=await Promise.all([fetch("/api/properties"),fetch("/api/reservations")]);
-    if(pr.ok){const d=await pr.json();setProperties(d);if(d.length>0&&!selectedPropId)setSelectedPropId(d[0].id)}
-    if(rr.ok)setReservations(await rr.json());
-  };
-
-  // ── Step 1: Connect Airbnb ──
-  const handleConnect=()=>{
-    setConnecting(true);
-    window.location.href="/api/auth/hospitable/connect";
-  };
-
-  // Check URL params on return from Hospitable
+  // Check return from Hospitable
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const hosp=params.get("hospitable");
     if(hosp==="connected"){
       window.history.replaceState({},"","/onboarding");
       setConnected(true);
-      // Auto-sync reservations
       setSyncing(true);
       fetch("/api/auth/hospitable/sync-reservations",{method:"POST"})
         .then(r=>r.json())
-        .then(d=>{
-          if(d.ok)setSyncResult({imported:d.imported,skipped:d.skipped});
-        })
+        .then(d=>{if(d.ok)setSyncResult({imported:d.imported,skipped:d.skipped})})
         .catch(()=>{})
         .finally(()=>{
           setSyncing(false);
@@ -116,33 +100,44 @@ export default function OnboardingPage(){
     }
   },[]);
 
-  // ── Step 2: Save property ──
-  const selectedProp=properties.find(p=>p.id===selectedPropId);
+  const loadData=async()=>{
+    const[pr,rr]=await Promise.all([fetch("/api/properties"),fetch("/api/reservations")]);
+    if(pr.ok)setProperties(await pr.json());
+    if(rr.ok)setReservations(await rr.json());
+  };
+
+  const handleConnect=()=>{
+    setConnecting(true);
+    window.location.href="/api/auth/hospitable/connect";
+  };
+
+  // First property to configure
+  const firstProp=properties[0];
+  const otherPropsCount=properties.length-1;
 
   const linkCondo=async()=>{
-    if(!selectedPropId||!condoCode.trim())return;
+    if(!firstProp||!condoCode.trim())return;
     setCondoSaving(true);setCondoError("");
-    const res=await fetch(`/api/properties/${selectedPropId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"link_condominium",code:condoCode.trim()})});
+    const res=await fetch(`/api/properties/${firstProp.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"link_condominium",code:condoCode.trim()})});
     if(!res.ok){const d=await res.json();setCondoError(d.error||"Código inválido");setCondoSaving(false);return}
     setCondoLinked(true);setCondoSaving(false);setCondoError("");
     await loadData();
   };
 
   const saveProperty=async()=>{
-    if(!selectedPropId)return;
+    if(!firstProp)return;
     if(!unitNumber.trim()){alert("Preencha o número da unidade");return}
-    if(!condoLinked&&!selectedProp?.condominium&&!doormanPhone&&(selectedProp?.doormanPhones?.length||0)===0){alert("Preencha o WhatsApp da portaria ou vincule ao condomínio");return}
+    if(!condoLinked&&!firstProp.condominium&&!doormanPhone&&(firstProp.doormanPhones?.length||0)===0){alert("Preencha o WhatsApp da portaria ou vincule ao condomínio");return}
     setPropSaving(true);
-    await fetch(`/api/properties/${selectedPropId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update_details",unitNumber:unitNumber.trim(),parkingSpot:parkingSpot.trim()})});
-    if(!condoLinked&&!selectedProp?.condominium&&(selectedProp?.doormanPhones?.length||0)===0&&doormanPhone){
-      await fetch(`/api/properties/${selectedPropId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add_phone",phone:doormanPhone,name:doormanName||"Portaria",label:""})});
+    await fetch(`/api/properties/${firstProp.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"update_details",unitNumber:unitNumber.trim(),parkingSpot:parkingSpot.trim()})});
+    if(!condoLinked&&!firstProp.condominium&&(firstProp.doormanPhones?.length||0)===0&&doormanPhone){
+      await fetch(`/api/properties/${firstProp.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add_phone",phone:doormanPhone,name:doormanLabel||"Portaria",label:""})});
     }
     await loadData();
     setPropSaving(false);
     setStep(3);
   };
 
-  // ── Step 4: Complete ──
   const completeOnboarding=async()=>{
     await fetch("/api/onboarding/complete",{method:"POST"});
     router.push("/dashboard");
@@ -151,6 +146,7 @@ export default function OnboardingPage(){
   if(loading)return<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#FAFAF9",fontFamily:"Outfit"}}><div style={{textAlign:"center",color:"#A3A3A3"}}><Logo/><div style={{marginTop:16,fontSize:14}}>Carregando...</div></div></div>;
 
   const firstReservation=reservations.find(r=>r.status!=="archived"&&r.status!=="cancelled")||reservations[0];
+  const formUrl=firstReservation?(firstReservation.confirmationCode?`https://airchk.in/c/${firstReservation.confirmationCode}`:`https://airchk.in/checkin/${firstReservation.formToken}`):"";
 
   return(
     <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 20%, rgba(59,95,229,0.05) 0%, transparent 60%), #FAFAF9",fontFamily:"Outfit,sans-serif"}}>
@@ -181,7 +177,7 @@ export default function OnboardingPage(){
                 {connecting?"Redirecionando...":"🔗 Conectar meu Airbnb"}
               </button>
               <div style={{textAlign:"center",marginTop:14}}>
-                <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.6}}>Gratuito · Não altera seu calendário ou preços · Seguro</p>
+                <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.6}}>Gratuito · Não altera seu calendário ou preços</p>
               </div>
             </div>
           ):(
@@ -197,41 +193,34 @@ export default function OnboardingPage(){
                 {properties.map(p=><div key={p.id} style={{fontSize:14,fontWeight:500,color:"#1A1A1A",padding:"4px 0"}}>📍 {p.name}</div>)}
               </div>}
               <button onClick={()=>setStep(2)} disabled={syncing} style={{...btnStyle(),width:"100%",opacity:syncing?0.5:1}}>
-                {syncing?"Aguarde...":"Configurar imóveis →"}
+                {syncing?"Aguarde...":"Configurar imóvel →"}
               </button>
             </div>
           )}
         </div>}
 
-        {/* ═══════════════════ STEP 2: Configurar imóvel ═══════════════════ */}
+        {/* ═══════════════════ STEP 2: Configurar primeiro imóvel ═══════════════════ */}
         {step===2&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(1)}/>
           <StepBadge n={2}/>
           <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Configure seu imóvel</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>
-            Informe os dados do apartamento e como a portaria será avisada — via WhatsApp ou pelo painel digital.
+            Informe os dados do apartamento e como a portaria será avisada.
           </p>
 
-          {/* Property selector (if multiple) */}
-          {properties.length>1&&<div style={{marginBottom:16}}>
-            <label style={labelStyle}>Selecione o imóvel</label>
-            <select value={selectedPropId||""} onChange={e=>{setSelectedPropId(e.target.value);setUnitNumber("");setParkingSpot("")}} style={{...inputStyle,cursor:"pointer"}}>
-              {properties.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>}
-
-          {selectedProp&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {/* Property name display */}
-            {properties.length===1&&<div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"12px 16px"}}>
+          {firstProp?<div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Property name */}
+            <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2}}>Imóvel</div>
-              <div style={{fontSize:16,fontWeight:700,color:"#1A1A1A"}}>{selectedProp.name}</div>
-            </div>}
+              <div style={{fontSize:16,fontWeight:700,color:"#1A1A1A"}}>{firstProp.name}</div>
+              {otherPropsCount>0&&<div style={{fontSize:12,color:B.primary,marginTop:4}}>+{otherPropsCount} imóvel(is) — configure na aba Imóveis do painel</div>}
+            </div>
 
             {/* Unit + Parking */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div>
                 <label style={labelStyle}>Nº da Unidade *</label>
-                <input value={unitNumber} onChange={e=>setUnitNumber(e.target.value)} placeholder="Ex: 501" style={inputStyle}/>
+                <input value={unitNumber} onChange={e=>setUnitNumber(e.target.value)} placeholder="Ex: 501, Bloco A" style={inputStyle}/>
               </div>
               <div>
                 <label style={labelStyle}>Vaga de garagem</label>
@@ -244,14 +233,13 @@ export default function OnboardingPage(){
               <div style={{fontSize:13,fontWeight:700,color:"#1A1A1A",marginBottom:6}}>Como a portaria será avisada?</div>
               <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:12}}>Se o condomínio é parceiro do AirCheck, use o código dele. Senão, informe o WhatsApp da portaria.</p>
 
-              {condoLinked||selectedProp.condominium?(
+              {condoLinked||firstProp.condominium?(
                 <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:10,padding:"14px 16px"}}>
-                  <div style={{fontSize:14,fontWeight:600,color:B.accent}}>🏢 {selectedProp.condominium?.name||"Condomínio vinculado"}</div>
-                  <div style={{fontSize:12,color:"#737373",marginTop:4}}>Os dados dos hóspedes serão enviados automaticamente para o painel digital da portaria.</div>
+                  <div style={{fontSize:14,fontWeight:600,color:B.accent}}>🏢 {firstProp.condominium?.name||"Condomínio vinculado"}</div>
+                  <div style={{fontSize:12,color:"#737373",marginTop:4}}>Os dados serão enviados automaticamente para o painel digital da portaria.</div>
                 </div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {/* Condo code */}
                   <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
                     <div style={{flex:1}}>
                       <label style={labelStyle}>Código do condomínio (se tiver)</label>
@@ -261,7 +249,6 @@ export default function OnboardingPage(){
                   </div>
                   {condoError&&<div style={{fontSize:12,color:"#DC2626"}}>{condoError}</div>}
 
-                  {/* Or WhatsApp */}
                   <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0"}}>
                     <div style={{flex:1,height:1,background:"#E5E5E5"}}/><span style={{fontSize:12,color:"#A3A3A3",fontWeight:500}}>ou</span><div style={{flex:1,height:1,background:"#E5E5E5"}}/>
                   </div>
@@ -272,8 +259,8 @@ export default function OnboardingPage(){
                       <input value={doormanPhone} onChange={e=>setDoormanPhone(maskPhone(e.target.value))} placeholder="(41) 99999-0000" inputMode="tel" style={inputStyle}/>
                     </div>
                     <div>
-                      <label style={labelStyle}>Nome do porteiro</label>
-                      <input value={doormanName} onChange={e=>setDoormanName(e.target.value)} placeholder="Ex: Portaria Central" style={inputStyle}/>
+                      <label style={labelStyle}>Rótulo da portaria</label>
+                      <input value={doormanLabel} onChange={e=>setDoormanLabel(e.target.value)} placeholder="Ex: Portaria Central" style={inputStyle}/>
                     </div>
                   </div>
                 </div>
@@ -281,43 +268,59 @@ export default function OnboardingPage(){
             </div>
 
             <button onClick={saveProperty} disabled={propSaving} style={{...btnStyle(),width:"100%",marginTop:8,opacity:propSaving?0.5:1}}>{propSaving?"Salvando...":"Continuar →"}</button>
-          </div>}
+          </div>
 
-          {properties.length===0&&<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:14,padding:"20px",textAlign:"center"}}>
+          :<div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:14,padding:"20px",textAlign:"center"}}>
             <div style={{fontSize:13,color:"#D97706",lineHeight:1.6}}>Nenhum imóvel encontrado. Pode levar alguns segundos após a conexão. <button onClick={loadData} style={{background:"none",border:"none",color:B.primary,fontWeight:600,cursor:"pointer",fontFamily:"Outfit"}}>Tentar novamente</button></div>
           </div>}
         </div>}
 
-        {/* ═══════════════════ STEP 3: Demo do formulário ═══════════════════ */}
+        {/* ═══════════════════ STEP 3: Mensagem + Formulário ═══════════════════ */}
         {step===3&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(2)}/>
           <StepBadge n={3}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Formulário de check-in</h2>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Envie o link ao hóspede</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>
-            Cada hóspede recebe um link para preencher seus dados — nome, CPF, RG e placa do veículo. É rápido e feito pelo celular.
+            Configure uma mensagem automática no Airbnb para que cada hóspede receba o link do formulário de check-in. Você faz isso uma única vez.
           </p>
 
-          {firstReservation&&<div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:600,color:B.primary,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Link do formulário</div>
-            <div style={{fontFamily:"'IBM Plex Mono'",fontSize:12,color:B.primary,background:"#fff",padding:"10px 14px",borderRadius:8,marginBottom:10,wordBreak:"break-all"}}>
-              {firstReservation.confirmationCode?`https://airchk.in/c/${firstReservation.confirmationCode}`:`https://airchk.in/checkin/${firstReservation.formToken}`}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{
-                const url=firstReservation.confirmationCode?`https://airchk.in/c/${firstReservation.confirmationCode}`:`https://airchk.in/checkin/${firstReservation.formToken}`;
-                navigator.clipboard.writeText(url);setCopied(true);setTimeout(()=>setCopied(false),2000);
-              }} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:copied?B.accent:"#fff",color:copied?"#fff":"#1A1A1A",border:`1px solid ${copied?B.accent:"#E5E5E5"}`,borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}>{copied?"Copiado! ✓":"📋 Copiar link"}</button>
-              <a href={firstReservation.confirmationCode?`/c/${firstReservation.confirmationCode}`:`/checkin/${firstReservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:8,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Abrir formulário ↗</a>
-            </div>
-          </div>}
+          {/* Airbnb message setup */}
+          <a href="https://www.airbnb.com.br/hosting/messages/settings/quick-replies?product=STAYS" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"14px 20px",background:"#FF385C",color:"#fff",borderRadius:12,textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:600,marginBottom:16,boxShadow:"0 2px 8px rgba(255,56,92,0.3)"}}>
+            🏠 Configurar mensagem automática no Airbnb ↗
+          </a>
 
-          {!firstReservation&&<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"20px",textAlign:"center",marginBottom:16}}>
-            <p style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Ainda não há reservas importadas. Quando uma reserva for confirmada no Airbnb, o formulário será gerado automaticamente.</p>
-          </div>}
-
-          <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#D97706",lineHeight:1.6,marginBottom:20}}>
-            💡 <strong>Experimente:</strong> abra o formulário e preencha com dados fictícios para ver como funciona. Depois, volte aqui.
+          {/* Message template */}
+          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Modelo de mensagem</div>
+            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>
+              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{"! 😊\n\nPara agilizar seu check-in, preencha este formulário rápido com seus dados — é necessário para liberação na portaria e leva menos de 1 minuto:\n\nhttps://airchk.in/c/"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Código de confirmação</span>{"\n\nQualquer dúvida, estou à disposição. Até breve!"}
+            </div>
+            <button onClick={()=>{
+              const msg=`Olá {nome do hóspede}! 😊\n\nPara agilizar seu check-in, preencha este formulário rápido com seus dados — é necessário para liberação na portaria e leva menos de 1 minuto:\n\nhttps://airchk.in/c/{código de confirmação}\n\nQualquer dúvida, estou à disposição. Até breve!`;
+              navigator.clipboard.writeText(msg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),2500);
+            }} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:copiedMsg?B.accent:"#fff",color:copiedMsg?"#fff":"#1A1A1A",border:`1px solid ${copiedMsg?B.accent:"#E5E5E5"}`,borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}>{copiedMsg?"Copiado! ✓":"📋 Copiar mensagem"}</button>
           </div>
+
+          {/* How to configure */}
+          <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:14,padding:"16px 20px",marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:600,color:B.primary,marginBottom:8}}>📱 Como configurar:</div>
+            <ol style={{margin:0,paddingLeft:20,fontSize:13,color:B.primary,lineHeight:1.8}}>
+              <li>Clique no botão acima (ou acesse pelo app: <strong>Anúncios</strong> → seu imóvel → <strong>Mensagens programadas</strong>)</li>
+              <li>Crie uma resposta rápida com gatilho <strong>"Reserva confirmada"</strong></li>
+              <li>Cole a mensagem acima (troque os campos em azul pelos atalhos do Airbnb)</li>
+              <li>Salve. Cada hóspede receberá o link automaticamente.</li>
+            </ol>
+          </div>
+
+          {/* Form link preview */}
+          {firstReservation&&<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:10,padding:"12px 16px",marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Exemplo de link gerado</div>
+            <div style={{fontFamily:"'IBM Plex Mono'",fontSize:12,color:B.primary,marginBottom:8,wordBreak:"break-all"}}>{formUrl}</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{navigator.clipboard.writeText(formUrl);setCopiedLink(true);setTimeout(()=>setCopiedLink(false),2000)}} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:copiedLink?B.accent:"#fff",color:copiedLink?"#fff":"#1A1A1A",border:`1px solid ${copiedLink?B.accent:"#E5E5E5"}`,borderRadius:6,cursor:"pointer"}}>{copiedLink?"Copiado!":"Copiar link"}</button>
+              <a href={firstReservation.confirmationCode?`/c/${firstReservation.confirmationCode}`:`/checkin/${firstReservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:6,textDecoration:"none"}}>Abrir formulário ↗</a>
+            </div>
+          </div>}
 
           <button onClick={()=>setStep(4)} style={{...btnStyle(),width:"100%"}}>Continuar →</button>
         </div>}
@@ -331,7 +334,7 @@ export default function OnboardingPage(){
             <div style={{fontSize:36,marginBottom:10}}>🎉</div>
             <h2 style={{fontSize:24,fontWeight:900,color:B.accent,letterSpacing:"-0.03em",marginBottom:8}}>Tudo pronto!</h2>
             <p style={{fontSize:14,color:"#737373",lineHeight:1.7}}>
-              Seu AirCheck está configurado. A cada nova reserva no Airbnb, ela aparece automaticamente no seu painel. O hóspede preenche os dados pelo formulário, e a portaria recebe tudo pronto{selectedProp?.condominium?" — direto no painel digital.":" — via WhatsApp com um clique."}
+              Seu AirCheck está configurado. A cada nova reserva no Airbnb, ela aparece automaticamente no seu painel. O hóspede preenche os dados pelo formulário, e a portaria recebe tudo pronto{firstProp?.condominium||condoLinked?" — direto no painel digital.":" — via WhatsApp com um clique."}
             </p>
           </div>
 
@@ -342,11 +345,11 @@ export default function OnboardingPage(){
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
               <div style={{width:28,height:28,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:B.accent}}>✓</div>
-              <span style={{fontSize:14,color:"#1A1A1A"}}>{properties.length} imóvel(is) configurado(s)</span>
+              <span style={{fontSize:14,color:"#1A1A1A"}}>{properties.length} imóvel(is) sincronizado(s){otherPropsCount>0?` — configure os demais na aba Imóveis`:""}</span>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
               <div style={{width:28,height:28,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:B.accent}}>✓</div>
-              <span style={{fontSize:14,color:"#1A1A1A"}}>{reservations.length} reserva(s) no painel</span>
+              <span style={{fontSize:14,color:"#1A1A1A"}}>{reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled").length} reserva(s) ativa(s) no painel</span>
             </div>
           </div>
 
