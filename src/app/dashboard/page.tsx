@@ -10,7 +10,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
 interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -43,6 +43,7 @@ export default function Dashboard(){
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
   const[showBulkTip,setShowBulkTip]=useState(true);
+  const[hospToast,setHospToast]=useState<{type:"success"|"error";msg:string}|null>(null);
 
   const fetchData=useCallback(async()=>{
     try{
@@ -72,8 +73,29 @@ export default function Dashboard(){
   },[router]);
   useEffect(()=>{fetchData()},[fetchData]);
   useEffect(()=>{
-    const p=new URLSearchParams(window.location.search).get("condo");
+    const params=new URLSearchParams(window.location.search);
+    const p=params.get("condo");
     if(p){setCondoFromUrl(p);setTab("properties")}
+    // Hospitable OAuth callback
+    const hosp=params.get("hospitable");
+    if(hosp==="connected"){
+      const synced=params.get("synced")||"0";
+      setHospToast({type:"success",msg:`Airbnb conectado via Hospitable! ${synced} imóvel(is) sincronizado(s).`});
+      setTab("settings");
+      window.history.replaceState({},"","/dashboard");
+      setTimeout(()=>setHospToast(null),6000);
+    }else if(hosp==="error"){
+      const reason=params.get("reason")||"Erro desconhecido";
+      setHospToast({type:"error",msg:`Erro ao conectar: ${reason}`});
+      setTab("settings");
+      window.history.replaceState({},"","/dashboard");
+      setTimeout(()=>setHospToast(null),8000);
+    }else if(hosp==="already_connected"){
+      setHospToast({type:"success",msg:"Seu Airbnb já está conectado via Hospitable."});
+      setTab("settings");
+      window.history.replaceState({},"","/dashboard");
+      setTimeout(()=>setHospToast(null),4000);
+    }
   },[]);
 
   const logout=async()=>{await fetch("/api/auth/logout",{method:"POST"});router.push("/login")};
@@ -112,6 +134,15 @@ export default function Dashboard(){
       </div>
 
       <div className="dashboard-content" style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
+        {/* Hospitable toast */}
+        {hospToast&&<div className="fade-up" style={{background:hospToast.type==="success"?"#ECFDF5":"#FEF2F2",border:`1px solid ${hospToast.type==="success"?"#A7F3D0":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>{hospToast.type==="success"?"✅":"⚠️"}</span>
+            <span style={{fontSize:13,fontWeight:500,color:hospToast.type==="success"?"#065F46":"#991B1B"}}>{hospToast.msg}</span>
+          </div>
+          <button onClick={()=>setHospToast(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:hospToast.type==="success"?"#065F46":"#991B1B",opacity:0.5,padding:0,lineHeight:1}}>✕</button>
+        </div>}
+
         {loading&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando...</div>}
 
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
@@ -173,11 +204,14 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
         <Badge status={r.status}/>
-        {r.confirmationCode&&<span style={{fontFamily:"'IBM Plex Mono'",fontSize:11,color:"#A3A3A3"}}>{r.confirmationCode}</span>}
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+          {r.source==="hospitable"&&<span style={{fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"#F3E8FF",color:"#7C3AED"}}>API</span>}
+          {r.confirmationCode&&<span style={{fontFamily:"'IBM Plex Mono'",fontSize:11,color:"#A3A3A3"}}>{r.confirmationCode}</span>}
+        </div>
       </div>
     </div>
   </button>};
-  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3"}}>Encaminhe um email de confirmação do Airbnb para <strong style={{color:"#1A1A1A"}}>reservas@aircheck.com.br</strong> e a reserva aparecerá aqui automaticamente.</div></div>;
+  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber reservas automaticamente, ou encaminhe um email de confirmação para <strong style={{color:"#1A1A1A"}}>reservas@aircheck.com.br</strong>.</div></div>;
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
     {active.map(r=><RCard key={r.id} r={r}/>)}
     {archived.length>0&&<>
@@ -329,6 +363,9 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       </div>
     </div>
 
+    {/* Hospitable Connect */}
+    <HospitableConnectSection/>
+
     {/* Password change */}
     <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Alterar senha</div>
@@ -345,8 +382,8 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
 
     {/* Recebimento automático */}
     <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Recebimento automático de reservas</div>
-      <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Cadastre abaixo o email onde você recebe as confirmações de reserva do Airbnb. Ele será usado para identificar que os encaminhamentos são seus.</p>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Recebimento automático via email</div>
+      <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Método alternativo: encaminhe emails de confirmação do Airbnb. Se você já conectou o Airbnb acima, esse passo é opcional.</p>
 
       {(user?.inboundEmails||[]).map(ie=><div key={ie.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFAF9",borderRadius:8,padding:"10px 14px",border:"1px solid #F0F0F0",marginBottom:6}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📧</span><span style={{fontSize:13,color:"#1A1A1A"}}>{ie.email}</span></div>
@@ -382,6 +419,62 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
       </div>
     </div>
   </div>}
+
+// ─── HOSPITABLE CONNECT SECTION ─────────────────────────────────
+function HospitableConnectSection(){
+  const[status,setStatus]=useState<{connected:boolean;connectedAt?:string;linkedProperties?:number;hospReservations?:number}|null>(null);
+  const[loading,setLoading]=useState(true);
+  const[disconnecting,setDisconnecting]=useState(false);
+
+  useEffect(()=>{
+    fetch("/api/auth/hospitable/status").then(r=>r.json()).then(setStatus).catch(()=>setStatus({connected:false})).finally(()=>setLoading(false));
+  },[]);
+
+  const disconnect=async()=>{
+    if(!confirm("Desconectar Airbnb? Novas reservas não serão mais recebidas automaticamente via Hospitable."))return;
+    setDisconnecting(true);
+    await fetch("/api/auth/hospitable/status",{method:"DELETE"});
+    setStatus({connected:false});
+    setDisconnecting(false);
+  };
+
+  if(loading)return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Conexão com Airbnb</div>
+    <div style={{fontSize:13,color:"#A3A3A3"}}>Verificando...</div>
+  </div>;
+
+  return<div style={{background:"#fff",border:`1px solid ${status?.connected?"#A7F3D0":"#F0F0F0"}`,borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Conexão com Airbnb</div>
+      {status?.connected&&<span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#ECFDF5",color:"#059669"}}>CONECTADO</span>}
+    </div>
+
+    {status?.connected?(
+      <div>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <div style={{width:40,height:40,borderRadius:10,background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🔗</div>
+          <div>
+            <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Airbnb conectado via Hospitable</div>
+            <div style={{fontSize:12,color:"#737373",marginTop:2}}>Reservas chegam automaticamente via webhook</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:16,marginBottom:12}}>
+          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.linkedProperties||0}</strong> imóveis sincronizados</div>
+          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas recebidas</div>
+        </div>
+        <button onClick={disconnect} disabled={disconnecting} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"6px 14px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:8,cursor:"pointer",opacity:disconnecting?0.5:1}}>{disconnecting?"Desconectando...":"Desconectar Airbnb"}</button>
+      </div>
+    ):(
+      <div>
+        <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Conecte sua conta do Airbnb para receber reservas automaticamente — sem precisar encaminhar emails. Leva menos de 1 minuto.</p>
+        <a href="/api/auth/hospitable/connect" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:14,fontWeight:600,padding:"11px 22px",background:B.primary,color:"#fff",border:"none",borderRadius:10,textDecoration:"none",cursor:"pointer",boxShadow:`0 2px 8px ${B.shadow}`}}>
+          🔗 Conectar Airbnb
+        </a>
+        <div style={{fontSize:11,color:"#A3A3A3",marginTop:10}}>Gratuito · Não é PMS · Não altera seu calendário</div>
+      </div>
+    )}
+  </div>;
+}
 
 // ─── FEEDBACK TAB ───────────────────────────────────────────────
 const CATEGORIES=[{id:"sugestao",emoji:"💡",label:"Sugestão"},{id:"bug",emoji:"🐛",label:"Problema"},{id:"elogio",emoji:"🎉",label:"Elogio"}];
