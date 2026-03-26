@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
 
       case "listing.created":
       case "listing.updated":
+      case "listing.changed":
         return await handleListingEvent(data, logId);
 
       case "reservation.created":
