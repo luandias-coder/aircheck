@@ -2,8 +2,8 @@
 // Hospitable Connect API helper
 
 const HOSPITABLE_API_BASE = "https://public.api.hospitable.com/v2";
-const HOSPITABLE_AUTH_URL = "https://my.hospitable.com/oauth/authorize";
-const HOSPITABLE_TOKEN_URL = "https://my.hospitable.com/oauth/token";
+const HOSPITABLE_AUTH_URL = "https://auth.hospitable.com/oauth/authorize";
+const HOSPITABLE_TOKEN_URL = "https://auth.hospitable.com/oauth/token";
 
 const CLIENT_ID = process.env.HOSPITABLE_CLIENT_ID || "";
 const CLIENT_SECRET = process.env.HOSPITABLE_CLIENT_SECRET || "";
@@ -31,12 +31,11 @@ export async function exchangeCodeForTokens(code: string): Promise<{
 }> {
   const res = await fetch(HOSPITABLE_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       grant_type: "authorization_code",
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
       code,
     }),
   });
@@ -56,8 +55,8 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 }> {
   const res = await fetch(HOSPITABLE_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       grant_type: "refresh_token",
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
