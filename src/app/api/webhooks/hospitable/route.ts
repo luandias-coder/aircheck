@@ -196,7 +196,7 @@ async function handleReservationCreated(
     }
   }
 
-  userId = property.userId;
+  userId = property.userId as string;
 
   // Update property with Hospitable IDs if missing
   if (hospitablePropertyId || hospitableListingId || airbnbRoomId) {
@@ -233,7 +233,7 @@ async function handleReservationCreated(
   }
 
   // By confirmation code
-  if (confirmationCode) {
+  if (confirmationCode && userId) {
     const existing = await prisma.reservation.findFirst({
       where: { userId, confirmationCode },
     });
@@ -261,7 +261,7 @@ async function handleReservationCreated(
   // ── Create reservation ──
   const reservation = await prisma.reservation.create({
     data: {
-      userId,
+      userId: userId!,
       propertyId: property.id,
       guestFullName: guestName,
       guestPhone,
