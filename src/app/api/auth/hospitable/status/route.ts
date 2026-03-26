@@ -10,34 +10,19 @@ export async function GET() {
 
   const connection = await prisma.hospitableConnection.findUnique({
     where: { userId },
-    select: {
-      id: true,
-      status: true,
-      hospitableAccountId: true,
-      scopes: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: { id: true, status: true, hospitableAccountId: true, createdAt: true },
   });
 
   if (!connection || connection.status !== "active") {
     return NextResponse.json({ connected: false });
   }
 
-  // Count properties linked via Hospitable
   const linkedProperties = await prisma.property.count({
-    where: {
-      userId,
-      hospitablePropertyId: { not: null },
-    },
+    where: { userId, hospitableListingId: { not: null } },
   });
 
-  // Count reservations from Hospitable
   const hospReservations = await prisma.reservation.count({
-    where: {
-      userId,
-      source: "hospitable",
-    },
+    where: { userId, source: "hospitable" },
   });
 
   return NextResponse.json({
@@ -48,20 +33,14 @@ export async function GET() {
   });
 }
 
-// DELETE — disconnect Hospitable
+// DELETE — disconnect
 export async function DELETE() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const connection = await prisma.hospitableConnection.findUnique({
-    where: { userId },
-  });
+  const connection = await prisma.hospitableConnection.findUnique({ where: { userId } });
+  if (!connection) return NextResponse.json({ error: "Não conectado" }, { status: 404 });
 
-  if (!connection) {
-    return NextResponse.json({ error: "Não conectado" }, { status: 404 });
-  }
-
-  // Revoke connection (don't delete — keep for audit trail)
   await prisma.hospitableConnection.update({
     where: { userId },
     data: { status: "revoked" },
