@@ -318,7 +318,7 @@ export default function HomePage() {
           </FadeIn>
           <div className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
             {[
-              { step: "01", icon: "📧", title: "Reserva entra no sistema", desc: "O email de confirmação do Airbnb é encaminhado pro AirCheck. O sistema lê e cria a reserva automaticamente — nome do hóspede, datas, código da reserva." },
+              { step: "01", icon: "🔗", title: "Conecte seu Airbnb", desc: "Em poucos cliques, você conecta sua conta do Airbnb ao AirCheck. Suas reservas são importadas automaticamente — nome do hóspede, datas, código de confirmação." },
               { step: "02", icon: "📱", title: "Hóspede preenche um formulário", desc: "No chat do Airbnb, o hóspede recebe automaticamente um link. Ele preenche nome, CPF e data de nascimento — tudo pelo celular em menos de 1 minuto." },
               { step: "03", icon: "✅", title: "Portaria recebe tudo pronto", desc: "Com um toque, você envia a mensagem completa pro WhatsApp da portaria. Ou, se o prédio usa o AirCheck, os dados chegam automaticamente no painel." },
             ].map((s, i) => (
@@ -465,7 +465,7 @@ export default function HomePage() {
           </FadeIn>
           <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {[
-              { icon: "📧", title: "Reserva lida automaticamente", desc: "O email de confirmação do Airbnb vira uma reserva organizada — sem você digitar nada." },
+              { icon: "🔗", title: "Conecta direto com o Airbnb", desc: "Suas reservas aparecem automaticamente no painel — sem digitar nada, sem encaminhar email." },
               { icon: "📋", title: "Coleta padronizada de dados", desc: "Formulário padrão com nome, CPF e data de nascimento. Acabou o vai-e-volta." },
               { icon: "👁️", title: "Visibilidade total", desc: "Saiba em tempo real quem já mandou os dados, quem está pendente, e o que já foi pra portaria." },
               { icon: "💬", title: "WhatsApp ou painel digital", desc: "Envie via WhatsApp com um toque. Ou, em prédios parceiros, os dados chegam automaticamente no painel." },
@@ -556,8 +556,8 @@ export default function HomePage() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <FadeIn><h2 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 40 }}>Perguntas frequentes</h2></FadeIn>
           {[
-            { q: "O que exatamente o AirCheck faz?", a: "O AirCheck automatiza o cadastro de hóspedes do Airbnb na portaria do seu condomínio. Quando uma reserva é confirmada, o sistema lê os dados do email, gera um formulário pro hóspede e entrega tudo formatado — via WhatsApp ou pelo painel digital da portaria." },
-            { q: "Preciso ficar encaminhando email a cada reserva?", a: "Não. Você configura o encaminhamento automático uma vez no Outlook/Gmail, e todos os emails de confirmação do Airbnb são processados automaticamente." },
+            { q: "O que exatamente o AirCheck faz?", a: "O AirCheck automatiza o cadastro de hóspedes do Airbnb na portaria do seu condomínio. Quando uma reserva é confirmada, o sistema importa os dados automaticamente, gera um formulário pro hóspede preencher e entrega tudo formatado — via WhatsApp ou pelo painel digital da portaria." },
+            { q: "Preciso fazer algo a cada nova reserva?", a: "Não. Você conecta seu Airbnb ao AirCheck uma vez e pronto. Todas as reservas são importadas automaticamente. Novas reservas futuras também chegam em tempo real." },
             { q: "Como o hóspede recebe o link do formulário?", a: "Você configura uma mensagem programada no Airbnb (uma vez só). A cada reserva confirmada, o Airbnb envia automaticamente o link personalizado no chat com o hóspede." },
             { q: "Sou síndico. Como funciona pra condomínios?", a: "Você cadastra o condomínio em 2 minutos e recebe um código. Passa esse código pros anfitriões que hospedam no prédio — eles conectam os imóveis e os dados passam a chegar automaticamente no painel da portaria, sem depender de WhatsApp." },
             { q: "O porteiro precisa ser bom com tecnologia?", a: "Não. O painel da portaria é simples e direto: lista de check-ins do dia, dados de cada hóspede e botão pra ver o documento. Qualquer pessoa consegue usar." },
