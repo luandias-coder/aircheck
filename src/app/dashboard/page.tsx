@@ -79,11 +79,25 @@ export default function Dashboard(){
     // Hospitable OAuth callback
     const hosp=params.get("hospitable");
     if(hosp==="connected"){
-      const synced=params.get("synced")||"0";
-      setHospToast({type:"success",msg:`Airbnb conectado via Hospitable! ${synced} imóvel(is) sincronizado(s).`});
+      setHospToast({type:"success",msg:"Airbnb conectado! Importando reservas..."});
       setTab("settings");
       window.history.replaceState({},"","/dashboard");
-      setTimeout(()=>setHospToast(null),6000);
+      // Auto-sync reservations
+      fetch("/api/auth/hospitable/sync-reservations",{method:"POST"})
+        .then(r=>r.json())
+        .then(d=>{
+          if(d.ok){
+            setHospToast({type:"success",msg:`Airbnb conectado! ${d.imported} reserva(s) importada(s), ${d.skipped} já existente(s).`});
+            fetchData(); // Refresh dashboard
+          }else{
+            setHospToast({type:"success",msg:"Airbnb conectado! Reservas serão sincronizadas em breve."});
+          }
+          setTimeout(()=>setHospToast(null),8000);
+        })
+        .catch(()=>{
+          setHospToast({type:"success",msg:"Airbnb conectado! Reservas serão sincronizadas em breve."});
+          setTimeout(()=>setHospToast(null),6000);
+        });
     }else if(hosp==="error"){
       const reason=params.get("reason")||"Erro desconhecido";
       setHospToast({type:"error",msg:`Erro ao conectar: ${reason}`});
@@ -425,17 +439,35 @@ function HospitableConnectSection(){
   const[status,setStatus]=useState<{connected:boolean;connectedAt?:string;linkedProperties?:number;hospReservations?:number}|null>(null);
   const[loading,setLoading]=useState(true);
   const[disconnecting,setDisconnecting]=useState(false);
+  const[syncing,setSyncing]=useState(false);
+  const[syncMsg,setSyncMsg]=useState<string|null>(null);
 
-  useEffect(()=>{
+  const loadStatus=()=>{
     fetch("/api/auth/hospitable/status").then(r=>r.json()).then(setStatus).catch(()=>setStatus({connected:false})).finally(()=>setLoading(false));
-  },[]);
+  };
+  useEffect(()=>{loadStatus()},[]);
 
   const disconnect=async()=>{
-    if(!confirm("Desconectar Airbnb? Novas reservas não serão mais recebidas automaticamente via Hospitable."))return;
+    if(!confirm("Desconectar Airbnb? Novas reservas não serão mais recebidas automaticamente."))return;
     setDisconnecting(true);
     await fetch("/api/auth/hospitable/status",{method:"DELETE"});
     setStatus({connected:false});
     setDisconnecting(false);
+  };
+
+  const syncReservations=async()=>{
+    setSyncing(true);setSyncMsg(null);
+    try{
+      const res=await fetch("/api/auth/hospitable/sync-reservations",{method:"POST"});
+      const d=await res.json();
+      if(d.ok){
+        setSyncMsg(`${d.imported} importada(s), ${d.skipped} já existente(s)`);
+        loadStatus();
+      }else{
+        setSyncMsg(d.error||"Erro ao sincronizar");
+      }
+    }catch{setSyncMsg("Erro de conexão")}
+    finally{setSyncing(false);setTimeout(()=>setSyncMsg(null),5000)}
   };
 
   if(loading)return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
@@ -459,14 +491,18 @@ function HospitableConnectSection(){
           </div>
         </div>
         <div style={{display:"flex",gap:16,marginBottom:12}}>
-          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.linkedProperties||0}</strong> imóveis sincronizados</div>
-          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas recebidas</div>
+          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.linkedProperties||0}</strong> imóveis</div>
+          <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas via API</div>
         </div>
-        <button onClick={disconnect} disabled={disconnecting} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"6px 14px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:8,cursor:"pointer",opacity:disconnecting?0.5:1}}>{disconnecting?"Desconectando...":"Desconectar Airbnb"}</button>
+        {syncMsg&&<div style={{background:"#ECFDF5",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#059669",marginBottom:10}}>{syncMsg}</div>}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={syncReservations} disabled={syncing} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"6px 14px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:syncing?0.5:1}}>{syncing?"Sincronizando...":"↻ Sincronizar reservas"}</button>
+          <button onClick={disconnect} disabled={disconnecting} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"6px 14px",background:"none",color:"#DC2626",border:"1px solid #FEE2E2",borderRadius:8,cursor:"pointer",opacity:disconnecting?0.5:1}}>{disconnecting?"...":"Desconectar"}</button>
+        </div>
       </div>
     ):(
       <div>
-        <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Conecte sua conta do Airbnb para receber reservas automaticamente — sem precisar encaminhar emails. Leva menos de 1 minuto.</p>
+        <p style={{fontSize:13,color:"#737373",lineHeight:1.6,marginBottom:14}}>Conecte sua conta do Airbnb para receber reservas automaticamente — sem precisar encaminhar emails.</p>
         <a href="/api/auth/hospitable/connect" style={{display:"inline-flex",alignItems:"center",gap:8,fontFamily:"Outfit",fontSize:14,fontWeight:600,padding:"11px 22px",background:B.primary,color:"#fff",border:"none",borderRadius:10,textDecoration:"none",cursor:"pointer",boxShadow:`0 2px 8px ${B.shadow}`}}>
           🔗 Conectar Airbnb
         </a>
