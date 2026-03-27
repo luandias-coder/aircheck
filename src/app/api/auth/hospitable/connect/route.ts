@@ -55,61 +55,56 @@ export async function GET() {
   }
 
   try {
-    // Use existing customerId if we have one, otherwise generate
-    const customerId = existing?.hospitableAccountId || makeCustomerId(user.id);
+    // Always generate a clean customer ID (don't reuse stale ones from failed attempts)
+    const customerId = makeCustomerId(user.id);
+
+    // Format phone to E.164 (Connect requires +55XXXXXXXXXXX)
+    let phone: string | undefined = undefined;
+    if (user.phone) {
+      const digits = user.phone.replace(/\D/g, "");
+      if (digits.length === 11) phone = `+55${digits}`;
+      else if (digits.length === 13 && digits.startsWith("55")) phone = `+${digits}`;
+      else if (digits.startsWith("+")) phone = user.phone;
+      // If format is unclear, just skip phone — it's optional
+    }
 
     // Step 1: Create customer
     const customerRes = await connectPost("/customers", {
       id: customerId,
       name: user.name || user.email.split("@")[0],
       email: user.email,
-      phone: user.phone || undefined,
+      ...(phone ? { phone } : {}),
       timezone: "America/Sao_Paulo",
     });
 
-    // 201 = created, 422/409 = might already exist — both OK
-    if (!customerRes.ok && customerRes.status !== 422 && customerRes.status !== 409) {
-      throw new Error(`Customer creation failed: ${customerRes.status} ${JSON.stringify(customerRes.data)}`);
-    }
-
-    // If 422, check if it's "already taken" (OK) vs real validation error
-    if (customerRes.status === 422 && customerRes.data?.errors) {
-      const errors = customerRes.data.errors;
+    // If phone validation fails, retry without phone
+    if (!customerRes.ok && customerRes.status === 422) {
+      const errors = customerRes.data?.errors || {};
+      const hasPhoneError = errors.phone?.length > 0;
       const idErrors = errors.customer_id || errors.id || [];
       const isAlreadyTaken = idErrors.some((e: string) =>
         e.toLowerCase().includes("taken") || e.toLowerCase().includes("already")
       );
-      if (!isAlreadyTaken) {
-        // Real validation error — log and try with the raw userId as fallback
-        console.warn("[hospitable/connect] Customer ID rejected, trying raw userId");
-        const fallbackId = user.id.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 50);
+
+      if (isAlreadyTaken) {
+        // Customer already exists — that's fine, continue
+      } else if (hasPhoneError) {
+        // Phone validation failed — retry without phone
+        console.log("[hospitable/connect] Phone rejected, retrying without phone");
         const retryRes = await connectPost("/customers", {
-          id: fallbackId,
+          id: customerId,
           name: user.name || user.email.split("@")[0],
           email: user.email,
-          phone: user.phone || undefined,
           timezone: "America/Sao_Paulo",
         });
         if (!retryRes.ok && retryRes.status !== 422 && retryRes.status !== 409) {
-          throw new Error(`Customer creation failed on retry: ${retryRes.status} ${JSON.stringify(retryRes.data)}`);
+          throw new Error(`Customer creation failed: ${retryRes.status} ${JSON.stringify(retryRes.data)}`);
         }
-        // Update customerId to fallback
-        await prisma.hospitableConnection.upsert({
-          where: { userId },
-          create: { userId, accessToken: "connect", refreshToken: "connect", hospitableAccountId: fallbackId, status: "pending" },
-          update: { hospitableAccountId: fallbackId, status: "pending" },
-        });
-
-        // Create auth code with fallback ID
-        const redirectUrl = `${BASE_URL}/api/auth/hospitable/callback?user_id=${userId}`;
-        const authCodeRes = await connectPost("/auth-codes", {
-          customer_id: fallbackId,
-          redirect_url: redirectUrl,
-        });
-        const returnUrl = authCodeRes.data?.return_url || authCodeRes.data?.data?.return_url;
-        if (!returnUrl) throw new Error(`No return_url: ${JSON.stringify(authCodeRes.data).slice(0, 500)}`);
-        return NextResponse.redirect(returnUrl);
+      } else {
+        throw new Error(`Customer creation failed: ${JSON.stringify(customerRes.data)}`);
       }
+    } else if (!customerRes.ok && customerRes.status !== 409) {
+      throw new Error(`Customer creation failed: ${customerRes.status} ${JSON.stringify(customerRes.data)}`);
     }
 
     // Save connection as pending
