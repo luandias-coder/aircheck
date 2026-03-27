@@ -119,6 +119,7 @@ export async function GET() {
     const authCodeRes = await connectPost("/auth-codes", {
       customer_id: customerId,
       redirect_url: redirectUrl,
+      locale: "pt",
     });
 
     const returnUrl = authCodeRes.data?.return_url || authCodeRes.data?.data?.return_url;
