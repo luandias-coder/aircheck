@@ -398,7 +398,7 @@ function PropertiesTab({properties}:{properties:any[]}){
     {key:"reservations",label:"Reservas",width:70},
     {key:"createdAt",label:"Criado",width:80},
   ]} rows={properties.map(p=>({
-    name:p.name,
+    name:<div style={{display:"flex",alignItems:"center",gap:5}}><span>{p.name}</span>{p.airbnbRoomId&&<a href={`https://www.airbnb.com.br/rooms/${p.airbnbRoomId}`} target="_blank" rel="noopener noreferrer" title="Ver no Airbnb" onClick={e=>e.stopPropagation()} style={{display:"inline-flex",flexShrink:0,opacity:0.6}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.7 17.3c-.3.6-.9 1-1.5 1.2-.2 0-.3.1-.5.1-1 0-2.1-.7-3.3-1.8-.2-.2-.4-.4-.5-.6-.1.2-.3.4-.5.6-1.2 1.1-2.3 1.8-3.3 1.8-.2 0-.4 0-.5-.1-.6-.2-1.2-.6-1.5-1.2-.4-.7-.4-1.5-.2-2.4.5-2.1 2.2-4.6 4.8-7.2.4-.4.8-.8 1.1-1.1.3.3.7.7 1.1 1.1 2.6 2.6 4.3 5.1 4.8 7.2.3.9.3 1.7 0 2.4z" fill="#FF5A5F"/></svg></a>}</div>,
     host:p.host,
     unit:p.unit||<span style={{color:C.muted}}>—</span>,
     parking:p.parking||<span style={{color:C.muted}}>—</span>,
