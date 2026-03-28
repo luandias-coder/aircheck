@@ -67,7 +67,7 @@ export async function GET() {
   // ── Properties ──
   const allProperties = await prisma.property.findMany({
     select: {
-      id: true, name: true, unitNumber: true, parkingSpot: true, createdAt: true,
+      id: true, name: true, airbnbRoomId: true, unitNumber: true, parkingSpot: true, createdAt: true,
       user: { select: { email: true, name: true } },
       doormanPhones: { select: { phone: true, name: true } },
       _count: { select: { reservations: true } },
@@ -162,7 +162,7 @@ export async function GET() {
       host: r.user.name || r.user.email, createdAt: r.createdAt, sentAt: r.sentToDoormanAt,
     })),
     properties: allProperties.map(p => ({
-      id: p.id, name: p.name, unit: p.unitNumber, parking: p.parkingSpot,
+      id: p.id, name: p.name, airbnbRoomId: p.airbnbRoomId, unit: p.unitNumber, parking: p.parkingSpot,
       host: p.user.name || p.user.email, doormanPhones: p.doormanPhones.length,
       reservations: p._count.reservations, createdAt: p.createdAt,
     })),
