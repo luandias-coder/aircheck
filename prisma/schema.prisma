@@ -95,6 +95,12 @@ model Property {
   whatsappEnabled       Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
   hospitablePropertyId  String?  // Hospitable Connect: property ID
   hospitableListingId   String?  // Hospitable Connect: listing ID
+  // ─── Address fields (from Hospitable listing webhook) ───
+  addressStreet         String?
+  addressApt            String?
+  addressCity           String?
+  addressState          String?
+  addressZipcode        String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -130,6 +136,7 @@ model Reservation {
   propertyId              String
   guestFullName           String
   guestPhone              String?
+  guestEmail              String?   // email do hóspede (se disponível via Hospitable)
   guestPhotoUrl           String?
   checkInDate             String
   checkInTime             String    @default("15:00")
@@ -138,7 +145,10 @@ model Reservation {
   numGuests               Int       @default(1)
   nights                  Int?
   confirmationCode        String?
-  hostPayment             String?
+  hostPayment             String?   // legacy string format "BRL 279.96"
+  payoutAmount            Float?    // valor numérico do payout do host
+  payoutCurrency          String?   // moeda (BRL, USD, etc.)
+  platform                String    @default("airbnb") // airbnb, vrbo, booking, etc.
   airbnbThreadId          String?
   airbnbThreadUrl         String?
   formToken               String    @unique @default(cuid())
@@ -151,9 +161,10 @@ model Reservation {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  property Property      @relation(fields: [propertyId], references: [id])
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property            @relation(fields: [propertyId], references: [id])
   guests   Guest[]
+  messages HospitableMessage[]
 
   @@index([userId])
   @@index([propertyId])
@@ -161,6 +172,7 @@ model Reservation {
   @@index([status])
   @@index([confirmationCode])
   @@index([source])
+  @@index([platform])
 }
 
 model Guest {
@@ -234,6 +246,24 @@ model HospitableConnection {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+}
+
+model HospitableMessage {
+  id                      String   @id @default(cuid())
+  reservationId           String?  // link to AirCheck reservation (if matched)
+  hospitableReservationId String?  // Hospitable's reservation ID (for matching later)
+  sender                  String   @default("guest") // guest, host, system, airbnb
+  senderName              String?
+  body                    String
+  sentAt                  DateTime @default(now())
+  platform                String   @default("airbnb")
+  createdAt               DateTime @default(now())
+
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@index([hospitableReservationId])
+  @@index([sentAt])
 }
 
 model WebhookLog {
