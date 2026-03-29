@@ -395,7 +395,7 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
   }
 
   // ── Dedup by confirmation code — DON'T change source ──
-  if (confirmationCode) {
+  if (confirmationCode && userId) {
     const existing = await prisma.reservation.findFirst({
       where: { userId, confirmationCode },
     });
