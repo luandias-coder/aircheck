@@ -10,7 +10,7 @@ interface Reservation {
   airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string;
   source?:string; carPlate:string|null; carModel:string|null;
   property:{ id:string; name:string; doormanPhones:DoormanPhone[]; whatsappEnabled?:boolean; condominiumId?:string|null; condominium?:any };
-  guests:any[]; sentToDoormanAt:string|null; createdAt:string;
+  guests:any[];
 }
 
 // ─── PALETTE ────────────────────────────────────────────────────
