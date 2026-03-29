@@ -70,7 +70,7 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
     reservations.forEach(r => {
       if (!map.has(r.property.id)) map.set(r.property.id, { id: r.property.id, name: r.property.name });
     });
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [reservations]);
 
   const propColor = useMemo(() => {
