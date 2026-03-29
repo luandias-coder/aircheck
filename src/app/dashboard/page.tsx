@@ -9,7 +9,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 // ─── TYPES ──────────────────────────────────────────────────────
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
-interface Property { id:string; name:string; airbnbRoomId:string|null; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
+interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
@@ -28,15 +28,7 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
   cancelled:{l:"Cancelada",c:"#DC2626",bg:"#FEF2F2",dot:"#DC2626"},
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
-
-// ─── DATE HELPERS ───────────────────────────────────────────────
-function parseDate(d:string):Date{const[dd,mm,yy]=d.split("/").map(Number);return new Date(yy,mm-1,dd)}
-function daysUntil(d:string):number{if(!d)return 999;const t=parseDate(d);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
-function isToday(d:string):boolean{return daysUntil(d)===0}
-function isThisWeek(d:string):boolean{const du=daysUntil(d);return du>=0&&du<=6}
-
-// ─── STATS FILTER TYPE ─────────────────────────────────────────
-type StatsFilter = null | "today" | "pending" | "ready" | "week";
+function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
 
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
@@ -51,7 +43,6 @@ export default function Dashboard(){
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
   const[hospToast,setHospToast]=useState<{type:"success"|"error";msg:string}|null>(null);
-  const[statsFilter,setStatsFilter]=useState<StatsFilter>(null);
 
   const fetchData=useCallback(async()=>{
     try{
@@ -127,33 +118,10 @@ export default function Dashboard(){
   const archived=reservations.filter(r=>r.status==="archived"||r.status==="cancelled");
   const pending=active.filter(r=>r.status==="pending_form").length;
   const filled=active.filter(r=>r.status==="form_filled").length;
-
-  // New stats
-  const checkinsToday=active.filter(r=>isToday(r.checkInDate)).length;
-  const checkoutsToday=active.filter(r=>isToday(r.checkOutDate)).length;
-  const thisWeek=active.filter(r=>isThisWeek(r.checkInDate)).length;
-
-  // Filter active reservations based on stats filter
-  const toggleFilter=(f:StatsFilter)=>{ setStatsFilter(prev=>prev===f?null:f); setTab("reservations"); };
-  const filteredActive=statsFilter===null?active
-    :statsFilter==="today"?active.filter(r=>isToday(r.checkInDate)||isToday(r.checkOutDate))
-    :statsFilter==="pending"?active.filter(r=>r.status==="pending_form")
-    :statsFilter==="ready"?active.filter(r=>r.status==="form_filled")
-    :statsFilter==="week"?active.filter(r=>isThisWeek(r.checkInDate))
-    :active;
-
-  const firstName=user?.name?.split(" ")[0]||"";
+  const upcoming=active.filter(r=>daysUntil(r.checkInDate)>=0).length;
 
   return(
     <div style={{minHeight:"100vh",background:"#FAFAF9",fontFamily:"Outfit,sans-serif"}}>
-      <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-        .fade-up{animation:fadeUp 0.35s ease-out both}
-        .stat-card{transition:all 0.15s;cursor:pointer}
-        .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.08)}
-        @media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr)!important}}
-      `}</style>
-
       {/* Header */}
       <div style={{background:"#fff",borderBottom:"1px solid #E5E5E5"}}>
         <div style={{maxWidth:700,margin:"0 auto",padding:"18px 20px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -179,11 +147,6 @@ export default function Dashboard(){
       </div>
 
       <div className="dashboard-content" style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
-        {/* Welcome greeting */}
-        {!loading&&view==="list"&&firstName&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:18,fontWeight:700,color:"#1A1A1A"}}>Olá, {firstName}!</div>
-        </div>}
-
         {/* Hospitable toast */}
         {hospToast&&<div className="fade-up" style={{background:hospToast.type==="success"?"#ECFDF5":"#FEF2F2",border:`1px solid ${hospToast.type==="success"?"#A7F3D0":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -198,90 +161,32 @@ export default function Dashboard(){
         {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
 
         {!loading&&view==="list"&&<>
-          {/* Stats — 4 cards */}
-          <div className="stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
-            {/* Hoje */}
-            <div className="stat-card fade-up" onClick={()=>toggleFilter("today")} style={{background:statsFilter==="today"?"#EFF6FF":"#fff",border:`1px solid ${statsFilter==="today"?B.primary:"#F0F0F0"}`,borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Hoje</div>
-                  <div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:checkinsToday>0||checkoutsToday>0?B.primary:"#1A1A1A",marginTop:4,lineHeight:1}}>{checkinsToday+checkoutsToday}</div>
-                  <div style={{fontSize:11,color:"#737373",marginTop:4,lineHeight:1.4}}>
-                    {checkinsToday>0&&<span style={{color:"#059669"}}>{checkinsToday} in</span>}
-                    {checkinsToday>0&&checkoutsToday>0&&<span> · </span>}
-                    {checkoutsToday>0&&<span style={{color:"#D97706"}}>{checkoutsToday} out</span>}
-                    {checkinsToday===0&&checkoutsToday===0&&<span>nenhum</span>}
-                  </div>
-                </div>
-                <span style={{fontSize:20,opacity:0.5}}>📅</span>
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+            {[{l:"Ativas",v:active.length,s:`${upcoming} próxima${upcoming!==1?"s":""}`,i:"📋"},{l:"Pendentes",v:pending,s:"aguardando form",i:"⏳",a:pending>0?"#D97706":undefined},{l:"Prontas",v:filled,s:"para enviar",i:"✅",a:filled>0?"#059669":undefined}].map((c,i)=>(
+              <div key={i} className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>{c.l}</div><div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:c.a||"#1A1A1A",marginTop:4,lineHeight:1}}>{c.v}</div>{c.s&&<div style={{fontSize:12,color:"#A3A3A3",marginTop:4}}>{c.s}</div>}</div><span style={{fontSize:20,opacity:0.5}}>{c.i}</span></div>
               </div>
-            </div>
-
-            {/* Pendentes */}
-            <div className="stat-card fade-up" onClick={()=>toggleFilter("pending")} style={{background:statsFilter==="pending"?"#FFFBEB":"#fff",border:`1px solid ${statsFilter==="pending"?"#D97706":"#F0F0F0"}`,borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Pendentes</div>
-                  <div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:pending>0?"#D97706":"#1A1A1A",marginTop:4,lineHeight:1}}>{pending}</div>
-                  <div style={{fontSize:11,color:"#737373",marginTop:4}}>aguardando form</div>
-                </div>
-                <span style={{fontSize:20,opacity:0.5}}>⏳</span>
-              </div>
-            </div>
-
-            {/* Prontas */}
-            <div className="stat-card fade-up" onClick={()=>toggleFilter("ready")} style={{background:statsFilter==="ready"?"#ECFDF5":"#fff",border:`1px solid ${statsFilter==="ready"?"#059669":"#F0F0F0"}`,borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Prontas</div>
-                  <div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:filled>0?"#059669":"#1A1A1A",marginTop:4,lineHeight:1}}>{filled}</div>
-                  <div style={{fontSize:11,color:"#737373",marginTop:4}}>para enviar</div>
-                </div>
-                <span style={{fontSize:20,opacity:0.5}}>✅</span>
-              </div>
-            </div>
-
-            {/* Esta semana */}
-            <div className="stat-card fade-up" onClick={()=>toggleFilter("week")} style={{background:statsFilter==="week"?B.light:"#fff",border:`1px solid ${statsFilter==="week"?B.primary:"#F0F0F0"}`,borderRadius:12,padding:"16px 14px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:500,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em"}}>Semana</div>
-                  <div style={{fontFamily:"Outfit",fontSize:26,fontWeight:800,color:"#1A1A1A",marginTop:4,lineHeight:1}}>{thisWeek}</div>
-                  <div style={{fontSize:11,color:"#737373",marginTop:4}}>check-ins</div>
-                </div>
-                <span style={{fontSize:20,opacity:0.5}}>📊</span>
-              </div>
-            </div>
+            ))}
           </div>
-
-          {/* Active filter indicator */}
-          {statsFilter&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-            <span style={{fontSize:12,color:"#737373"}}>Filtrando por: <strong style={{color:"#1A1A1A"}}>{
-              statsFilter==="today"?"Hoje":
-              statsFilter==="pending"?"Pendentes":
-              statsFilter==="ready"?"Prontas para enviar":
-              "Esta semana"
-            }</strong></span>
-            <button onClick={()=>setStatsFilter(null)} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"2px 8px",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:6,cursor:"pointer"}}>✕ Limpar</button>
-          </div>}
 
           {/* Tabs */}
           <div style={{display:"flex",gap:0,borderBottom:"1px solid #F0F0F0",marginBottom:16}}>
             {([["reservations","Reservas",active.length],["properties","Imóveis",properties.length],["feedback","Feedback",null],["settings","Configurações",null]] as const).map(([id,l,n])=>(
-              <button key={id} onClick={()=>{setTab(id as any);if(id!=="reservations")setStatsFilter(null)}} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
+              <button key={id} onClick={()=>setTab(id as any)} style={{fontFamily:"Outfit",fontSize:13,fontWeight:tab===id?600:400,color:tab===id?B.primary:"#A3A3A3",padding:"10px 16px",background:"none",border:"none",borderBottom:tab===id?`2px solid ${B.primary}`:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
                 {l} {n!==null&&<span style={{marginLeft:4,fontSize:11,fontWeight:700,color:tab===id?B.primary:"#A3A3A3",background:tab===id?B.light:"#F5F5F5",padding:"2px 6px",borderRadius:10}}>{n}</span>}
               </button>
             ))}
           </div>
 
-          {tab==="reservations"?<ReservationsList active={filteredActive} archived={statsFilter?[]:archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+          {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
           :tab==="feedback"?<FeedbackTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
 
-      <BottomTabBar tab={tab} onTabChange={(t) => { setTab(t); setView("list"); setStatsFilter(null); }} />
+      <BottomTabBar tab={tab} onTabChange={(t) => { setTab(t); setView("list"); }} />
     </div>
   );
 }
@@ -309,10 +214,7 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
       </div>
     </div>
   </button>};
-  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva{active.length===0&&archived.length===0?" ainda":""}</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber suas reservas automaticamente.</div></div>;
-  if(active.length===0&&archived.length>0)return<div style={{display:"flex",flexDirection:"column",gap:8}}>
-    <div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"32px 24px",textAlign:"center"}}><div style={{fontSize:28,marginBottom:4,opacity:0.3}}>🔍</div><div style={{fontSize:14,fontWeight:500,color:"#737373"}}>Nenhuma reserva corresponde ao filtro</div></div>
-  </div>;
+  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber suas reservas automaticamente.</div></div>;
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
     {active.map(r=><RCard key={r.id} r={r}/>)}
     {archived.length>0&&<>
@@ -542,6 +444,14 @@ function HospitableConnectSection(){
           <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.linkedProperties||0}</strong> imóveis</div>
           <div style={{fontSize:12,color:"#737373"}}><strong style={{color:"#1A1A1A"}}>{status.hospReservations||0}</strong> reservas importadas</div>
         </div>
+        {/* Auto-message indicator */}
+        <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:16}}>💬</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:"#059669"}}>Mensagem automática ativada</div>
+            <div style={{fontSize:11,color:"#737373",marginTop:1}}>O link do formulário de check-in é enviado automaticamente no chat do Airbnb a cada nova reserva.</div>
+          </div>
+        </div>
         {syncMsg&&<div style={{background:"#ECFDF5",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#059669",marginBottom:10}}>{syncMsg}</div>}
         <div style={{display:"flex",gap:8}}>
           <button onClick={syncReservations} disabled={syncing} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"6px 14px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:syncing?0.5:1}}>{syncing?"Sincronizando...":"↻ Sincronizar reservas"}</button>
@@ -702,7 +612,7 @@ function PropertiesTab({properties,onRefresh,initialCondoCode}:{properties:Prope
     <div style={{display:"flex",alignItems:"center",gap:8,background:B.light,borderRadius:10,padding:"10px 14px",fontSize:12,color:B.primary}}><span>💡</span>Imóveis são criados automaticamente. Configure aqui o nº da unidade, vaga de garagem, portarias e condomínio parceiro.</div>
     {initialCondoCode&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#F0F4FF",borderRadius:10,padding:"10px 14px",fontSize:12,color:"#3B5FE5",border:"1px solid #D4DEFF"}}><span>🏢</span>Você foi convidado por um condomínio! Edite um imóvel abaixo e vincule usando o código <strong>{initialCondoCode}</strong>.</div>}
     {properties.map(p=><div key={p.id} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:14}}>{p.photoUrl?<img src={p.photoUrl} alt="" style={{width:48,height:48,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:10,background:"#F5F5F4",border:"1px solid #E5E5E5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,opacity:0.4}}>🏠</div>}<div><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</span>{p.airbnbRoomId&&<a href={`https://www.airbnb.com.br/rooms/${p.airbnbRoomId}`} target="_blank" rel="noopener noreferrer" title="Ver no Airbnb" onClick={e=>e.stopPropagation()} style={{display:"inline-flex",flexShrink:0,opacity:0.85}}><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 2C8.27812 2 2 8.27812 2 16C2 23.7219 8.27812 30 16 30C23.7219 30 30 23.7219 30 16C30 8.27812 23.7219 2 16 2Z" fill="#FF5A5F"/><path d="M16.0003 19.6867C15.0825 18.5322 14.5426 17.5201 14.3626 16.6542C14.1826 15.9506 14.2546 15.3914 14.5605 14.9765C14.8845 14.4894 15.3704 14.2549 16.0003 14.2549C16.6302 14.2549 17.1162 14.4894 17.4401 14.9765C17.7461 15.3914 17.818 15.9506 17.6381 16.6542C17.4401 17.5382 16.9002 18.5484 16.0003 19.6867ZM21.0251 22.3566C19.4954 23.0241 17.9818 21.9597 16.686 20.5165C18.8295 17.8268 19.2254 15.7342 18.3058 14.3794C17.7659 13.6037 16.992 13.2248 16.0003 13.2248C14.0026 13.2248 12.903 14.9206 13.3349 16.8887C13.5869 17.9531 14.2528 19.1636 15.3146 20.5165C14.5182 21.4012 13.4733 22.4047 12.2191 22.519C10.4014 22.7896 8.97781 21.0217 9.62571 19.1978L14.2348 9.63307C14.6282 8.91403 15.1137 8.29812 15.9985 8.29812C16.6464 8.29812 17.1503 8.67696 17.3663 8.98363L22.3713 19.1978C22.8617 20.432 22.2398 21.8308 21.0251 22.3566ZM23.3468 18.837L19.0617 9.90367C18.2518 8.244 17.6759 7.25 16.0003 7.25C14.3446 7.25 13.6409 8.40455 12.921 9.90367L8.65386 18.837C7.73601 21.3644 9.62571 23.5833 11.9132 23.5833C12.0572 23.5833 12.2001 23.5653 12.3451 23.5653C13.5329 23.421 14.7585 22.6633 16.0003 21.3085C17.2421 22.6615 18.4677 23.421 19.6556 23.5653C19.8006 23.5653 19.9435 23.5833 20.0875 23.5833C22.3749 23.5851 24.2646 21.3644 23.3468 18.837Z" fill="white"/></svg></a>}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:14}}>{p.photoUrl?<img src={p.photoUrl} alt="" style={{width:48,height:48,borderRadius:10,objectFit:"cover",border:"1px solid #E5E5E5",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:10,background:"#F5F5F4",border:"1px solid #E5E5E5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,opacity:0.4}}>🏠</div>}<div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A"}}>{p.name}</div><div style={{fontSize:12,color:"#A3A3A3",marginTop:2}}>{p.unitNumber?`Unidade ${p.unitNumber}`:""}{p.unitNumber&&p.parkingSpot?" · ":""}{p.parkingSpot?`Vaga ${p.parkingSpot}`:""}{(p.unitNumber||p.parkingSpot)?" · ":""}{p.reservationCount} reserva(s){!p.condominium?` · ${p.doormanPhones.length} portaria(s)`:""}{p.condominium?<span style={{color:B.primary}}> · 🏢 {p.condominium.name}{p.condominium.reportMode==="dashboard"?" (painel)":""}</span>:""}</div></div></div><button onClick={()=>startEdit(p)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"7px 14px",background:"#fff",color:"#1A1A1A",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>{editingId===p.id?"Fechar":"Editar"}</button></div>
       <div style={{padding:"0 20px 16px",display:"flex",flexDirection:"column",gap:6}}>
         {editingId===p.id&&<div style={{background:B.light,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,marginBottom:4}}>
           {/* ── Condomínio Parceiro (PRIMEIRO BLOCO) ── */}
