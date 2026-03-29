@@ -15,24 +15,23 @@ interface Reservation {
 
 // ─── PALETTE ────────────────────────────────────────────────────
 const B = { primary:"#3B5FE5", light:"#EBF0FF" };
+const PROP_COLORS = ["#3B5FE5","#7C3AED","#059669","#D97706","#0891B2","#DC2626","#BE185D","#4338CA"];
+
 const STATUS_COLORS: Record<string, { bg:string; text:string; border:string }> = {
   pending_form:   { bg:"#FEF3C7", text:"#92400E", border:"#FCD34D" },
   form_filled:    { bg:"#D1FAE5", text:"#065F46", border:"#6EE7B7" },
   sent_to_doorman:{ bg:"#DBEAFE", text:"#1E40AF", border:"#93C5FD" },
   archived:       { bg:"#F3F4F6", text:"#6B7280", border:"#D1D5DB" },
 };
-const DEFAULT_COLOR = { bg:"#F3F4F6", text:"#374151", border:"#D1D5DB" };
+const DEFAULT_SC = { bg:"#F3F4F6", text:"#374151", border:"#D1D5DB" };
 
 // ─── HELPERS ────────────────────────────────────────────────────
 function parseDate(d: string): Date {
   if (!d) return new Date(NaN);
-  // ISO format (from Hospitable): "2025-04-03" or "2025-04-03T15:00:00"
   if (d.includes("-")) {
-    const iso = d.split("T")[0];
-    const [y, m, dd] = iso.split("-").map(Number);
+    const [y, m, dd] = d.split("T")[0].split("-").map(Number);
     return new Date(y, m - 1, dd);
   }
-  // BR format (from email): "03/04/2025"
   const [dd, mm, yy] = d.split("/").map(Number);
   return new Date(yy, mm - 1, dd);
 }
@@ -41,20 +40,15 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfWeek(year: number, month: number): number {
-  return new Date(year, month, 1).getDay(); // 0=Sunday
-}
+function getDaysInMonth(y: number, m: number): number { return new Date(y, m + 1, 0).getDate(); }
+function getFirstDayOfWeek(y: number, m: number): number { return new Date(y, m, 1).getDay(); }
 
 const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const DAY_LABELS = ["D","S","T","Q","Q","S","S"];
 
 // ─── COMPONENT ──────────────────────────────────────────────────
 export default function CalendarView({ reservations, onSelect }: { reservations: Reservation[]; onSelect: (id: string) => void }) {
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
@@ -70,7 +64,22 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
   const firstDay = getFirstDayOfWeek(year, month);
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
 
-  // Map reservations to their day spans within this month
+  // ─── Unique properties from all reservations (stable order) ─
+  const allProperties = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    reservations.forEach(r => {
+      if (!map.has(r.property.id)) map.set(r.property.id, { id: r.property.id, name: r.property.name });
+    });
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [reservations]);
+
+  const propColor = useMemo(() => {
+    const map: Record<string, string> = {};
+    allProperties.forEach((p, i) => { map[p.id] = PROP_COLORS[i % PROP_COLORS.length]; });
+    return map;
+  }, [allProperties]);
+
+  // ─── Reservations mapped to this month ────────────────────
   const resRows = useMemo(() => {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month, daysInMonth);
@@ -81,21 +90,44 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
         const ci = parseDate(r.checkInDate);
         const co = parseDate(r.checkOutDate);
         if (isNaN(ci.getTime()) || isNaN(co.getTime())) return false;
-        // Reservation overlaps this month?
         return ci <= monthEnd && co >= monthStart;
       })
       .map(r => {
         const ci = parseDate(r.checkInDate);
         const co = parseDate(r.checkOutDate);
-        // Clamp to month bounds
         const startDay = ci < monthStart ? 1 : ci.getDate();
         const endDay = co > monthEnd ? daysInMonth : co.getDate();
-        return { ...r, startDay, endDay, ciDate: ci, coDate: co };
-      })
-      .sort((a, b) => a.startDay - b.startDay || a.endDay - b.endDay);
+        const isRealStart = ci >= monthStart;
+        const isRealEnd = co <= monthEnd;
+        return { ...r, startDay, endDay, isRealStart, isRealEnd };
+      });
   }, [reservations, year, month, daysInMonth]);
 
-  // Build week rows with reservation bar positions
+  // Properties that have reservations this month
+  const activeProperties = useMemo(() => {
+    const ids = new Set(resRows.map(r => r.property.id));
+    return allProperties.filter(p => ids.has(p.id));
+  }, [allProperties, resRows]);
+
+  // ─── Turnover detection (same-day checkout → checkin) ─────
+  const turnovers = useMemo(() => {
+    const halfStarts = new Set<string>();
+    const halfEnds = new Set<string>();
+
+    for (const r of resRows) {
+      if (r.isRealStart) {
+        const hasPred = resRows.some(o => o.id !== r.id && o.property.id === r.property.id && o.endDay === r.startDay && o.isRealEnd);
+        if (hasPred) halfStarts.add(`${r.property.id}-${r.startDay}`);
+      }
+      if (r.isRealEnd) {
+        const hasSucc = resRows.some(o => o.id !== r.id && o.property.id === r.property.id && o.startDay === r.endDay && o.isRealStart);
+        if (hasSucc) halfEnds.add(`${r.property.id}-${r.endDay}`);
+      }
+    }
+    return { halfStarts, halfEnds };
+  }, [resRows]);
+
+  // ─── Build weeks ──────────────────────────────────────────
   const weeks = useMemo(() => {
     const rows: { day: number | null; date: Date | null }[][] = [];
     let dayNum = 1;
@@ -112,76 +144,33 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
     return rows;
   }, [year, month, daysInMonth, firstDay, totalCells]);
 
-  // For each week, determine which reservations have bars
-  const weekBars = useMemo(() => {
-    return weeks.map(week => {
-      const weekStart = week.find(d => d.day !== null)?.day ?? 0;
-      const weekEnd = week.filter(d => d.day !== null).pop()?.day ?? 0;
-      if (!weekStart || !weekEnd) return [];
-
-      return resRows
-        .filter(r => r.startDay <= weekEnd && r.endDay >= weekStart)
-        .map(r => {
-          const barStart = Math.max(r.startDay, weekStart);
-          const barEnd = Math.min(r.endDay, weekEnd);
-          // Column positions (0-indexed within the week's actual days)
-          const startCol = week.findIndex(d => d.day === barStart);
-          const endCol = week.findIndex(d => d.day === barEnd);
-          return { ...r, startCol, endCol, barStart, barEnd };
-        });
-    });
-  }, [weeks, resRows]);
-
-  // Assign vertical slots per week to avoid overlaps
-  const weekSlots = useMemo(() => {
-    return weekBars.map(bars => {
-      const slots: { bar: typeof bars[0]; slot: number }[] = [];
-      const occupied: number[][] = []; // occupied[slot] = array of occupied columns
-
-      for (const bar of bars) {
-        let slot = 0;
-        while (true) {
-          if (!occupied[slot]) occupied[slot] = [];
-          const conflict = occupied[slot].some(col => col >= bar.startCol && col <= bar.endCol);
-          if (!conflict) break;
-          slot++;
-        }
-        for (let c = bar.startCol; c <= bar.endCol; c++) {
-          if (!occupied[slot]) occupied[slot] = [];
-          occupied[slot].push(c);
-        }
-        slots.push({ bar, slot });
-      }
-      return { slots, maxSlot: slots.reduce((m, s) => Math.max(m, s.slot), -1) + 1 };
-    });
-  }, [weekBars]);
-
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const barHeight = 24;
+  const propRowHeight = barHeight + 6;
 
   return (
     <div style={{ fontFamily: "Outfit, sans-serif" }}>
       {/* Month navigation */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <button onClick={() => goTo(-1)} style={{ background: "none", border: "1px solid #E5E5E5", borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#737373" }}>
-          ‹
-        </button>
+        <button onClick={() => goTo(-1)} style={{ background: "none", border: "1px solid #E5E5E5", borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#737373" }}>‹</button>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: "#1A1A1A" }}>
-            {MONTH_NAMES[month]} {year}
-          </span>
+          <span style={{ fontSize: 17, fontWeight: 700, color: "#1A1A1A" }}>{MONTH_NAMES[month]} {year}</span>
           {!isCurrentMonth && (
-            <button onClick={goToday} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, color: B.primary, background: B.light, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>
-              Hoje
-            </button>
+            <button onClick={goToday} style={{ fontFamily: "Outfit", fontSize: 11, fontWeight: 600, color: B.primary, background: B.light, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>Hoje</button>
           )}
         </div>
-        <button onClick={() => goTo(1)} style={{ background: "none", border: "1px solid #E5E5E5", borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#737373" }}>
-          ›
-        </button>
+        <button onClick={() => goTo(1)} style={{ background: "none", border: "1px solid #E5E5E5", borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#737373" }}>›</button>
       </div>
 
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
+      {/* Legends */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+        {activeProperties.map(p => (
+          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: propColor[p.id] }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#525252" }}>{p.name}</span>
+          </div>
+        ))}
+        {activeProperties.length > 0 && <div style={{ width: 1, height: 14, background: "#E5E5E5" }} />}
         {[
           { label: "Pendente", color: STATUS_COLORS.pending_form },
           { label: "Pronta", color: STATUS_COLORS.form_filled },
@@ -200,90 +189,107 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
         {/* Day headers */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #F0F0F0" }}>
           {DAY_LABELS.map((d, i) => (
-            <div key={i} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 600, color: i === 0 ? "#DC2626" : "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {d}
-            </div>
+            <div key={i} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 600, color: i === 0 ? "#DC2626" : "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.05em" }}>{d}</div>
           ))}
         </div>
 
-        {/* Week rows */}
+        {/* Week sections */}
         {weeks.map((week, wi) => {
-          const slotData = weekSlots[wi];
-          const barHeight = 26;
-          const barGap = 3;
-          const barsAreaHeight = slotData.maxSlot > 0 ? slotData.maxSlot * (barHeight + barGap) : 0;
-          const cellMinHeight = 36 + barsAreaHeight;
+          const weekStart = week.find(d => d.day !== null)?.day ?? 0;
+          const weekEnd = week.filter(d => d.day !== null).pop()?.day ?? 0;
 
           return (
-            <div key={wi} style={{ position: "relative", borderBottom: wi < weeks.length - 1 ? "1px solid #F0F0F0" : "none" }}>
-              {/* Day numbers row */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", minHeight: cellMinHeight }}>
+            <div key={wi} style={{ borderBottom: wi < weeks.length - 1 ? "1px solid #F0F0F0" : "none" }}>
+              {/* Day numbers */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
                 {week.map((cell, ci) => {
                   const isToday = cell.date && isSameDay(cell.date, today);
                   return (
-                    <div key={ci} style={{ padding: "6px 0 0", textAlign: "center", background: cell.day === null ? "#FAFAF9" : undefined, borderRight: ci < 6 ? "1px solid #F8F8F8" : "none" }}>
+                    <div key={ci} style={{ padding: "6px 0 2px", textAlign: "center", background: cell.day === null ? "#FAFAF9" : undefined, borderRight: ci < 6 ? "1px solid #F8F8F8" : "none" }}>
                       {cell.day !== null && (
                         <span style={{
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          width: 26, height: 26, borderRadius: "50%", fontSize: 13, fontWeight: isToday ? 700 : 400,
-                          color: isToday ? "#fff" : cell.date && cell.date.getDay() === 0 ? "#DC2626" : "#1A1A1A",
+                          width: 24, height: 24, borderRadius: "50%", fontSize: 12, fontWeight: isToday ? 700 : 400,
+                          color: isToday ? "#fff" : cell.date!.getDay() === 0 ? "#DC2626" : "#1A1A1A",
                           background: isToday ? B.primary : "transparent",
-                        }}>
-                          {cell.day}
-                        </span>
+                        }}>{cell.day}</span>
                       )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Reservation bars (positioned absolutely) */}
-              {slotData.slots.map(({ bar, slot }, bi) => {
-                const sc = STATUS_COLORS[bar.status] || DEFAULT_COLOR;
-                const isArchived = bar.status === "archived";
-                const colWidth = 100 / 7;
-                const left = bar.startCol * colWidth;
-                const width = (bar.endCol - bar.startCol + 1) * colWidth;
-                const top = 34 + slot * (barHeight + barGap);
-                const firstName = bar.guestFullName.split(" ")[0];
-                const propShort = bar.property.name.length > 12 ? bar.property.name.slice(0, 11) + "…" : bar.property.name;
-
-                // Bar shape: rounded left if reservation starts this week, rounded right if it ends this week
-                const startsThisWeek = bar.barStart === bar.startDay;
-                const endsThisWeek = bar.barEnd === bar.endDay;
-                const borderRadius = `${startsThisWeek ? 6 : 0}px ${endsThisWeek ? 6 : 0}px ${endsThisWeek ? 6 : 0}px ${startsThisWeek ? 6 : 0}px`;
+              {/* One row per property */}
+              {activeProperties.map((prop, pi) => {
+                const bars = weekStart && weekEnd ? resRows
+                  .filter(r => r.property.id === prop.id && r.startDay <= weekEnd && r.endDay >= weekStart)
+                  .map(r => {
+                    const barStart = Math.max(r.startDay, weekStart);
+                    const barEnd = Math.min(r.endDay, weekEnd);
+                    const startCol = week.findIndex(d => d.day === barStart);
+                    const endCol = week.findIndex(d => d.day === barEnd);
+                    const isRealStartInWeek = barStart === r.startDay;
+                    const isRealEndInWeek = barEnd === r.endDay;
+                    const isHalfStart = isRealStartInWeek && turnovers.halfStarts.has(`${r.property.id}-${r.startDay}`);
+                    const isHalfEnd = isRealEndInWeek && turnovers.halfEnds.has(`${r.property.id}-${r.endDay}`);
+                    return { ...r, startCol, endCol, barStart, barEnd, isRealStartInWeek, isRealEndInWeek, isHalfStart, isHalfEnd };
+                  }) : [];
 
                 return (
-                  <button
-                    key={bar.id + "-" + wi + "-" + bi}
-                    onClick={() => onSelect(bar.id)}
-                    title={`${bar.guestFullName} · ${bar.property.name} · ${bar.checkInDate} → ${bar.checkOutDate}`}
-                    style={{
-                      position: "absolute", top, left: `${left}%`, width: `${width}%`, height: barHeight,
-                      background: sc.bg, border: `1px solid ${sc.border}`, borderRadius,
-                      display: "flex", alignItems: "center", gap: 4, padding: "0 6px",
-                      cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
-                      fontFamily: "Outfit", fontSize: 11, fontWeight: 600, color: sc.text,
-                      zIndex: 10, boxSizing: "border-box",
-                      opacity: isArchived ? 0.55 : 1,
-                      transition: "filter 0.15s",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.94)")}
-                    onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-                  >
-                    {/* Guest photo or initial */}
-                    {startsThisWeek && (
-                      bar.guestPhotoUrl ? (
-                        <img src={bar.guestPhotoUrl} alt="" style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `1px solid ${sc.border}` }} />
-                      ) : (
-                        <span style={{ width: 18, height: 18, borderRadius: "50%", background: sc.border, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: sc.text, flexShrink: 0 }}>
-                          {bar.guestFullName[0]}
-                        </span>
-                      )
-                    )}
-                    {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{firstName}</span>}
-                    {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis", fontSize: 9, fontWeight: 400, opacity: 0.7 }}>· {propShort}</span>}
-                  </button>
+                  <div key={prop.id} style={{
+                    position: "relative", height: propRowHeight,
+                    borderLeft: `3px solid ${propColor[prop.id]}`,
+                    background: pi % 2 === 1 ? "#FAFBFC" : undefined,
+                  }}>
+                    {bars.map((bar, bi) => {
+                      const sc = STATUS_COLORS[bar.status] || DEFAULT_SC;
+                      const isArchived = bar.status === "archived";
+                      const colWidth = 100 / 7;
+
+                      let leftPct = bar.startCol * colWidth;
+                      let rightPct = (bar.endCol + 1) * colWidth;
+                      if (bar.isHalfStart) leftPct += colWidth / 2;
+                      if (bar.isHalfEnd) rightPct -= colWidth / 2;
+                      const widthPct = rightPct - leftPct;
+
+                      const startsThisWeek = bar.isRealStartInWeek;
+                      const endsThisWeek = bar.isRealEndInWeek;
+                      const borderRadius = `${startsThisWeek ? 6 : 0}px ${endsThisWeek ? 6 : 0}px ${endsThisWeek ? 6 : 0}px ${startsThisWeek ? 6 : 0}px`;
+
+                      const firstName = bar.guestFullName.split(" ")[0];
+
+                      return (
+                        <button
+                          key={bar.id + "-" + wi + "-" + bi}
+                          onClick={() => onSelect(bar.id)}
+                          title={`${bar.guestFullName} · ${bar.property.name} · ${bar.checkInDate} → ${bar.checkOutDate}`}
+                          style={{
+                            position: "absolute", top: 3, left: `${leftPct}%`, width: `${widthPct}%`, height: barHeight,
+                            background: sc.bg, border: `1px solid ${sc.border}`, borderRadius,
+                            display: "flex", alignItems: "center", gap: 4, padding: "0 5px",
+                            cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
+                            fontFamily: "Outfit", fontSize: 11, fontWeight: 600, color: sc.text,
+                            zIndex: 10, boxSizing: "border-box",
+                            opacity: isArchived ? 0.5 : 1,
+                            transition: "filter 0.15s",
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.94)")}
+                          onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+                        >
+                          {startsThisWeek && (
+                            bar.guestPhotoUrl ? (
+                              <img src={bar.guestPhotoUrl} alt="" style={{ width: 16, height: 16, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `1px solid ${sc.border}` }} />
+                            ) : (
+                              <span style={{ width: 16, height: 16, borderRadius: "50%", background: sc.border, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: sc.text, flexShrink: 0 }}>
+                                {bar.guestFullName[0]}
+                              </span>
+                            )
+                          )}
+                          {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{firstName}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
