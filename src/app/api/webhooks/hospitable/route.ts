@@ -380,6 +380,14 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
 
   userId = property.userId;
 
+  if (!userId) {
+    await prisma.webhookLog.update({
+      where: { id: logId },
+      data: { status: "error", error: "userId not resolved after property match" },
+    });
+    return NextResponse.json({ ok: false, error: "No user", logId });
+  }
+
   // ── Dedup by hospitableReservationId ──
   if (hospReservationId) {
     const existing = await prisma.reservation.findUnique({
