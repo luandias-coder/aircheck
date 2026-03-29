@@ -19,6 +19,8 @@ const STATUS_COLORS: Record<string, { bg:string; text:string; border:string }> =
   pending_form:   { bg:"#FEF3C7", text:"#92400E", border:"#FCD34D" },
   form_filled:    { bg:"#D1FAE5", text:"#065F46", border:"#6EE7B7" },
   sent_to_doorman:{ bg:"#DBEAFE", text:"#1E40AF", border:"#93C5FD" },
+  archived:       { bg:"#F3F4F6", text:"#6B7280", border:"#D1D5DB" },
+  cancelled:      { bg:"#FEE2E2", text:"#991B1B", border:"#FCA5A5" },
 };
 const DEFAULT_COLOR = { bg:"#F3F4F6", text:"#374151", border:"#D1D5DB" };
 
@@ -76,7 +78,6 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
 
     return reservations
       .filter(r => {
-        if (r.status === "archived" || r.status === "cancelled") return false;
         const ci = parseDate(r.checkInDate);
         const co = parseDate(r.checkOutDate);
         if (isNaN(ci.getTime()) || isNaN(co.getTime())) return false;
@@ -185,6 +186,8 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
           { label: "Pendente", color: STATUS_COLORS.pending_form },
           { label: "Pronta", color: STATUS_COLORS.form_filled },
           { label: "Enviada", color: STATUS_COLORS.sent_to_doorman },
+          { label: "Arquivada", color: STATUS_COLORS.archived },
+          { label: "Cancelada", color: STATUS_COLORS.cancelled },
         ].map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: l.color.bg, border: `1.5px solid ${l.color.border}` }} />
@@ -238,12 +241,13 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
               {/* Reservation bars (positioned absolutely) */}
               {slotData.slots.map(({ bar, slot }, bi) => {
                 const sc = STATUS_COLORS[bar.status] || DEFAULT_COLOR;
+                const isArchived = bar.status === "archived" || bar.status === "cancelled";
                 const colWidth = 100 / 7;
                 const left = bar.startCol * colWidth;
                 const width = (bar.endCol - bar.startCol + 1) * colWidth;
                 const top = 34 + slot * (barHeight + barGap);
                 const firstName = bar.guestFullName.split(" ")[0];
-                const displayName = firstName.length > 9 ? firstName.slice(0, 8) + "…" : firstName;
+                const propShort = bar.property.name.length > 12 ? bar.property.name.slice(0, 11) + "…" : bar.property.name;
 
                 // Bar shape: rounded left if reservation starts this week, rounded right if it ends this week
                 const startsThisWeek = bar.barStart === bar.startDay;
@@ -262,6 +266,7 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
                       cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
                       fontFamily: "Outfit", fontSize: 11, fontWeight: 600, color: sc.text,
                       zIndex: 10, boxSizing: "border-box",
+                      opacity: isArchived ? 0.55 : 1,
                       transition: "filter 0.15s",
                     }}
                     onMouseEnter={e => (e.currentTarget.style.filter = "brightness(0.94)")}
@@ -277,7 +282,8 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
                         </span>
                       )
                     )}
-                    {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</span>}
+                    {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{firstName}</span>}
+                    {startsThisWeek && <span style={{ overflow: "hidden", textOverflow: "ellipsis", fontSize: 9, fontWeight: 400, opacity: 0.7 }}>· {propShort}</span>}
                   </button>
                 );
               })}
@@ -290,7 +296,7 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
       {resRows.length === 0 && (
         <div style={{ textAlign: "center", padding: "32px 20px", color: "#A3A3A3" }}>
           <div style={{ fontSize: 28, marginBottom: 6, opacity: 0.3 }}>📅</div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Nenhuma reserva ativa em {MONTH_NAMES[month]}</div>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Nenhuma reserva em {MONTH_NAMES[month]}</div>
         </div>
       )}
     </div>
