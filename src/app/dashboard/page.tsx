@@ -11,7 +11,7 @@ const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5"
 interface DoormanPhone { id:string; phone:string; name:string|null; label:string|null }
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
 interface Property { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
-interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
+interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;photoUrl?:string|null;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
 interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
 
 // ─── LOGO ───────────────────────────────────────────────────────
@@ -222,7 +222,10 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
           <span style={{fontSize:15,fontWeight:600,color:isCancelled?"#DC2626":"#1A1A1A",textDecoration:isCancelled?"line-through":"none"}}>{r.guestFullName}</span>
           {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du===0?"#DC2626":"#D97706",background:du===0?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du===0?"Hoje!":du===1?"Amanhã":"Em "+du+" dias"}</span>}
         </div>
-        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3,textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1}}>📍 {r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</div>
+        <div style={{fontSize:12,color:"#A3A3A3",marginTop:3,textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1,display:"flex",alignItems:"center",gap:5}}>
+          {r.property.photoUrl?<img src={r.property.photoUrl} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover",flexShrink:0,border:"1px solid #E5E5E5"}}/>:<span style={{width:18,height:18,borderRadius:4,background:B.light,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:8,fontWeight:700,color:B.primary}}>📍</span>}
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.property.name} · {r.checkInDate} → {r.checkOutDate} · {r.numGuests} hósp.</span>
+        </div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
         <Badge status={r.status}/>
