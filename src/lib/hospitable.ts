@@ -74,11 +74,33 @@ export async function getReservation(reservationId: string) {
 
 // ─── Messaging ───
 
-export async function sendMessage(reservationId: string, body: string) {
-  return connectApi(`/reservations/${reservationId}/messages`, {
-    method: "POST",
-    body: { body },
-  });
+const CHECKIN_TEMPLATE_ID = "648ad03a-881c-4f98-8141-f2491cd50b6b";
+
+export async function sendCheckinMessage(params: {
+  hospReservationId: string;
+  channelId: string;
+  confirmationCode: string;
+  propertyName: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const checkinLink = `https://airchk.in/c/${params.confirmationCode}`;
+    await connectApi(`/reservations/${params.hospReservationId}/messages`, {
+      method: "POST",
+      body: {
+        channel_id: params.channelId,
+        template_id: CHECKIN_TEMPLATE_ID,
+        replacements: {
+          checkin_link: checkinLink,
+          property_name: params.propertyName,
+        },
+      },
+    });
+    console.log(`[hospitable] Check-in message sent for ${params.confirmationCode}`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error(`[hospitable] Failed to send check-in message:`, err.message);
+    return { ok: false, error: err.message };
+  }
 }
 
 // ─── Webhook validation ───
