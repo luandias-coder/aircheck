@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import BottomTabBar from "@/components/BottomTabBar";
+import CalendarView from "@/components/CalendarView";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)", accent:"#059669", dark:"#0F0F0F" };
@@ -40,6 +41,7 @@ export default function Dashboard(){
   const[user,setUser]=useState<User|null>(null);
   const[loading,setLoading]=useState(true);
   const[view,setView]=useState<"list"|"detail">("list");
+  const[resView,setResView]=useState<"list"|"calendar">("list");
   const[selectedId,setSelectedId]=useState<string|null>(null);
   const[showUserMenu,setShowUserMenu]=useState(false);
   const[hospToast,setHospToast]=useState<{type:"success"|"error";msg:string}|null>(null);
@@ -179,7 +181,24 @@ export default function Dashboard(){
             ))}
           </div>
 
-          {tab==="reservations"?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+          {tab==="reservations"?<>
+            {/* View toggle: Lista / Calendário */}
+            <div style={{display:"flex",gap:4,marginBottom:14}}>
+              {([["list","📋 Lista"],["calendar","📅 Calendário"]] as const).map(([v,l])=>(
+                <button key={v} onClick={()=>setResView(v)} style={{
+                  fontFamily:"Outfit",fontSize:12,fontWeight:resView===v?600:400,padding:"7px 14px",
+                  background:resView===v?B.primary:"#fff",
+                  color:resView===v?"#fff":"#737373",
+                  border:resView===v?"none":"1px solid #E5E5E5",
+                  borderRadius:8,cursor:"pointer",
+                }}>{l}</button>
+              ))}
+            </div>
+            {resView==="list"
+              ?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+              :<CalendarView reservations={reservations} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+            }
+          </>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
           :tab==="feedback"?<FeedbackTab/>
           :<SettingsTab user={user} onRefresh={fetchData}/>}
