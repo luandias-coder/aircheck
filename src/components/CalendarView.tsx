@@ -20,7 +20,6 @@ const STATUS_COLORS: Record<string, { bg:string; text:string; border:string }> =
   form_filled:    { bg:"#D1FAE5", text:"#065F46", border:"#6EE7B7" },
   sent_to_doorman:{ bg:"#DBEAFE", text:"#1E40AF", border:"#93C5FD" },
   archived:       { bg:"#F3F4F6", text:"#6B7280", border:"#D1D5DB" },
-  cancelled:      { bg:"#FEE2E2", text:"#991B1B", border:"#FCA5A5" },
 };
 const DEFAULT_COLOR = { bg:"#F3F4F6", text:"#374151", border:"#D1D5DB" };
 
@@ -78,6 +77,7 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
 
     return reservations
       .filter(r => {
+        if (r.status === "cancelled") return false;
         const ci = parseDate(r.checkInDate);
         const co = parseDate(r.checkOutDate);
         if (isNaN(ci.getTime()) || isNaN(co.getTime())) return false;
@@ -187,7 +187,6 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
           { label: "Pronta", color: STATUS_COLORS.form_filled },
           { label: "Enviada", color: STATUS_COLORS.sent_to_doorman },
           { label: "Arquivada", color: STATUS_COLORS.archived },
-          { label: "Cancelada", color: STATUS_COLORS.cancelled },
         ].map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: l.color.bg, border: `1.5px solid ${l.color.border}` }} />
@@ -241,7 +240,7 @@ export default function CalendarView({ reservations, onSelect }: { reservations:
               {/* Reservation bars (positioned absolutely) */}
               {slotData.slots.map(({ bar, slot }, bi) => {
                 const sc = STATUS_COLORS[bar.status] || DEFAULT_COLOR;
-                const isArchived = bar.status === "archived" || bar.status === "cancelled";
+                const isArchived = bar.status === "archived";
                 const colWidth = 100 / 7;
                 const left = bar.startCol * colWidth;
                 const width = (bar.endCol - bar.startCol + 1) * colWidth;
