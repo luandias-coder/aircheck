@@ -196,7 +196,7 @@ export default function Dashboard(){
             </div>
             {resView==="list"
               ?<ReservationsList active={active} archived={archived} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
-              :<CalendarView reservations={reservations} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
+              :<CalendarView reservations={reservations} properties={properties} onSelect={(id)=>{setSelectedId(id);setView("detail")}}/>
             }
           </>
           :tab==="properties"?<PropertiesTab properties={properties} onRefresh={fetchData} initialCondoCode={condoFromUrl||undefined}/>
