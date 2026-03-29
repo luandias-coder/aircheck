@@ -56,8 +56,7 @@ export default function OnboardingPage(){
   const[condoError,setCondoError]=useState("");
   const[condoSaving,setCondoSaving]=useState(false);
 
-  // Step 3 — Message
-  const[copiedMsg,setCopiedMsg]=useState(false);
+  // Step 3 — Demo
   const[copiedLink,setCopiedLink]=useState(false);
 
   useEffect(()=>{
@@ -151,17 +150,11 @@ export default function OnboardingPage(){
 
   const firstReservation=reservations.find(r=>r.status!=="archived"&&r.status!=="cancelled")||reservations[0];
   const formUrl=firstReservation?(firstReservation.confirmationCode?`https://airchk.in/c/${firstReservation.confirmationCode}`:`https://airchk.in/checkin/${firstReservation.formToken}`):"";
-  const firstName=user?.name?.split(" ")[0]||"";
 
   return(
     <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 20%, rgba(59,95,229,0.05) 0%, transparent 60%), #FAFAF9",fontFamily:"Outfit,sans-serif"}}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-      <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-        .onboarding-card{animation:fadeUp 0.5s ease-out both}
-        @keyframes confettiFall{0%{transform:translateY(-100%) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
-        .confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall 3s ease-in forwards}
-      `}</style>
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}.onboarding-card{animation:fadeUp 0.5s ease-out both}`}</style>
 
       {/* Header */}
       <div style={{maxWidth:560,margin:"0 auto",padding:"48px 24px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -175,54 +168,41 @@ export default function OnboardingPage(){
 
         {/* ═══════════════════ STEP 1: Conectar Airbnb ═══════════════════ */}
         {step===1&&<div className="onboarding-card" style={cardStyle}>
-          {/* Warm welcome */}
-          <div style={{textAlign:"center",marginBottom:28}}>
-            <div style={{fontSize:40,marginBottom:12}}>👋</div>
-            <h2 style={{fontSize:28,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8,background:`linear-gradient(135deg,${B.g1},${B.g2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
-              {firstName?`Que bom ter você aqui, ${firstName}!`:"Que bom ter você aqui!"}
-            </h2>
-            <p style={{fontSize:15,color:"#737373",lineHeight:1.7,maxWidth:420,margin:"0 auto"}}>
-              Parabéns por dar esse passo! Você está a poucos cliques de nunca mais precisar enviar dados de hóspede manualmente para a portaria.
-            </p>
-          </div>
+          <StepBadge n={1}/>
+          <h2 style={{fontSize:28,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Conecte seu Airbnb</h2>
+          <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:24}}>
+            Em poucos cliques, suas reservas do Airbnb serão importadas automaticamente para o AirCheck. Você faz isso uma vez só.
+          </p>
 
-          <div style={{borderTop:"1px solid #F0F0F0",paddingTop:24}}>
-            <StepBadge n={1}/>
-            <h3 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:6}}>Conecte seu Airbnb</h3>
-            <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>
-              Em poucos cliques, suas reservas serão importadas automaticamente. Você faz isso uma vez só.
-            </p>
-
-            {!connected?(
-              <div>
-                <button onClick={handleConnect} disabled={connecting} style={{...btnStyle(),width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:connecting?0.6:1}}>
-                  {connecting?"Redirecionando...":"🔗 Conectar meu Airbnb"}
-                </button>
-                <div style={{textAlign:"center",marginTop:14}}>
-                  <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.6}}>Gratuito · Não altera seu calendário ou preços</p>
-                </div>
-                {connectError&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,padding:"12px 16px",marginTop:12}}>
-                  <div style={{fontSize:13,color:"#DC2626",lineHeight:1.5}}>⚠️ Erro ao conectar. Tente novamente. Se o problema persistir, entre em contato: <strong>oi@aircheck.com.br</strong></div>
-                </div>}
+          {!connected?(
+            <div>
+              <button onClick={handleConnect} disabled={connecting} style={{...btnStyle(),width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:connecting?0.6:1}}>
+                {connecting?"Redirecionando...":"🔗 Conectar meu Airbnb"}
+              </button>
+              <div style={{textAlign:"center",marginTop:14}}>
+                <p style={{fontSize:12,color:"#A3A3A3",lineHeight:1.6}}>Gratuito · Não altera seu calendário ou preços</p>
               </div>
-            ):(
-              <div>
-                <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"20px",textAlign:"center",marginBottom:16}}>
-                  <div style={{fontSize:28,marginBottom:6}}>✅</div>
-                  <div style={{fontSize:16,fontWeight:700,color:B.accent,marginBottom:4}}>Airbnb conectado!</div>
-                  {syncing&&<div style={{fontSize:13,color:"#737373"}}>Importando reservas...</div>}
-                  {syncResult&&<div style={{fontSize:13,color:"#737373"}}>{syncResult.imported} reserva(s) importada(s)</div>}
-                </div>
-                {properties.length>0&&<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:10,padding:"12px 16px",marginBottom:16}}>
-                  <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Imóveis encontrados</div>
-                  {properties.map(p=><div key={p.id} style={{fontSize:14,fontWeight:500,color:"#1A1A1A",padding:"4px 0"}}>📍 {p.name}</div>)}
-                </div>}
-                <button onClick={()=>setStep(2)} disabled={syncing} style={{...btnStyle(),width:"100%",opacity:syncing?0.5:1}}>
-                  {syncing?"Aguarde...":"Configurar imóvel →"}
-                </button>
+              {connectError&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,padding:"12px 16px",marginTop:12}}>
+                <div style={{fontSize:13,color:"#DC2626",lineHeight:1.5}}>⚠️ Erro ao conectar. Tente novamente. Se o problema persistir, entre em contato: <strong>oi@aircheck.com.br</strong></div>
+              </div>}
+            </div>
+          ):(
+            <div>
+              <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"20px",textAlign:"center",marginBottom:16}}>
+                <div style={{fontSize:28,marginBottom:6}}>✅</div>
+                <div style={{fontSize:16,fontWeight:700,color:B.accent,marginBottom:4}}>Airbnb conectado!</div>
+                {syncing&&<div style={{fontSize:13,color:"#737373"}}>Importando reservas...</div>}
+                {syncResult&&<div style={{fontSize:13,color:"#737373"}}>{syncResult.imported} reserva(s) importada(s)</div>}
               </div>
-            )}
-          </div>
+              {properties.length>0&&<div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:10,padding:"12px 16px",marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Imóveis encontrados</div>
+                {properties.map(p=><div key={p.id} style={{fontSize:14,fontWeight:500,color:"#1A1A1A",padding:"4px 0"}}>📍 {p.name}</div>)}
+              </div>}
+              <button onClick={()=>setStep(2)} disabled={syncing} style={{...btnStyle(),width:"100%",opacity:syncing?0.5:1}}>
+                {syncing?"Aguarde...":"Configurar imóvel →"}
+              </button>
+            </div>
+          )}
         </div>}
 
         {/* ═══════════════════ STEP 2: Configurar primeiro imóvel ═══════════════════ */}
@@ -301,41 +281,30 @@ export default function OnboardingPage(){
           </div>}
         </div>}
 
-        {/* ═══════════════════ STEP 3: Mensagem + Formulário ═══════════════════ */}
+        {/* ═══════════════════ STEP 3: Mensagem automática ═══════════════════ */}
         {step===3&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(2)}/>
           <StepBadge n={3}/>
-          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Envie o link ao hóspede</h2>
+          <h2 style={{fontSize:24,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8}}>Mensagem automática</h2>
           <p style={{fontSize:14,color:"#737373",lineHeight:1.6,marginBottom:20}}>
-            Configure uma mensagem automática no Airbnb para que cada hóspede receba o link do formulário de check-in. Você faz isso uma única vez.
+            A cada nova reserva, o AirCheck envia automaticamente uma mensagem no chat do Airbnb com o link do formulário de check-in. Você não precisa fazer nada.
           </p>
 
-          {/* Airbnb message setup */}
-          <a href="https://www.airbnb.com.br/hosting/messages/settings/quick-replies?product=STAYS" target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"14px 20px",background:"#FF385C",color:"#fff",borderRadius:12,textDecoration:"none",fontFamily:"Outfit",fontSize:14,fontWeight:600,marginBottom:16,boxShadow:"0 2px 8px rgba(255,56,92,0.3)"}}>
-            🏠 Configurar mensagem automática no Airbnb ↗
-          </a>
-
-          {/* Message template */}
-          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Modelo de mensagem</div>
-            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-all",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px",marginBottom:12}}>
-              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{"! 😊\n\nPara agilizar seu check-in, preencha este formulário rápido com seus dados — é necessário para liberação na portaria e leva menos de 1 minuto:\n\nhttps://airchk.in/c/"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Código de confirmação</span>{"\n\nQualquer dúvida, estou à disposição. Até breve!"}
+          {/* Auto-send confirmation */}
+          <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"18px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:40,height:40,borderRadius:10,background:"#D1FAE5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>✅</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:600,color:B.accent}}>Envio automático ativado</div>
+              <div style={{fontSize:12,color:"#737373",marginTop:2}}>Cada hóspede receberá o link no chat do Airbnb assim que a reserva for confirmada.</div>
             </div>
-            <button onClick={()=>{
-              const msg=`Olá {nome do hóspede}! 😊\n\nPara agilizar seu check-in, preencha este formulário rápido com seus dados — é necessário para liberação na portaria e leva menos de 1 minuto:\n\nhttps://airchk.in/c/{código de confirmação}\n\nQualquer dúvida, estou à disposição. Até breve!`;
-              navigator.clipboard.writeText(msg);setCopiedMsg(true);setTimeout(()=>setCopiedMsg(false),2500);
-            }} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"8px 14px",background:copiedMsg?B.accent:"#fff",color:copiedMsg?"#fff":"#1A1A1A",border:`1px solid ${copiedMsg?B.accent:"#E5E5E5"}`,borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}>{copiedMsg?"Copiado! ✓":"📋 Copiar mensagem"}</button>
           </div>
 
-          {/* How to configure */}
-          <div style={{background:B.light,border:`1px solid ${B.muted}`,borderRadius:14,padding:"16px 20px",marginBottom:16}}>
-            <div style={{fontSize:13,fontWeight:600,color:B.primary,marginBottom:8}}>📱 Como configurar:</div>
-            <ol style={{margin:0,paddingLeft:20,fontSize:13,color:B.primary,lineHeight:1.8}}>
-              <li>Clique no botão acima (ou acesse pelo app: <strong>Anúncios</strong> → seu imóvel → <strong>Mensagens programadas</strong>)</li>
-              <li>Crie uma resposta rápida com gatilho <strong>&quot;Reserva confirmada&quot;</strong></li>
-              <li>Cole a mensagem acima (troque os campos em azul pelos atalhos do Airbnb)</li>
-              <li>Salve. Cada hóspede receberá o link automaticamente.</li>
-            </ol>
+          {/* Message preview */}
+          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Mensagem que o hóspede recebe</div>
+            <div style={{fontSize:13,color:"#1A1A1A",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"system-ui",background:"#fff",border:"1px solid #E5E5E5",borderRadius:10,padding:"14px 16px"}}>
+              {"Olá "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do hóspede</span>{"! Bem-vindo(a) ao "}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Nome do imóvel</span>{". Para agilizar seu check-in, preencha este formulário rápido com seus dados:\n\n"}<span style={{background:"#DBEAFE",color:"#2563EB",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:600}}>Link do formulário</span>{"\n\n— Leva só 2 minutinhos. Nos vemos em breve!"}
+            </div>
           </div>
 
           {/* Form link preview */}
@@ -344,82 +313,46 @@ export default function OnboardingPage(){
             <div style={{fontFamily:"'IBM Plex Mono'",fontSize:12,color:B.primary,marginBottom:8,wordBreak:"break-all"}}>{formUrl}</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{navigator.clipboard.writeText(formUrl);setCopiedLink(true);setTimeout(()=>setCopiedLink(false),2000)}} style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:copiedLink?B.accent:"#fff",color:copiedLink?"#fff":"#1A1A1A",border:`1px solid ${copiedLink?B.accent:"#E5E5E5"}`,borderRadius:6,cursor:"pointer"}}>{copiedLink?"Copiado!":"Copiar link"}</button>
-              <a href={firstReservation.confirmationCode?`/c/${firstReservation.confirmationCode}`:`/checkin/${firstReservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:6,textDecoration:"none"}}>Abrir formulário ↗</a>
+              <a href={firstReservation.confirmationCode?`/c/${firstReservation.confirmationCode}`:`/checkin/${firstReservation.formToken}`} target="_blank" rel="noopener noreferrer" style={{fontFamily:"Outfit",fontSize:11,fontWeight:600,padding:"6px 12px",background:"#fff",color:B.primary,border:`1px solid ${B.primary}`,borderRadius:6,textDecoration:"none"}}>Testar formulário ↗</a>
             </div>
           </div>}
+
+          <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#D97706",lineHeight:1.6,marginBottom:20}}>
+            💡 <strong>Dica:</strong> clique em "Testar formulário" acima para ver como o hóspede preenche os dados. Pode usar dados fictícios.
+          </div>
 
           <button onClick={()=>setStep(4)} style={{...btnStyle(),width:"100%"}}>Continuar →</button>
         </div>}
 
         {/* ═══════════════════ STEP 4: Pronto! ═══════════════════ */}
-        {step===4&&<div className="onboarding-card" style={{...cardStyle,position:"relative",overflow:"hidden"}}>
+        {step===4&&<div className="onboarding-card" style={cardStyle}>
           <BackBtn onClick={()=>setStep(3)}/>
+          <StepBadge n={4}/>
 
-          {/* Confetti */}
-          <div style={{position:"absolute",top:0,left:0,right:0,height:"100%",pointerEvents:"none",overflow:"hidden"}}>
-            {Array.from({length:24}).map((_,i)=>(
-              <div key={i} className="confetti-piece" style={{
-                left:`${Math.random()*100}%`,
-                top:`${-10-Math.random()*20}%`,
-                background:["#3B5FE5","#5E4FE5","#059669","#D97706","#FF385C","#7C3AED","#0EA5E9"][i%7],
-                width:Math.random()>0.5?8:6,
-                height:Math.random()>0.5?8:12,
-                borderRadius:Math.random()>0.5?"50%":"2px",
-                animationDelay:`${Math.random()*1.5}s`,
-                animationDuration:`${2.5+Math.random()*2}s`,
-              }}/>
-            ))}
-          </div>
-
-          <div style={{textAlign:"center",marginBottom:28,position:"relative"}}>
-            <div style={{fontSize:48,marginBottom:8}}>🎉</div>
-            <h2 style={{fontSize:28,fontWeight:900,letterSpacing:"-0.03em",marginBottom:8,background:`linear-gradient(135deg,${B.accent},#10B981)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
-              {firstName?`Parabéns, ${firstName}!`:"Parabéns!"}
-            </h2>
-            <p style={{fontSize:16,color:"#374151",lineHeight:1.7,fontWeight:500}}>
-              Seu check-in automatizado está no ar!
-            </p>
-            <p style={{fontSize:14,color:"#737373",lineHeight:1.7,marginTop:8,maxWidth:400,margin:"8px auto 0"}}>
-              A cada nova reserva no Airbnb, ela aparece automaticamente no seu painel. O hóspede preenche os dados pelo formulário, e a portaria recebe tudo pronto{firstProp?.condominium||condoLinked?" — direto no painel digital.":" — via WhatsApp com um clique."}
+          <div style={{background:"#ECFDF5",border:"1px solid #BBF7D0",borderRadius:14,padding:"28px",textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:36,marginBottom:10}}>🎉</div>
+            <h2 style={{fontSize:24,fontWeight:900,color:B.accent,letterSpacing:"-0.03em",marginBottom:8}}>Tudo pronto!</h2>
+            <p style={{fontSize:14,color:"#737373",lineHeight:1.7}}>
+              Seu AirCheck está configurado. A cada nova reserva no Airbnb, ela aparece automaticamente no seu painel. O hóspede preenche os dados pelo formulário, e a portaria recebe tudo pronto{firstProp?.condominium||condoLinked?" — direto no painel digital.":" — via WhatsApp com um clique."}
             </p>
           </div>
 
-          {/* Summary of what was configured */}
-          <div style={{background:"#FAFAF9",border:"1px solid #E5E5E5",borderRadius:14,padding:"20px",marginBottom:24}}>
-            <div style={{fontSize:11,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:14}}>Resumo da configuração</div>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>✅</div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Airbnb conectado</div>
-                  <div style={{fontSize:12,color:"#737373"}}>Reservas importam automaticamente</div>
-                </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏠</div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{properties.length} imóvel(is) sincronizado(s)</div>
-                  <div style={{fontSize:12,color:"#737373"}}>{otherPropsCount>0?`Configure os demais na aba Imóveis`:`${firstProp?.name||"Imóvel configurado"}`}</div>
-                </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{firstProp?.condominium||condoLinked?"🏢":"📱"}</div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Portaria via {firstProp?.condominium||condoLinked?"painel digital":"WhatsApp"}</div>
-                  <div style={{fontSize:12,color:"#737373"}}>{firstProp?.condominium?.name||condoLinked?"Dados fluem automaticamente":"Envie com um clique quando o hóspede preencher"}</div>
-                </div>
-              </div>
-              {reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled").length>0&&<div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>📋</div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled").length} reserva(s) ativa(s)</div>
-                  <div style={{fontSize:12,color:"#737373"}}>Já disponíveis no seu painel</div>
-                </div>
-              </div>}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
+              <div style={{width:28,height:28,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:B.accent}}>✓</div>
+              <span style={{fontSize:14,color:"#1A1A1A"}}>Airbnb conectado — reservas importam automaticamente</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
+              <div style={{width:28,height:28,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:B.accent}}>✓</div>
+              <span style={{fontSize:14,color:"#1A1A1A"}}>{properties.length} imóvel(is) sincronizado(s){otherPropsCount>0?` — configure os demais na aba Imóveis`:""}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
+              <div style={{width:28,height:28,borderRadius:"50%",background:"#ECFDF5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:B.accent}}>✓</div>
+              <span style={{fontSize:14,color:"#1A1A1A"}}>{reservations.filter(r=>r.status!=="archived"&&r.status!=="cancelled").length} reserva(s) ativa(s) no painel</span>
             </div>
           </div>
 
-          <button onClick={completeOnboarding} style={{...btnStyle(),width:"100%",fontSize:16,padding:"16px 32px"}}>Ver meu painel →</button>
+          <button onClick={completeOnboarding} style={{...btnStyle(),width:"100%"}}>Ir para o painel →</button>
         </div>}
 
       </div>
