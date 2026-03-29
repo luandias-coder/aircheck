@@ -1,7 +1,7 @@
 // src/app/api/webhooks/hospitable/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyWebhookSignature, formatDateBR, calculateNights } from "@/lib/hospitable";
+import { verifyWebhookSignature, formatDateBR, calculateNights, sendCheckinMessage } from "@/lib/hospitable";
 
 export async function POST(req: NextRequest) {
   let logId = "";
@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
 
       case "listing.created":
       case "listing.updated":
-      case "listing.changed":
         return await handleListingEvent(data, logId);
 
       case "reservation.created":
@@ -256,7 +255,7 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
   const guest = data.guest || {};
   const guestName = guest.full_name || guest.name ||
     [guest.first_name, guest.last_name].filter(Boolean).join(" ") || "Hóspede";
-  const guestPhone = guest.phone || null;
+  const guestPhone = guest.phone || guest.phone_numbers?.[0] || null;
   const guestPhotoUrl = guest.picture_url || guest.picture || guest.photo || null;
 
   // Dates — Connect sends ISO format or date strings
@@ -266,7 +265,7 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
   const checkOutDate = formatDateBR(departureRaw?.split("T")[0]);
   const checkInTime = data.check_in_time || data.checkin_time || "15:00";
   const checkOutTime = data.check_out_time || data.checkout_time || "12:00";
-  const numGuests = data.guests || data.number_of_guests || data.guests_count || 1;
+  const numGuests = (typeof data.guests === "object" ? data.guests?.total : data.guests) || data.number_of_guests || data.guests_count || 1;
   const nights = data.nights || calculateNights(arrivalRaw?.split("T")[0], departureRaw?.split("T")[0]);
   const confirmationCode = data.confirmation_code || data.platform_id || data.code || null;
   const conversationId = data.conversation_id || null;
@@ -357,6 +356,23 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
     },
   });
 
+  // Auto-send check-in link via Airbnb inbox
+  const channelId = data.listing?.channel?.id || data.channel?.id || data.channel_id;
+  if (hospReservationId && channelId && confirmationCode) {
+    const propertyName = data.listing?.public_name || data.listing?.name || property.name || "Imóvel";
+    const msgResult = await sendCheckinMessage({
+      hospReservationId,
+      channelId,
+      confirmationCode,
+      propertyName,
+    });
+    if (!msgResult.ok) {
+      console.warn(`[webhook/hospitable] Check-in message failed: ${msgResult.error}`);
+    }
+  } else {
+    console.warn(`[webhook/hospitable] Skipped auto-message: missing channelId=${channelId} or confirmationCode=${confirmationCode}`);
+  }
+
   await prisma.webhookLog.update({
     where: { id: logId },
     data: { status: "processed", reservationId: reservation.id },
@@ -402,7 +418,7 @@ async function handleReservationChanged(data: any, logId: string): Promise<NextR
   if (departure) updateData.checkOutDate = formatDateBR(departure.split("T")[0]);
   if (data.check_in_time || data.checkin_time) updateData.checkInTime = data.check_in_time || data.checkin_time;
   if (data.check_out_time || data.checkout_time) updateData.checkOutTime = data.check_out_time || data.checkout_time;
-  if (data.guests || data.number_of_guests) updateData.numGuests = data.guests || data.number_of_guests;
+  if (data.guests || data.number_of_guests) updateData.numGuests = (typeof data.guests === "object" ? data.guests?.total : data.guests) || data.number_of_guests;
   if (aircheckStatus !== reservation.status) updateData.status = aircheckStatus;
 
   if (reservation.status === "pending_form") {
