@@ -23,6 +23,40 @@ async function connectGet(path: string) {
   return res.json();
 }
 
+// ── Extract structured financials from various API response formats ──
+function extractFinancials(r: any): {
+  hostPayment: string | null;
+  payoutAmount: number | null;
+  payoutCurrency: string | null;
+} {
+  const financials = r.financials || {};
+
+  // Format 1: Connect webhook style — financials.host_payout + currency
+  if (financials.host_payout != null) {
+    const amount = Number(financials.host_payout) || null;
+    const currency = financials.currency || "BRL";
+    return {
+      hostPayment: `${currency} ${financials.host_payout}`,
+      payoutAmount: amount,
+      payoutCurrency: currency,
+    };
+  }
+
+  // Format 2: Public API style — financials.host.payout.formatted / amount / currency
+  if (financials.host?.payout) {
+    const payout = financials.host.payout;
+    const amount = payout.amount != null ? Number(payout.amount) : null;
+    const currency = payout.currency || "BRL";
+    return {
+      hostPayment: payout.formatted || (amount ? `${currency} ${amount}` : null),
+      payoutAmount: amount,
+      payoutCurrency: currency,
+    };
+  }
+
+  return { hostPayment: null, payoutAmount: null, payoutCurrency: null };
+}
+
 export async function POST() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -83,10 +117,15 @@ export async function POST() {
                 where: { userId, confirmationCode },
               });
               if (existing) {
-                // Link but DON'T change source
+                // Link but DON'T change source — backfill new fields
                 await prisma.reservation.update({
                   where: { id: existing.id },
-                  data: { hospitableReservationId: hospReservationId },
+                  data: {
+                    hospitableReservationId: hospReservationId,
+                    platform: existing.platform || r.platform || "airbnb",
+                    guestEmail: existing.guestEmail || r.guest?.email || null,
+                    ...(!existing.payoutAmount ? extractFinancials(r) : {}),
+                  },
                 });
                 totalSkipped++;
                 continue;
@@ -96,7 +135,11 @@ export async function POST() {
             // Guest info
             const guest = r.guest || {};
             const guestName = [guest.first_name, guest.last_name].filter(Boolean).join(" ") || "Hóspede";
-            const guestPhone = guest.phone_numbers?.[0] || null;
+            const guestPhone = guest.phone_numbers?.[0] || guest.phone || null;
+            const guestEmail = guest.email || null; // NEW
+
+            // Platform (NEW)
+            const platform = r.platform || r.listing?.platform || "airbnb";
 
             // Dates — arrival_date/departure_date are "YYYY-MM-DD"
             const checkInDate = formatDateBR(r.arrival_date);
@@ -118,8 +161,8 @@ export async function POST() {
             const numGuests = r.guests?.total || 1;
             const nights = calculateNights(r.arrival_date, r.departure_date);
 
-            // Host payout
-            const hostPayment = r.financials?.host?.payout?.formatted || null;
+            // Financials — structured (NEW)
+            const { hostPayment, payoutAmount, payoutCurrency } = extractFinancials(r);
 
             // Determine AirCheck status — archive past reservations
             let aircheckStatus = "pending_form";
@@ -136,6 +179,7 @@ export async function POST() {
                 propertyId: prop.id,
                 guestFullName: guestName,
                 guestPhone,
+                guestEmail,
                 checkInDate,
                 checkInTime,
                 checkOutDate,
@@ -144,6 +188,9 @@ export async function POST() {
                 nights,
                 confirmationCode,
                 hostPayment,
+                payoutAmount,
+                payoutCurrency,
+                platform,
                 source: "hospitable",
                 hospitableReservationId: hospReservationId,
                 status: aircheckStatus,
@@ -173,7 +220,6 @@ export async function POST() {
             totalFetched += pageItems.length;
 
             for (const r of pageItems) {
-              // Same logic as above (simplified — skip duplicates)
               const hospId = r.id;
               const code = r.platform_id;
               if (hospId) {
@@ -183,7 +229,15 @@ export async function POST() {
               if (code) {
                 const ex = await prisma.reservation.findFirst({ where: { userId, confirmationCode: code } });
                 if (ex) {
-                  await prisma.reservation.update({ where: { id: ex.id }, data: { hospitableReservationId: hospId } });
+                  await prisma.reservation.update({
+                    where: { id: ex.id },
+                    data: {
+                      hospitableReservationId: hospId,
+                      platform: ex.platform || r.platform || "airbnb",
+                      guestEmail: ex.guestEmail || r.guest?.email || null,
+                      ...(!ex.payoutAmount ? extractFinancials(r) : {}),
+                    },
+                  });
                   totalSkipped++;
                   continue;
                 }
@@ -201,16 +255,21 @@ export async function POST() {
               let aircheckStatus = "pending_form";
               if (r.departure_date && new Date(r.departure_date) < new Date(new Date().toDateString())) aircheckStatus = "archived";
 
+              const { hostPayment: hp, payoutAmount: pa, payoutCurrency: pc } = extractFinancials(r);
+
               try {
                 await prisma.reservation.create({
                   data: {
                     userId, propertyId: prop.id,
                     guestFullName: [g.first_name, g.last_name].filter(Boolean).join(" ") || "Hóspede",
-                    guestPhone: g.phone_numbers?.[0] || null,
+                    guestPhone: g.phone_numbers?.[0] || g.phone || null,
+                    guestEmail: g.email || null,
                     checkInDate, checkInTime: cit, checkOutDate, checkOutTime: cot,
                     numGuests: r.guests?.total || 1,
                     nights: calculateNights(r.arrival_date, r.departure_date),
-                    confirmationCode: r.platform_id, hostPayment: r.financials?.host?.payout?.formatted || null,
+                    confirmationCode: r.platform_id,
+                    hostPayment: hp, payoutAmount: pa, payoutCurrency: pc,
+                    platform: r.platform || "airbnb",
                     source: "hospitable", hospitableReservationId: hospId, status: aircheckStatus,
                   },
                 });
