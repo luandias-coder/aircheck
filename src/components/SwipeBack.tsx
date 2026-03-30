@@ -36,16 +36,9 @@ export default function SwipeBack({ onBack, children, threshold = 80, enabled = 
     }
     if (direction.current !== "h") return;
 
-    // Swipe left (dx negative) = back
-    if (dx < 0) {
-      const distance = Math.min(Math.abs(dx) * 0.45, 140);
-      setOffsetX(-distance);
-      setSwiping(true);
-      if (distance > 15) e.preventDefault();
-    }
-    // Swipe right from left edge (iOS-style) = also back
-    else if (dx > 0 && startX.current < 40) {
-      const distance = Math.min(dx * 0.45, 140);
+    // Swipe left → right (dx positive) = back
+    if (dx > 0) {
+      const distance = Math.min(dx * 0.45, 160);
       setOffsetX(distance);
       setSwiping(true);
       if (distance > 15) e.preventDefault();
@@ -54,12 +47,11 @@ export default function SwipeBack({ onBack, children, threshold = 80, enabled = 
 
   const handleTouchEnd = useCallback(() => {
     if (!swiping || triggered.current) return;
-    const absX = Math.abs(offsetX);
 
-    if (absX >= threshold) {
+    if (offsetX >= threshold) {
       triggered.current = true;
-      // Animate out
-      setOffsetX(offsetX < 0 ? -320 : 320);
+      // Animate out to the right
+      setOffsetX(350);
       setTimeout(() => {
         onBack();
         setOffsetX(0);
@@ -85,16 +77,16 @@ export default function SwipeBack({ onBack, children, threshold = 80, enabled = 
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-  const progress = Math.min(Math.abs(offsetX) / threshold, 1);
+  const progress = Math.min(offsetX / threshold, 1);
 
   return (
     <div ref={containerRef} style={{ position: "relative", overflow: "hidden" }}>
-      {/* Back arrow indicator */}
-      {swiping && Math.abs(offsetX) > 15 && (
+      {/* Back arrow indicator on left edge */}
+      {swiping && offsetX > 15 && (
         <div style={{
           position: "fixed",
           top: "50%",
-          [offsetX < 0 ? "right" : "left"]: 8,
+          left: 8,
           transform: "translateY(-50%)",
           zIndex: 30, pointerEvents: "none",
         }}>
@@ -115,7 +107,7 @@ export default function SwipeBack({ onBack, children, threshold = 80, enabled = 
         </div>
       )}
 
-      {/* Content */}
+      {/* Content slides right */}
       <div style={{
         transform: offsetX ? `translateX(${offsetX}px)` : "none",
         transition: swiping ? "none" : "transform 0.22s ease-out",
