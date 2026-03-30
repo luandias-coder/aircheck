@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import BottomTabBar from "@/components/BottomTabBar";
 import CalendarView from "@/components/CalendarView";
+import PullToRefresh from "@/components/PullToRefresh";
+import SwipeBack from "@/components/SwipeBack";
 
 // ─── BLUE PALETTE ───────────────────────────────────────────────
 const B = { primary:"#3B5FE5", primaryDark:"#5B7FFF", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", shadow:"rgba(59,95,229,0.25)", accent:"#059669", dark:"#0F0F0F" };
@@ -148,6 +150,7 @@ export default function Dashboard(){
         </div>
       </div>
 
+      <PullToRefresh onRefresh={fetchData}>
       <div className="dashboard-content" style={{maxWidth:700,margin:"0 auto",padding:"20px 20px 40px"}} onClick={()=>showUserMenu&&setShowUserMenu(false)}>
         {/* Hospitable toast */}
         {hospToast&&<div className="fade-up" style={{background:hospToast.type==="success"?"#ECFDF5":"#FEF2F2",border:`1px solid ${hospToast.type==="success"?"#A7F3D0":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
@@ -160,7 +163,7 @@ export default function Dashboard(){
 
         {loading&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Carregando...</div>}
 
-        {!loading&&view==="detail"&&selected&&<DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/>}
+        {!loading&&view==="detail"&&selected&&<SwipeBack onBack={()=>{setView("list");setSelectedId(null);fetchData()}}><DetailView res={selected} onBack={()=>{setView("list");setSelectedId(null);fetchData()}} onRefresh={fetchData}/></SwipeBack>}
 
         {!loading&&view==="list"&&<>
           {/* Stats */}
@@ -204,6 +207,7 @@ export default function Dashboard(){
           :<SettingsTab user={user} onRefresh={fetchData}/>}
         </>}
       </div>
+      </PullToRefresh>
 
       <BottomTabBar tab={tab} onTabChange={(t) => { setTab(t); setView("list"); }} />
     </div>
