@@ -226,16 +226,13 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
           <span style={{fontSize:15,fontWeight:600,color:isCancelled?"#DC2626":"#1A1A1A",textDecoration:isCancelled?"line-through":"none"}}>{r.guestFullName}</span>
           {!isArch&&du>=0&&du<=3&&<span style={{fontSize:11,fontWeight:600,color:du===0?"#DC2626":"#D97706",background:du===0?"#FEF2F2":"#FFFBEB",padding:"2px 8px",borderRadius:12}}>{du===0?"Hoje!":du===1?"Amanhã":"Em "+du+" dias"}</span>}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4,fontSize:12,color:"#525252",textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1}}>
-          <span style={{fontWeight:600}}>{r.checkInDate}</span>
-          <span style={{color:"#A3A3A3"}}>→</span>
-          <span style={{fontWeight:600}}>{r.checkOutDate}</span>
-          {r.nights&&<span style={{color:"#A3A3A3"}}>· {r.nights}n</span>}
-          <span style={{color:"#A3A3A3"}}>· {r.numGuests} hósp.</span>
-        </div>
-        <div style={{fontSize:11,color:"#A3A3A3",marginTop:3,display:"flex",alignItems:"center",gap:4}}>
-          {r.property.photoUrl?<img src={r.property.photoUrl} alt="" style={{width:16,height:16,borderRadius:3,objectFit:"cover",flexShrink:0,border:"1px solid #E5E5E5"}}/>:<span style={{width:16,height:16,borderRadius:3,background:B.light,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:7,fontWeight:700,color:B.primary}}>📍</span>}
+        <div style={{fontSize:12,color:"#737373",marginTop:3,display:"flex",alignItems:"center",gap:5,textDecoration:isCancelled?"line-through":"none",opacity:isCancelled?0.6:1}}>
+          {r.property.photoUrl?<img src={r.property.photoUrl} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover",flexShrink:0,border:"1px solid #E5E5E5"}}/>:<span style={{width:18,height:18,borderRadius:4,background:B.light,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:8,fontWeight:700,color:B.primary}}>📍</span>}
           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.property.name}</span>
+          <span style={{color:"#D1D5DB"}}>·</span>
+          <span style={{flexShrink:0,fontWeight:500,color:"#525252"}}>{r.checkInDate.slice(0,5)} → {r.checkOutDate.slice(0,5)}</span>
+          <span style={{color:"#D1D5DB",flexShrink:0}}>·</span>
+          <span style={{flexShrink:0,color:"#A3A3A3"}}>{r.numGuests} hósp.</span>
         </div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
