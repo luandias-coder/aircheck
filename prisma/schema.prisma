@@ -114,6 +114,7 @@ model Property {
   description           String?  // listing summary/description
   roomType              String?  // entire_home, private_room, etc.
   propertyType          String?  // apartment, house, etc.
+  internalCode          String?  // Hospitable private_name (e.g. "!RUA1138")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
