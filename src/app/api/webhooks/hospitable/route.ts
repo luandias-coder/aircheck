@@ -16,7 +16,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = JSON.parse(rawBody);
-    // Connect webhooks: action is inside body.data.action or body.action
     const event = body.data?.action || body.action || body.event || "";
     const data = body.data || body;
 
@@ -72,17 +71,18 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    // Always return 200 to prevent Hospitable retries for processing errors
     return NextResponse.json({ error: "Processing error", logId }, { status: 200 });
   }
 }
 
-// ─── Helpers ───
+// ════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════
 
 function extractCustomerId(data: any): string | null {
-  // Connect puts customer ID in various places
   const raw =
     data.channel?.customer?.id ||
+    data.listing?.channel?.customer?.id ||
     data.customer?.id ||
     data.customer_id ||
     null;
@@ -92,14 +92,12 @@ function extractCustomerId(data: any): string | null {
 async function findUserByCustomerId(customerId: string | null): Promise<string | null> {
   if (!customerId) return null;
 
-  // Direct match by hospitableAccountId
   const direct = await prisma.hospitableConnection.findFirst({
     where: { hospitableAccountId: customerId, status: "active" },
     select: { userId: true },
   });
   if (direct) return direct.userId;
 
-  // Fuzzy match (strip non-alphanumeric)
   const allConnections = await prisma.hospitableConnection.findMany({
     where: { status: "active" },
     select: { userId: true, hospitableAccountId: true },
@@ -112,6 +110,111 @@ async function findUserByCustomerId(customerId: string | null): Promise<string |
 
   return null;
 }
+
+async function findFallbackUserId(): Promise<string | null> {
+  const conn = await prisma.hospitableConnection.findFirst({
+    where: { status: "active" },
+    select: { userId: true },
+  });
+  return conn?.userId || null;
+}
+
+/** Extract listing details for Property update/create */
+function extractListingData(listing: any): Record<string, any> {
+  if (!listing) return {};
+
+  const addr = listing.address || {};
+  const details = listing.details || {};
+  const capacity = listing.capacity || {};
+  const rules = listing.house_rules;
+
+  return {
+    // Address
+    addressStreet: addr.street || null,
+    addressApt: addr.apt || null,
+    addressCity: addr.city || null,
+    addressState: addr.state || null,
+    addressZipcode: addr.zipcode || null,
+    addressLatitude: addr.latitude || null,
+    addressLongitude: addr.longitude || null,
+    // WiFi
+    wifiName: details.wifi_name || null,
+    wifiPassword: details.wifi_password || null,
+    // Capacity
+    maxCapacity: capacity.max || null,
+    bedrooms: capacity.bedrooms ?? listing.bedrooms ?? null,
+    bathrooms: capacity.bathrooms ?? listing.bathrooms ?? null,
+    // Amenities & rules
+    amenities: listing.amenities ? JSON.stringify(listing.amenities) : null,
+    houseRules: rules ? JSON.stringify(rules) : null,
+    // Description
+    description: listing.summary || listing.description || null,
+    roomType: listing.room_type || null,
+    propertyType: listing.property_type || null,
+    // Photo & IDs
+    photoUrl: listing.picture || null,
+    airbnbRoomId: listing.platform_id || null,
+    hospitableListingId: listing.id || null,
+  };
+}
+
+/** Merge listing data into property — only fill nulls, don't overwrite existing */
+function mergeListingData(existing: Record<string, any>, incoming: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(incoming)) {
+    if (value != null) {
+      // Always update these (they may change)
+      if (["name", "photoUrl", "airbnbRoomId", "hospitableListingId"].includes(key)) {
+        result[key] = value;
+      }
+      // Only fill if currently empty
+      else if (existing[key] == null) {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
+/** Extract structured financials from webhook/API payload */
+function extractFinancials(data: any): {
+  hostPayment: string | null;
+  payoutAmount: number | null;
+  payoutCurrency: string | null;
+  financialDetails: string | null;
+} {
+  const financials = data.financials || {};
+
+  let hostPayment: string | null = null;
+  let payoutAmount: number | null = null;
+  let payoutCurrency: string | null = null;
+  let financialDetails: string | null = null;
+
+  // Full financials object → store as JSON
+  if (financials.host || financials.guest) {
+    financialDetails = JSON.stringify(financials);
+  }
+
+  // Connect webhook format: financials.host_payout + currency
+  if (financials.host_payout != null) {
+    payoutAmount = Number(financials.host_payout) || null;
+    payoutCurrency = financials.currency || "BRL";
+    hostPayment = `${payoutCurrency} ${financials.host_payout}`;
+  }
+  // Full API format: financials.host.payout
+  else if (financials.host?.payout) {
+    const payout = financials.host.payout;
+    payoutAmount = payout.amount != null ? Number(payout.amount) : null;
+    payoutCurrency = payout.currency || "BRL";
+    hostPayment = payout.formatted || (payoutAmount ? `${payoutCurrency} ${payoutAmount}` : null);
+  }
+
+  return { hostPayment, payoutAmount, payoutCurrency, financialDetails };
+}
+
+// ════════════════════════════════════════════════════════
+// HANDLERS
+// ════════════════════════════════════════════════════════
 
 // ─── Channel activated ───
 
@@ -142,120 +245,45 @@ async function handleListingEvent(data: any, logId: string): Promise<NextRespons
   const customerId = extractCustomerId(data);
   const listingId = data.id;
   const listingName = data.public_name || data.name || data.nickname || "Imóvel";
-  const platformId = data.platform_id || null;
-  const photoUrl = data.picture || null;
 
-  // ── Extract address (NEW) ──
-  const addr = data.address || {};
-  const addressStreet = addr.street || null;
-  const addressApt = addr.apt || null;
-  const addressCity = addr.city || null;
-  const addressState = addr.state || null;
-  const addressZipcode = addr.zipcode || addr.zip || addr.postal_code || null;
+  // Extract all listing data
+  const listingData = extractListingData(data);
 
   // Find user
-  const userId = await findUserByCustomerId(customerId);
+  let userId = await findUserByCustomerId(customerId);
+  if (!userId) userId = await findFallbackUserId();
+
   if (!userId) {
-    // Fallback: any active connection
-    const anyConn = await prisma.hospitableConnection.findFirst({
-      where: { status: "active" },
-      select: { userId: true },
-    });
-    if (!anyConn) {
-      await prisma.webhookLog.update({
-        where: { id: logId },
-        data: { status: "error", error: "No active connection found" },
-      });
-      return NextResponse.json({ ok: false, error: "No connection", logId });
-    }
-
-    // Use fallback userId
-    const fallbackUserId = anyConn.userId;
-    const property = await prisma.property.findFirst({
-      where: { userId: fallbackUserId, hospitableListingId: listingId },
-    });
-
-    if (property) {
-      await prisma.property.update({
-        where: { id: property.id },
-        data: {
-          airbnbRoomId: platformId || property.airbnbRoomId,
-          name: listingName,
-          photoUrl: photoUrl || property.photoUrl,
-          addressStreet: addressStreet || property.addressStreet,
-          addressApt: addressApt || property.addressApt,
-          addressCity: addressCity || property.addressCity,
-          addressState: addressState || property.addressState,
-          addressZipcode: addressZipcode || property.addressZipcode,
-        },
-      });
-    } else {
-      await prisma.property.create({
-        data: {
-          userId: fallbackUserId,
-          name: listingName,
-          airbnbRoomId: platformId,
-          hospitableListingId: listingId,
-          photoUrl,
-          addressStreet,
-          addressApt,
-          addressCity,
-          addressState,
-          addressZipcode,
-        },
-      });
-    }
-
     await prisma.webhookLog.update({
       where: { id: logId },
-      data: { status: "processed" },
+      data: { status: "error", error: "No active connection found" },
     });
-    return NextResponse.json({ ok: true, action: "listing.synced", listingName, logId });
+    return NextResponse.json({ ok: false, error: "No connection", logId });
   }
 
-  // Found userId — find or create property
+  // Find existing property
   let property = listingId
     ? await prisma.property.findFirst({ where: { hospitableListingId: listingId } })
     : null;
 
-  if (!property && platformId) {
-    property = await prisma.property.findFirst({ where: { userId, airbnbRoomId: platformId } });
+  if (!property && listingData.airbnbRoomId) {
+    property = await prisma.property.findFirst({ where: { userId, airbnbRoomId: listingData.airbnbRoomId } });
   }
 
   if (!property) {
-    property = await prisma.property.findFirst({
-      where: { userId, name: listingName },
-    });
+    property = await prisma.property.findFirst({ where: { userId, name: listingName } });
   }
 
   if (property) {
-    await prisma.property.update({
-      where: { id: property.id },
-      data: {
-        hospitableListingId: listingId || property.hospitableListingId,
-        airbnbRoomId: platformId || property.airbnbRoomId,
-        name: listingName,
-        photoUrl: photoUrl || property.photoUrl,
-        addressStreet: addressStreet || property.addressStreet,
-        addressApt: addressApt || property.addressApt,
-        addressCity: addressCity || property.addressCity,
-        addressState: addressState || property.addressState,
-        addressZipcode: addressZipcode || property.addressZipcode,
-      },
-    });
+    const updates = mergeListingData(property, listingData);
+    updates.name = listingName; // Always sync name
+    await prisma.property.update({ where: { id: property.id }, data: updates });
   } else {
     await prisma.property.create({
       data: {
         userId,
         name: listingName,
-        airbnbRoomId: platformId,
-        hospitableListingId: listingId,
-        photoUrl,
-        addressStreet,
-        addressApt,
-        addressCity,
-        addressState,
-        addressZipcode,
+        ...listingData,
       },
     });
   }
@@ -272,82 +300,67 @@ async function handleListingEvent(data: any, logId: string): Promise<NextRespons
 async function handleReservationCreated(data: any, logId: string): Promise<NextResponse> {
   const hospReservationId = data.id;
   const customerId = extractCustomerId(data);
-  const listingId = data.listing_id || data.listing?.id;
+  const listing = data.listing || {};
+  const listingId = data.listing_id || listing.id;
 
-  // Guest info
+  // ── Guest info ──
   const guest = data.guest || {};
   const guestName = guest.full_name || guest.name ||
     [guest.first_name, guest.last_name].filter(Boolean).join(" ") || "Hóspede";
-  const guestPhone = guest.phone || null;
+  const guestPhone = guest.phone || guest.phone_numbers?.[0] || null;
   const guestPhotoUrl = guest.picture_url || guest.picture || guest.photo || null;
-  const guestEmail = guest.email || null; // NEW: capture guest email if available
+  const guestEmail = guest.email || null;
+  const guestLocale = guest.locale || null;
 
-  // Platform (NEW)
-  const platform = data.platform || data.listing?.platform || data.channel?.platform || "airbnb";
+  // ── Guest breakdown ──
+  const guests = data.guests || {};
+  const numGuests = guests.total || data.number_of_guests || 1;
+  const guestAdults = guests.adult_count ?? null;
+  const guestChildren = guests.child_count ?? null;
+  const guestInfants = guests.infant_count ?? null;
+  const guestPets = guests.pet_count ?? null;
 
-  // Dates — Connect sends ISO format or date strings
-  const arrivalRaw = data.check_in || data.arrival_date || data.check_in_date || data.checkin_date;
-  const departureRaw = data.check_out || data.departure_date || data.check_out_date || data.checkout_date;
+  // ── Platform & timezone ──
+  const platform = data.platform || listing.platform || listing.channel?.platform || "airbnb";
+  const timezone = data.timezone || null;
+
+  // ── Dates ──
+  const arrivalRaw = data.check_in || data.arrival_date || data.check_in_date;
+  const departureRaw = data.check_out || data.departure_date || data.check_out_date;
   const checkInDate = formatDateBR(arrivalRaw?.split("T")[0]);
   const checkOutDate = formatDateBR(departureRaw?.split("T")[0]);
-  const checkInTime = data.check_in_time || data.checkin_time || "15:00";
-  const checkOutTime = data.check_out_time || data.checkout_time || "12:00";
-  const numGuests = data.guests?.total || data.number_of_guests || data.guests || 1;
+  const checkInTime = data.check_in_time || data.checkin_time ||
+    (data.check_in_local?.match(/T(\d{2}:\d{2})/)?.[1]) || listing.check_in || "15:00";
+  const checkOutTime = data.check_out_time || data.checkout_time ||
+    (data.check_out_local?.match(/T(\d{2}:\d{2})/)?.[1]) || listing.check_out || "12:00";
   const nights = data.nights || calculateNights(arrivalRaw?.split("T")[0], departureRaw?.split("T")[0]);
   const confirmationCode = data.platform_id || data.code || data.confirmation_code || null;
   const conversationId = data.conversation_id || data.conversation?.id || null;
+  const bookedAt = data.booking_date || null;
 
-  // Financials — structured (NEW) + legacy string
-  const financials = data.financials || {};
-  let payoutAmount: number | null = null;
-  let payoutCurrency: string | null = null;
-  let hostPayment: string | null = null;
-
-  // Try Connect format: financials.host_payout + currency
-  if (financials.host_payout != null) {
-    payoutAmount = Number(financials.host_payout) || null;
-    payoutCurrency = financials.currency || "BRL";
-    hostPayment = `${payoutCurrency} ${financials.host_payout}`;
-  }
-  // Try sync format: financials.host.payout
-  else if (financials.host?.payout) {
-    const payout = financials.host.payout;
-    payoutAmount = payout.amount != null ? Number(payout.amount) : null;
-    payoutCurrency = payout.currency || "BRL";
-    hostPayment = payout.formatted || (payoutAmount ? `${payoutCurrency} ${payoutAmount}` : null);
-  }
+  // ── Financials ──
+  const { hostPayment, payoutAmount, payoutCurrency, financialDetails } = extractFinancials(data);
 
   // ── Find property ──
   let userId: string | null = null;
   let property: any = null;
 
-  // Try by hospitableListingId
   if (listingId) {
     property = await prisma.property.findFirst({
       where: { hospitableListingId: listingId },
-      select: { id: true, userId: true, name: true },
     });
   }
 
-  // Try by airbnbRoomId from listing
-  const airbnbRoomId = data.listing?.platform_id || null;
+  const airbnbRoomId = listing.platform_id || null;
   if (!property && airbnbRoomId) {
     property = await prisma.property.findFirst({
       where: { airbnbRoomId },
-      select: { id: true, userId: true, name: true },
     });
   }
 
-  // Try by customerId → user → any property
   if (!property) {
     userId = await findUserByCustomerId(customerId);
-    if (!userId) {
-      const anyConn = await prisma.hospitableConnection.findFirst({
-        where: { status: "active" },
-        select: { userId: true },
-      });
-      userId = anyConn?.userId || null;
-    }
+    if (!userId) userId = await findFallbackUserId();
 
     if (!userId) {
       await prisma.webhookLog.update({
@@ -357,23 +370,15 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
       return NextResponse.json({ ok: false, error: "No connection", logId });
     }
 
-    // Try to find by property name
-    const propertyName = data.property?.name || data.listing?.name || "Imóvel Hospitable";
+    const propertyName = listing.public_name || data.property?.name || listing.name || "Imóvel Hospitable";
     property = await prisma.property.findFirst({
       where: { userId, name: propertyName },
-      select: { id: true, userId: true, name: true },
     });
 
     if (!property) {
-      // Create new property
+      const listingData = extractListingData(listing);
       property = await prisma.property.create({
-        data: {
-          userId,
-          name: propertyName,
-          airbnbRoomId,
-          hospitableListingId: listingId,
-        },
-        select: { id: true, userId: true, name: true },
+        data: { userId, name: propertyName, ...listingData },
       });
     }
   }
@@ -386,6 +391,15 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
       data: { status: "error", error: "userId not resolved after property match" },
     });
     return NextResponse.json({ ok: false, error: "No user", logId });
+  }
+
+  // ── Update property with listing details from reservation payload ──
+  if (listing.id) {
+    const listingData = extractListingData(listing);
+    const updates = mergeListingData(property, listingData);
+    if (Object.keys(updates).length > 0) {
+      await prisma.property.update({ where: { id: property.id }, data: updates });
+    }
   }
 
   // ── Dedup by hospitableReservationId ──
@@ -408,16 +422,22 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
       where: { userId, confirmationCode },
     });
     if (existing) {
-      // Link but DON'T change source — preserve original
       await prisma.reservation.update({
         where: { id: existing.id },
         data: {
           hospitableReservationId: hospReservationId,
-          // Backfill new fields if missing
           platform: existing.platform || platform,
           guestEmail: existing.guestEmail || guestEmail,
+          guestLocale: existing.guestLocale || guestLocale,
+          bookedAt: existing.bookedAt || bookedAt,
+          timezone: existing.timezone || timezone,
           payoutAmount: existing.payoutAmount ?? payoutAmount,
           payoutCurrency: existing.payoutCurrency || payoutCurrency,
+          financialDetails: existing.financialDetails || financialDetails,
+          guestAdults: existing.guestAdults ?? guestAdults,
+          guestChildren: existing.guestChildren ?? guestChildren,
+          guestInfants: existing.guestInfants ?? guestInfants,
+          guestPets: existing.guestPets ?? guestPets,
         },
       });
       await prisma.webhookLog.update({
@@ -437,17 +457,25 @@ async function handleReservationCreated(data: any, logId: string): Promise<NextR
       guestPhone,
       guestEmail,
       guestPhotoUrl,
+      guestLocale,
       checkInDate,
       checkInTime,
       checkOutDate,
       checkOutTime,
       numGuests: typeof numGuests === "number" ? numGuests : 1,
+      guestAdults,
+      guestChildren,
+      guestInfants,
+      guestPets,
       nights,
       confirmationCode,
+      bookedAt,
       hostPayment,
       payoutAmount,
       payoutCurrency,
+      financialDetails,
       platform,
+      timezone,
       airbnbThreadId: conversationId,
       source: "hospitable",
       hospitableReservationId: hospReservationId,
@@ -492,6 +520,20 @@ async function handleReservationChanged(data: any, logId: string): Promise<NextR
     return handleReservationCreated(data, logId);
   }
 
+  // ── Update property listing details if they come in the reservation payload ──
+  const listing = data.listing || {};
+  if (listing.id) {
+    const property = await prisma.property.findUnique({ where: { id: reservation.propertyId } });
+    if (property) {
+      const listingData = extractListingData(listing);
+      const updates = mergeListingData(property, listingData);
+      if (Object.keys(updates).length > 0) {
+        await prisma.property.update({ where: { id: property.id }, data: updates });
+      }
+    }
+  }
+
+  // ── Map status ──
   const hospStatus = (data.status || "").toLowerCase();
   let aircheckStatus = reservation.status;
   if (hospStatus === "cancelled" || hospStatus === "not_accepted" || hospStatus === "denied") {
@@ -509,24 +551,31 @@ async function handleReservationChanged(data: any, logId: string): Promise<NextR
   if (departure) updateData.checkOutDate = formatDateBR(departure.split("T")[0]);
   if (data.check_in_time || data.checkin_time) updateData.checkInTime = data.check_in_time || data.checkin_time;
   if (data.check_out_time || data.checkout_time) updateData.checkOutTime = data.check_out_time || data.checkout_time;
-  if (data.guests?.total || data.number_of_guests) updateData.numGuests = data.guests?.total || data.number_of_guests;
   if (aircheckStatus !== reservation.status) updateData.status = aircheckStatus;
 
-  // Platform (NEW — backfill if missing)
-  const platform = data.platform || data.listing?.platform || data.channel?.platform;
-  if (platform && !reservation.platform) updateData.platform = platform;
+  // Guest breakdown
+  const guests = data.guests || {};
+  if (guests.total) updateData.numGuests = guests.total;
+  if (guests.adult_count != null) updateData.guestAdults = guests.adult_count;
+  if (guests.child_count != null) updateData.guestChildren = guests.child_count;
+  if (guests.infant_count != null) updateData.guestInfants = guests.infant_count;
+  if (guests.pet_count != null) updateData.guestPets = guests.pet_count;
 
-  // Financials (NEW — update if provided)
-  const financials = data.financials || {};
-  if (financials.host_payout != null) {
-    updateData.payoutAmount = Number(financials.host_payout) || null;
-    updateData.payoutCurrency = financials.currency || "BRL";
-    updateData.hostPayment = `${updateData.payoutCurrency} ${financials.host_payout}`;
-  } else if (financials.host?.payout) {
-    const payout = financials.host.payout;
-    if (payout.amount != null) updateData.payoutAmount = Number(payout.amount);
-    if (payout.currency) updateData.payoutCurrency = payout.currency;
-    if (payout.formatted) updateData.hostPayment = payout.formatted;
+  // Backfill new fields
+  const platform = data.platform || listing.platform;
+  if (platform && !reservation.platform) updateData.platform = platform;
+  if (data.timezone && !reservation.timezone) updateData.timezone = data.timezone;
+  if (data.booking_date && !reservation.bookedAt) updateData.bookedAt = data.booking_date;
+
+  // Financials
+  const { hostPayment, payoutAmount, payoutCurrency, financialDetails } = extractFinancials(data);
+  if (payoutAmount != null) {
+    updateData.payoutAmount = payoutAmount;
+    updateData.payoutCurrency = payoutCurrency;
+    updateData.hostPayment = hostPayment;
+  }
+  if (financialDetails && !reservation.financialDetails) {
+    updateData.financialDetails = financialDetails;
   }
 
   // Guest info — only update if reservation is still pending
@@ -534,10 +583,9 @@ async function handleReservationChanged(data: any, logId: string): Promise<NextR
     const guest = data.guest || {};
     const guestName = guest.full_name || guest.name || [guest.first_name, guest.last_name].filter(Boolean).join(" ");
     if (guestName) updateData.guestFullName = guestName;
-    if (guest.phone) updateData.guestPhone = guest.phone;
-    if (guest.picture_url || guest.picture) updateData.guestPhotoUrl = guest.picture_url || guest.picture;
-    // Guest email (NEW)
+    if (guest.phone || guest.phone_numbers?.[0]) updateData.guestPhone = guest.phone || guest.phone_numbers[0];
     if (guest.email && !reservation.guestEmail) updateData.guestEmail = guest.email;
+    if (guest.locale && !reservation.guestLocale) updateData.guestLocale = guest.locale;
   }
 
   await prisma.reservation.update({ where: { id: reservation.id }, data: updateData });
@@ -548,7 +596,7 @@ async function handleReservationChanged(data: any, logId: string): Promise<NextR
   return NextResponse.json({ ok: true, action: "updated", reservationId: reservation.id, logId });
 }
 
-// ─── Message created (NEW — structured storage) ───
+// ─── Message created (structured storage) ───
 
 async function handleMessageCreated(data: any, logId: string): Promise<NextResponse> {
   try {
@@ -556,13 +604,12 @@ async function handleMessageCreated(data: any, logId: string): Promise<NextRespo
     const conversationId = data.conversation_id || data.conversation?.id || null;
     const platform = data.platform || data.channel?.platform || "airbnb";
 
-    // Extract message content
     const messageBody = data.body || data.message || data.text || data.content || "";
-    const sender = data.sender || data.from || data.direction || "guest"; // guest, host, system
+    const sender = data.sender || data.from || data.direction || "guest";
     const senderName = data.sender_name || data.from_name || null;
     const sentAt = data.sent_at || data.created_at || data.timestamp || new Date().toISOString();
 
-    // Try to match to an AirCheck reservation
+    // Match to AirCheck reservation
     let reservationId: string | null = null;
     if (hospReservationId) {
       const reservation = await prisma.reservation.findUnique({
@@ -572,7 +619,6 @@ async function handleMessageCreated(data: any, logId: string): Promise<NextRespo
       reservationId = reservation?.id || null;
     }
 
-    // If no match by hospReservationId, try by conversationId (airbnbThreadId)
     if (!reservationId && conversationId) {
       const reservation = await prisma.reservation.findFirst({
         where: { airbnbThreadId: conversationId },
@@ -581,7 +627,6 @@ async function handleMessageCreated(data: any, logId: string): Promise<NextRespo
       reservationId = reservation?.id || null;
     }
 
-    // Store structured message
     if (messageBody) {
       await prisma.hospitableMessage.create({
         data: {
@@ -598,7 +643,7 @@ async function handleMessageCreated(data: any, logId: string): Promise<NextRespo
 
     await prisma.webhookLog.update({
       where: { id: logId },
-      data: { status: "processed", error: `message.created — stored${reservationId ? ` (linked to ${reservationId})` : " (unlinked)"}` },
+      data: { status: "processed", error: `message.created — stored${reservationId ? ` (linked)` : " (unlinked)"}` },
     });
     return NextResponse.json({ ok: true, action: "message.stored", reservationId, logId });
   } catch (err: any) {
@@ -607,7 +652,6 @@ async function handleMessageCreated(data: any, logId: string): Promise<NextRespo
       where: { id: logId },
       data: { status: "processed", error: `message.created — error: ${err.message}` },
     });
-    // Still return 200 — don't lose the raw payload in WebhookLog
     return NextResponse.json({ ok: true, action: "message.error", logId });
   }
 }
