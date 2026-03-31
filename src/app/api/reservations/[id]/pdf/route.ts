@@ -54,7 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const safeProperty = reservation.property.name.replace(/[^a-zA-Z0-9\u00C0-\u017F ]/g, "").replace(/\s+/g, "-");
     const filename = `checkin-${safeName}-${safeProperty}-${reservation.checkInDate.replace(/\//g, "-")}.pdf`;
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
