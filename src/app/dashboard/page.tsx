@@ -14,7 +14,7 @@ interface DoormanPhone { id:string; phone:string; name:string|null; label:string
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
 interface Property { id:string; name:string; airbnbRoomId:string|null; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; internalCode?:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; bookedAt?:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;photoUrl?:string|null;internalCode?:string|null;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
-interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}> }
+interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}>; sendCheckinPdf?:boolean }
 
 // ─── LOGO ───────────────────────────────────────────────────────
 function Logo(){return<div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -32,6 +32,79 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
+
+// ─── PDF SEND BUTTON ────────────────────────────────────────────
+function PdfSendButton({reservationId}:{reservationId:string}){
+  const[sending,setSending]=useState(false);
+  const[result,setResult]=useState<{ok:boolean;msg:string}|null>(null);
+  const send=async()=>{
+    setSending(true);setResult(null);
+    try{
+      const res=await fetch(`/api/reservations/${reservationId}/send-pdf`,{method:"POST"});
+      const data=await res.json();
+      if(res.ok)setResult({ok:true,msg:`Enviado para ${data.sentTo}`});
+      else setResult({ok:false,msg:data.error||"Erro ao enviar"});
+    }catch{setResult({ok:false,msg:"Erro de conexão"})}
+    setSending(false);
+    setTimeout(()=>setResult(null),4000);
+  };
+  return<div style={{display:"inline-flex",alignItems:"center",gap:8}}>
+    <button onClick={send} disabled={sending} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:result?.ok?"#059669":"#fff",color:result?.ok?"#fff":"#1A1A1A",border:`1px solid ${result?.ok?"#059669":"#E5E5E5"}`,borderRadius:10,cursor:"pointer",opacity:sending?0.5:1}}>{sending?"Enviando...":result?.ok?"✓ Enviado":"📧 Enviar por email"}</button>
+    {result&&!result.ok&&<span style={{fontSize:12,color:"#DC2626"}}>{result.msg}</span>}
+  </div>;
+}
+
+// ─── PDF EMAIL TOGGLE ───────────────────────────────────────────
+function PdfEmailToggle({user}:{user:User|null}){
+  const[enabled,setEnabled]=useState(user?.sendCheckinPdf||false);
+  const[saving,setSaving]=useState(false);
+  const[loaded,setLoaded]=useState(false);
+
+  useEffect(()=>{
+    fetch("/api/settings/preferences").then(r=>r.json()).then(d=>{
+      setEnabled(d.sendCheckinPdf||false);
+      setLoaded(true);
+    }).catch(()=>setLoaded(true));
+  },[]);
+
+  const toggle=async()=>{
+    const newVal=!enabled;
+    setEnabled(newVal);
+    setSaving(true);
+    await fetch("/api/settings/preferences",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({sendCheckinPdf:newVal}),
+    });
+    setSaving(false);
+  };
+
+  if(!loaded)return null;
+
+  return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Notificações de check-in</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div>
+        <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Receber PDF por email</div>
+        <div style={{fontSize:12,color:"#737373",marginTop:3}}>Quando um hóspede preencher o formulário, você receberá um PDF com todos os dados no email <strong>{user?.email}</strong>.</div>
+      </div>
+      <button onClick={toggle} disabled={saving} style={{
+        width:48,height:26,borderRadius:13,border:"none",cursor:"pointer",
+        background:enabled?"#3B5FE5":"#D1D5DB",
+        position:"relative",transition:"background 0.2s",flexShrink:0,marginLeft:16,
+        opacity:saving?0.5:1,
+      }}>
+        <div style={{
+          width:22,height:22,borderRadius:"50%",background:"#fff",
+          position:"absolute",top:2,
+          left:enabled?24:2,
+          transition:"left 0.2s",
+          boxShadow:"0 1px 3px rgba(0,0,0,0.2)",
+        }}/>
+      </button>
+    </div>
+  </div>;
+}
 
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function Dashboard(){
@@ -249,12 +322,12 @@ function ReservationsList({active,archived,onSelect}:{active:Reservation[];archi
           {r.source==="hospitable"&&<span style={{fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"#F3E8FF",color:"#7C3AED"}}>API</span>}
           {r.confirmationCode&&<span style={{fontFamily:"'IBM Plex Mono'",fontSize:11,color:"#A3A3A3"}}>{r.confirmationCode}</span>}
         </div>
-        {booked&&<span style={{fontSize:10,color:"#A3A3A3"}}>Res. {booked}</span>}
+        {booked&&<span style={{fontSize:10,color:"#D4D4D4"}}>Res. {booked}</span>}
       </div>
     </div>
   </button>};
-  if(active.length===0&&archived.length===0)return<div style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:16,padding:"48px 24px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:8,opacity:0.3}}>📋</div><div style={{fontSize:16,fontWeight:600,color:"#1A1A1A",marginBottom:4}}>Nenhuma reserva ainda</div><div style={{fontSize:13,color:"#A3A3A3",lineHeight:1.6}}>Conecte seu Airbnb nas <strong style={{color:"#1A1A1A"}}>Configurações</strong> para receber suas reservas automaticamente.</div></div>;
   return<div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {active.length===0&&<div style={{textAlign:"center",padding:48,color:"#A3A3A3",fontSize:14}}>Nenhuma reserva ativa.</div>}
     {active.map(r=><RCard key={r.id} r={r}/>)}
     {archived.length>0&&<>
       <button onClick={()=>setShowArchived(!showArchived)} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,color:"#A3A3A3",background:"none",border:"none",cursor:"pointer",padding:"12px 0 4px",display:"flex",alignItems:"center",gap:6}}>
@@ -345,6 +418,15 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <button onClick={async()=>{if(!confirm(`Adicionar mais 1 hóspede? (atual: ${r.numGuests})`))return;await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({numGuests:r.numGuests+1})});onRefresh()}} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"8px 14px",background:"none",color:B.primary,border:`1px solid ${B.muted}`,borderRadius:8,cursor:"pointer",marginTop:12}}>👤+ Adicionar hóspede</button>
     </div>}
 
+    {/* ── PDF Download & Send ── */}
+    {hasGuests&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Comprovante PDF</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <a href={`/api/reservations/${r.id}/pdf`} download style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}>📄 Baixar PDF</a>
+        <PdfSendButton reservationId={r.id}/>
+      </div>
+    </div>}
+
     {hasGuests&&(!(r.property.condominium?.reportMode==="dashboard"&&r.property.condominiumId))&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Enviar para portaria</div>
       {r.property.doormanPhones.length===0&&!(r.property.condominium?.reportMode==="whatsapp")?<div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#D97706"}}>⚠️ Configure portaria(s) na aba Imóveis</div>
@@ -408,6 +490,9 @@ function SettingsTab({user,onRefresh}:{user:User|null;onRefresh:()=>void}){
 
     {/* Hospitable Connect */}
     <HospitableConnectSection/>
+
+    {/* PDF por email toggle */}
+    <PdfEmailToggle user={user}/>
 
     {/* Password change */}
     <div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
