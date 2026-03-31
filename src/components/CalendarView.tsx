@@ -114,24 +114,6 @@ export default function CalendarView({ reservations, properties, onSelect }: {
     return list.sort((a, b) => a.name.localeCompare(b.name));
   }, [resRows, propLookup]);
 
-  // ─── Turnover detection (same-day checkout → checkin) ─────
-  const turnovers = useMemo(() => {
-    const halfStarts = new Set<string>();
-    const halfEnds = new Set<string>();
-
-    for (const r of resRows) {
-      if (r.isRealStart) {
-        const hasPred = resRows.some(o => o.id !== r.id && o.property.id === r.property.id && o.endDay === r.startDay && o.isRealEnd);
-        if (hasPred) halfStarts.add(`${r.property.id}-${r.startDay}`);
-      }
-      if (r.isRealEnd) {
-        const hasSucc = resRows.some(o => o.id !== r.id && o.property.id === r.property.id && o.startDay === r.endDay && o.isRealStart);
-        if (hasSucc) halfEnds.add(`${r.property.id}-${r.endDay}`);
-      }
-    }
-    return { halfStarts, halfEnds };
-  }, [resRows]);
-
   // ─── Build weeks ──────────────────────────────────────────
   const weeks = useMemo(() => {
     const rows: { day: number | null; date: Date | null }[][] = [];
@@ -236,8 +218,8 @@ export default function CalendarView({ reservations, properties, onSelect }: {
                     const endCol = week.findIndex(d => d.day === barEnd);
                     const isRealStartInWeek = barStart === r.startDay;
                     const isRealEndInWeek = barEnd === r.endDay;
-                    const isHalfStart = isRealStartInWeek && turnovers.halfStarts.has(`${r.property.id}-${r.startDay}`);
-                    const isHalfEnd = isRealEndInWeek && turnovers.halfEnds.has(`${r.property.id}-${r.endDay}`);
+                    const isHalfStart = isRealStartInWeek && r.isRealStart;
+                    const isHalfEnd = isRealEndInWeek && r.isRealEnd;
                     return { ...r, startCol, endCol, barStart, barEnd, isRealStartInWeek, isRealEndInWeek, isHalfStart, isHalfEnd };
                   }) : [];
 
