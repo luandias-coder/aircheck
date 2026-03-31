@@ -95,12 +95,25 @@ model Property {
   whatsappEnabled       Boolean  @default(true) // DEPRECATED — usar Condominium.reportMode
   hospitablePropertyId  String?  // Hospitable Connect: property ID
   hospitableListingId   String?  // Hospitable Connect: listing ID
-  // ─── Address fields (from Hospitable listing webhook) ───
+  // ─── Address (from listing webhook) ───
   addressStreet         String?
   addressApt            String?
   addressCity           String?
   addressState          String?
   addressZipcode        String?
+  addressLatitude       Float?
+  addressLongitude      Float?
+  // ─── Listing details (from listing/reservation webhook) ───
+  wifiName              String?  // details.wifi_name
+  wifiPassword          String?  // details.wifi_password
+  maxCapacity           Int?     // capacity.max
+  bedrooms              Int?     // capacity.bedrooms
+  bathrooms             Int?     // capacity.bathrooms
+  amenities             String?  // JSON array: ["KITCHEN","POOL",...]
+  houseRules            String?  // JSON: {"pets_allowed":true,...}
+  description           String?  // listing summary/description
+  roomType              String?  // entire_home, private_room, etc.
+  propertyType          String?  // apartment, house, etc.
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -136,19 +149,27 @@ model Reservation {
   propertyId              String
   guestFullName           String
   guestPhone              String?
-  guestEmail              String?   // email do hóspede (se disponível via Hospitable)
+  guestEmail              String?   // email do hóspede (se disponível via API)
   guestPhotoUrl           String?
+  guestLocale             String?   // idioma do hóspede: "pt", "en", "es"
   checkInDate             String
   checkInTime             String    @default("15:00")
   checkOutDate            String
   checkOutTime            String    @default("12:00")
   numGuests               Int       @default(1)
+  guestAdults             Int?      // guests.adult_count
+  guestChildren           Int?      // guests.child_count
+  guestInfants            Int?      // guests.infant_count
+  guestPets               Int?      // guests.pet_count
   nights                  Int?
   confirmationCode        String?
-  hostPayment             String?   // legacy string format "BRL 279.96"
-  payoutAmount            Float?    // valor numérico do payout do host
+  bookedAt                String?   // data que o hóspede reservou (YYYY-MM-DD)
+  hostPayment             String?   // legacy string format "R$350.86"
+  payoutAmount            Float?    // valor numérico em centavos (35086 = R$350.86)
   payoutCurrency          String?   // moeda (BRL, USD, etc.)
+  financialDetails        String?   // JSON completo: host fees, guest fees, cleaning, service, etc.
   platform                String    @default("airbnb") // airbnb, vrbo, booking, etc.
+  timezone                String?   // ex: "America/Sao_Paulo"
   airbnbThreadId          String?
   airbnbThreadUrl         String?
   formToken               String    @unique @default(cuid())
