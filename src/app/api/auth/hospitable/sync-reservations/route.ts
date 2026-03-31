@@ -103,6 +103,7 @@ async function backfillPropertyFromListing(propertyId: string, listing: any) {
   if (!property.description && (listing.summary || listing.description)) updates.description = listing.summary || listing.description;
   if (!property.roomType && listing.room_type) updates.roomType = listing.room_type;
   if (!property.propertyType && listing.property_type) updates.propertyType = listing.property_type;
+  if (!property.internalCode && listing.private_name) updates.internalCode = listing.private_name;
 
   if (Object.keys(updates).length > 0) {
     await prisma.property.update({ where: { id: propertyId }, data: updates });
