@@ -155,6 +155,7 @@ function extractListingData(listing: any): Record<string, any> {
     photoUrl: listing.picture || null,
     airbnbRoomId: listing.platform_id || null,
     hospitableListingId: listing.id || null,
+    internalCode: listing.private_name || null,
   };
 }
 
