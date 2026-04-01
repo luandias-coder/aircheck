@@ -1,3 +1,4 @@
+// src/app/api/checkin/[token]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateCheckinPdf } from "@/lib/generate-checkin-pdf";
@@ -105,9 +106,9 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       },
     });
 
-    // ─── AUTO-SEND PDF EMAIL ────────────────────────────────
+    // ─── AUTO-SEND PDF (immediate mode) ─────────────────
     // Fire-and-forget: don't block form submission response
-    sendPdfIfEnabled(r.id, r.userId).catch((err) => {
+    sendPdfIfImmediate(r.id, r.userId).catch((err) => {
       console.error("[checkin] Auto-send PDF failed:", err);
     });
 
@@ -118,17 +119,16 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   }
 }
 
-// ─── Helper: check if host wants PDF and send it ──────────
-async function sendPdfIfEnabled(reservationId: string, userId: string) {
+// ─── Helper: send PDF if host has "immediate" mode ────────
+async function sendPdfIfImmediate(reservationId: string, userId: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { sendCheckinPdf: true, email: true },
+      select: { checkinPdfMode: true, email: true },
     });
 
-    if (!user?.sendCheckinPdf) return; // Host doesn't want PDF emails
+    if (!user || user.checkinPdfMode !== "immediate") return;
 
-    // Fetch full reservation data for PDF generation
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
@@ -143,10 +143,8 @@ async function sendPdfIfEnabled(reservationId: string, userId: string) {
 
     if (!reservation || reservation.guests.length === 0) return;
 
-    // Generate PDF
     const pdfBuffer = await generateCheckinPdf(reservation);
 
-    // Send via SendGrid
     const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
     if (!SENDGRID_API_KEY) {
       console.warn("[checkin] SENDGRID_API_KEY not set, skipping PDF email");
@@ -155,7 +153,7 @@ async function sendPdfIfEnabled(reservationId: string, userId: string) {
 
     const guestName = reservation.guestFullName;
     const firstName = guestName.split(" ")[0];
-    const safeName = guestName.replace(/[^a-zA-Z0-9\u00C0-\u017F ]/g, "").replace(/\s+/g, "-");
+    const safeName = guestName.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-");
     const filename = `checkin-${safeName}-${reservation.checkInDate.replace(/\//g, "-")}.pdf`;
 
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -188,13 +186,11 @@ async function sendPdfIfEnabled(reservationId: string, userId: string) {
       console.error(`[checkin] SendGrid error ${res.status}:`, body);
     }
   } catch (err) {
-    console.error("[checkin] sendPdfIfEnabled error:", err);
+    console.error("[checkin] sendPdfIfImmediate error:", err);
   }
 }
 
-// ─── Email template for auto-send PDF ─────────────────────
 function buildPdfEmailHtml(guestName: string, propertyName: string, checkInDate: string): string {
-  const firstName = guestName.split(" ")[0];
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
@@ -215,11 +211,11 @@ function buildPdfEmailHtml(guestName: string, propertyName: string, checkInDate:
     <div class="logo"><div class="logo-text">Air<span>Check</span></div></div>
     <h1>Dados de check-in recebidos ✓</h1>
     <p>O hóspede <strong style="color:#1A1A1A">${guestName}</strong> preencheu o formulário de check-in para <strong style="color:#1A1A1A">${propertyName}</strong> (${checkInDate}).</p>
-    <p style="font-size:13px;color:#737373">📎 O comprovante em PDF está anexo a este email. Você pode encaminhar diretamente para a portaria se necessário.</p>
+    <p style="font-size:13px;color:#737373">📎 O comprovante em PDF está anexo a este email.</p>
     <div class="divider"></div>
     <p style="text-align:center;margin-bottom:0"><a href="https://aircheck.com.br/dashboard" class="btn">Ver no painel →</a></p>
   </div>
-  <div class="footer">AirCheck — Check-in automatizado para anfitriões<br><a href="https://aircheck.com.br" style="color:#3B5FE5;text-decoration:none">aircheck.com.br</a></div>
+  <div class="footer">AirCheck — aircheck.com.br</div>
 </div>
 </body></html>`;
 }
