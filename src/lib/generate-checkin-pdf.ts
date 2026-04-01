@@ -1,9 +1,9 @@
 // src/lib/generate-checkin-pdf.ts
-// Professional branded PDF with Roboto font (Portuguese accents), logo, property photo
+// Professional branded PDF with Roboto font (Portuguese accents), real logo, property photo
 // Dependencies: jspdf, ./pdf-fonts
 
 import { jsPDF } from "jspdf";
-import { ROBOTO_REGULAR, ROBOTO_BOLD, AIRCHECK_LOGO } from "./pdf-fonts";
+import { ROBOTO_REGULAR, ROBOTO_BOLD, AIRCHECK_LOGO_PNG } from "./pdf-fonts";
 
 interface PdfGuest {
   fullName: string;
@@ -78,7 +78,6 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
       if (res.ok) {
         const buf = Buffer.from(await res.arrayBuffer());
         const contentType = res.headers.get("content-type") || "image/jpeg";
-        const ext = contentType.includes("png") ? "PNG" : "JPEG";
         propertyImageData = `data:${contentType};base64,${buf.toString("base64")}`;
       }
     } catch (e) {
@@ -87,15 +86,13 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   }
 
   // ─── HEADER ────────────────────────────────────────────
-  // Full logo image (icon + text)
-  const logoDataUrl = `data:image/png;base64,${AIRCHECK_LOGO}`;
-  // Original image is wide (icon + text). Render at height ~9mm
+  // Real AirCheck logo (1467×440 → ratio 3.33:1)
   const logoH = 9;
-  const logoW = logoH * 4.2; // approximate aspect ratio of the full logo
+  const logoW = logoH * 3.33;
   try {
-    doc.addImage(logoDataUrl, "PNG", margin, y - 1, logoW, logoH);
+    doc.addImage(AIRCHECK_LOGO_PNG, "PNG", margin, y - 2, logoW, logoH);
   } catch (e) {
-    // Fallback: text-only logo
+    // Fallback: text logo if image fails
     doc.setFont("Roboto", "bold");
     doc.setFontSize(18);
     doc.setTextColor(...DARK);
@@ -105,19 +102,15 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
     doc.text("Check", margin + airW, y + 4);
   }
 
-  // Tagline (below logo)
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...LIGHT_GRAY);
-  doc.text("Check-in automatizado para anfitriões", margin, y + 11);
-
-  // Date generated (right-aligned, vertically centered with logo)
+  // Date generated (right aligned)
   const now = new Date();
   const dateStr = `Gerado em ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} às ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
-  doc.text(dateStr, pageWidth - margin, y + 3, { align: "right" });
+  doc.setTextColor(...LIGHT_GRAY);
+  doc.text(dateStr, pageWidth - margin, y + 2, { align: "right" });
 
-  y += 17;
+  y += 14;
 
   // Separator
   doc.setDrawColor(...BORDER);
@@ -144,7 +137,6 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   if (hasPhoto && propertyImageData) {
     try {
       doc.addImage(propertyImageData, "JPEG", margin, y, photoSize, photoSize);
-      // Rounded border around photo
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
       doc.roundedRect(margin, y, photoSize, photoSize, 2, 2, "S");
@@ -193,7 +185,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
     doc.setFont("Roboto", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(...BLUE);
-    doc.text(`🏢  ${reservation.property.condominium.name}`, textX, infoY);
+    doc.text(`Condomínio: ${reservation.property.condominium.name}`, textX, infoY);
     infoY += 4;
   }
 
@@ -203,7 +195,8 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   y = drawSectionHeader(doc, "Reserva", margin, y);
 
   // Info grid with background
-  const gridH = reservation.confirmationCode || reservation.guestPhone ? 32 : 22;
+  const hasExtra = !!(reservation.confirmationCode || reservation.guestPhone);
+  const gridH = hasExtra ? 32 : 22;
   doc.setFillColor(...BLUE_LIGHT);
   doc.roundedRect(margin, y, contentWidth, gridH, 2, 2, "F");
 
@@ -218,7 +211,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   drawGridField(doc, col3, gridY, "Hóspedes", String(reservation.numGuests));
   drawGridField(doc, col4, gridY, "Noites", reservation.nights ? String(reservation.nights) : "—");
 
-  if (reservation.confirmationCode || reservation.guestPhone) {
+  if (hasExtra) {
     const gridY2 = gridY + 13;
     if (reservation.confirmationCode) drawGridField(doc, col1, gridY2, "Código", reservation.confirmationCode);
     if (reservation.guestPhone) drawGridField(doc, col2, gridY2, "Contato", reservation.guestPhone);
@@ -234,7 +227,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
     doc.setFontSize(9);
     doc.setTextColor(...GRAY);
     const vehicle = [reservation.carModel, reservation.carPlate].filter(Boolean).join("  ·  ");
-    doc.text(`🚗  ${toTitleCase(vehicle)}`, margin + 5, y + 6.5);
+    doc.text(`Veículo: ${toTitleCase(vehicle)}`, margin + 5, y + 6.5);
     y += 13;
   }
 
@@ -280,7 +273,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
       doc.setFont("Roboto", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...BLUE);
-      doc.text("🌍 Estrangeiro", cx + 7 + nameW + 2, cy);
+      doc.text("Estrangeiro", cx + 7 + nameW + 3, cy);
     }
 
     // Document info
