@@ -68,7 +68,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   const pageWidth = doc.internal.pageSize.getWidth(); // 210
   const margin = 18;
   const contentWidth = pageWidth - margin * 2;
-  let y = 16;
+  let y = 18;
 
   // ─── Fetch property photo ──────────────────────────────
   let propertyImageData: string | null = null;
@@ -86,13 +86,13 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   }
 
   // ─── HEADER ────────────────────────────────────────────
-  // Real AirCheck logo (1467×440 → ratio 3.33:1)
-  const logoH = 9;
+  // AirCheck logo (white bg, 1467×440 → ratio 3.33:1)
+  const logoH = 8;
   const logoW = logoH * 3.33;
   try {
-    doc.addImage(AIRCHECK_LOGO_PNG, "PNG", margin, y - 2, logoW, logoH);
+    doc.addImage(AIRCHECK_LOGO_PNG, "PNG", margin, y - 1, logoW, logoH);
   } catch (e) {
-    // Fallback: text logo if image fails
+    // Fallback: text logo
     doc.setFont("Roboto", "bold");
     doc.setFontSize(18);
     doc.setTextColor(...DARK);
@@ -108,7 +108,7 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...LIGHT_GRAY);
-  doc.text(dateStr, pageWidth - margin, y + 2, { align: "right" });
+  doc.text(dateStr, pageWidth - margin, y + 3, { align: "right" });
 
   y += 14;
 
@@ -194,7 +194,6 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   // ─── RESERVATION INFO ──────────────────────────────────
   y = drawSectionHeader(doc, "Reserva", margin, y);
 
-  // Info grid with background
   const hasExtra = !!(reservation.confirmationCode || reservation.guestPhone);
   const gridH = hasExtra ? 32 : 22;
   doc.setFillColor(...BLUE_LIGHT);
@@ -226,8 +225,10 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
     doc.setFont("Roboto", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...GRAY);
-    const vehicle = [reservation.carModel, reservation.carPlate].filter(Boolean).join("  ·  ");
-    doc.text(`Veículo: ${toTitleCase(vehicle)}`, margin + 5, y + 6.5);
+    const model = reservation.carModel ? toTitleCase(reservation.carModel) : "";
+    const plate = reservation.carPlate ? reservation.carPlate.toUpperCase() : "";
+    const vehicle = [model, plate].filter(Boolean).join("  ·  ");
+    doc.text(`Veículo: ${vehicle}`, margin + 5, y + 6.5);
     y += 13;
   }
 
@@ -354,9 +355,17 @@ function calculateGuestCardHeight(g: PdfGuest): number {
 }
 
 function buildAddress(r: PdfReservation): string | null {
-  if (r.property.condominium?.address) return r.property.condominium.address;
+  if (r.property.condominium?.address) return cleanAddress(r.property.condominium.address);
   const parts = [r.property.addressStreet, r.property.addressCity, r.property.addressState].filter(Boolean);
-  return parts.length > 0 ? parts.join(", ") : null;
+  return parts.length > 0 ? cleanAddress(parts.join(", ")) : null;
+}
+
+// Remove English prefixes from Hospitable address data
+function cleanAddress(addr: string): string {
+  return addr
+    .replace(/State of /gi, "")
+    .replace(/City of /gi, "")
+    .replace(/Province of /gi, "");
 }
 
 function toTitleCase(str: string): string {
