@@ -102,9 +102,9 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
     doc.text("Check", margin + airW, y + 4);
   }
 
-  // Date generated (right aligned)
-  const now = new Date();
-  const dateStr = `Gerado em ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} às ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // Date generated (right aligned) — always BRT (UTC-3)
+  const now = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const dateStr = `Gerado em ${pad(now.getUTCDate())}/${pad(now.getUTCMonth() + 1)}/${now.getUTCFullYear()} às ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...LIGHT_GRAY);
