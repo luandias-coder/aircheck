@@ -14,7 +14,7 @@ model User {
   name                String?
   phone               String?
   onboardingCompleted Boolean   @default(false)
-  sendCheckinPdf      Boolean   @default(false)
+  checkinPdfMode      String    @default("off") // "off" | "immediate" | "morning"
   resetToken          String?   @unique
   resetTokenExpiry    DateTime?
   createdAt           DateTime  @default(now())
@@ -151,35 +151,35 @@ model Reservation {
   propertyId              String
   guestFullName           String
   guestPhone              String?
-  guestEmail              String?   // email do hóspede (se disponível via API)
+  guestEmail              String?
   guestPhotoUrl           String?
-  guestLocale             String?   // idioma do hóspede: "pt", "en", "es"
+  guestLocale             String?
   checkInDate             String
   checkInTime             String    @default("15:00")
   checkOutDate            String
   checkOutTime            String    @default("12:00")
   numGuests               Int       @default(1)
-  guestAdults             Int?      // guests.adult_count
-  guestChildren           Int?      // guests.child_count
-  guestInfants            Int?      // guests.infant_count
-  guestPets               Int?      // guests.pet_count
+  guestAdults             Int?
+  guestChildren           Int?
+  guestInfants            Int?
+  guestPets               Int?
   nights                  Int?
   confirmationCode        String?
-  bookedAt                String?   // data que o hóspede reservou (YYYY-MM-DD)
-  hostPayment             String?   // legacy string format "R$350.86"
-  payoutAmount            Float?    // valor numérico em centavos (35086 = R$350.86)
-  payoutCurrency          String?   // moeda (BRL, USD, etc.)
-  financialDetails        String?   // JSON completo: host fees, guest fees, cleaning, service, etc.
-  platform                String    @default("airbnb") // airbnb, vrbo, booking, etc.
-  timezone                String?   // ex: "America/Sao_Paulo"
+  bookedAt                String?
+  hostPayment             String?
+  payoutAmount            Float?
+  payoutCurrency          String?
+  financialDetails        String?
+  platform                String    @default("airbnb")
+  timezone                String?
   airbnbThreadId          String?
   airbnbThreadUrl         String?
   formToken               String    @unique @default(cuid())
   status                  String    @default("pending_form")
   carPlate                String?
   carModel                String?
-  source                  String    @default("email") // email, hospitable, manual
-  hospitableReservationId String?   @unique           // Hospitable Connect: reservation ID
+  source                  String    @default("email")
+  hospitableReservationId String?   @unique
   sentToDoormanAt         DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -261,8 +261,8 @@ model HospitableConnection {
   refreshToken          String
   expiresAt             DateTime?
   hospitableAccountId   String?
-  scopes                String?   // comma-separated: "reservations:read,properties:read"
-  status                String    @default("active") // active, revoked, expired
+  scopes                String?
+  status                String    @default("active")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -273,9 +273,9 @@ model HospitableConnection {
 
 model HospitableMessage {
   id                      String   @id @default(cuid())
-  reservationId           String?  // link to AirCheck reservation (if matched)
-  hospitableReservationId String?  // Hospitable's reservation ID (for matching later)
-  sender                  String   @default("guest") // guest, host, system, airbnb
+  reservationId           String?
+  hospitableReservationId String?
+  sender                  String   @default("guest")
   senderName              String?
   body                    String
   sentAt                  DateTime @default(now())
@@ -291,11 +291,11 @@ model HospitableMessage {
 
 model WebhookLog {
   id            String   @id @default(cuid())
-  source        String   @default("hospitable") // hospitable, stripe, etc.
-  action        String   // reservation.created, reservation.changed, etc.
-  payload       String?  // raw JSON payload
+  source        String   @default("hospitable")
+  action        String
+  payload       String?
   reservationId String?
-  status        String   @default("received") // received, processed, error, duplicate
+  status        String   @default("received")
   error         String?
   createdAt     DateTime @default(now())
 
