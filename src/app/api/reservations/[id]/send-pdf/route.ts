@@ -5,73 +5,36 @@ import { getCurrentUserId } from "@/lib/auth";
 import { generateCheckinPdf } from "@/lib/generate-checkin-pdf";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
-const FROM_EMAIL = "oi@aircheck.com.br";
-const FROM_NAME = "AirCheck";
 
-// ─── Send PDF email via SendGrid with attachment ──────────
 async function sendPdfEmail({
-  to,
-  guestName,
-  propertyName,
-  checkInDate,
-  pdfBuffer,
+  to, guestName, propertyName, checkInDate, pdfBuffer,
 }: {
-  to: string;
-  guestName: string;
-  propertyName: string;
-  checkInDate: string;
-  pdfBuffer: Buffer;
+  to: string; guestName: string; propertyName: string; checkInDate: string; pdfBuffer: Buffer;
 }): Promise<boolean> {
-  if (!SENDGRID_API_KEY) {
-    console.warn("[send-pdf] SENDGRID_API_KEY not set, skipping");
-    return false;
-  }
+  if (!SENDGRID_API_KEY) { console.warn("[send-pdf] SENDGRID_API_KEY not set"); return false; }
 
   const firstName = guestName.split(" ")[0];
   const safeName = guestName.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-");
   const filename = `checkin-${safeName}-${checkInDate.replace(/\//g, "-")}.pdf`;
 
-  const subject = `Check-in de ${firstName} — ${propertyName} (${checkInDate})`;
-  const htmlContent = buildEmailHtml(guestName, propertyName, checkInDate);
-
   try {
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${SENDGRID_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${SENDGRID_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: FROM_EMAIL, name: FROM_NAME },
-        subject,
-        content: [{ type: "text/html", value: htmlContent }],
-        attachments: [
-          {
-            content: pdfBuffer.toString("base64"),
-            filename,
-            type: "application/pdf",
-            disposition: "attachment",
-          },
-        ],
+        from: { email: "oi@aircheck.com.br", name: "AirCheck" },
+        subject: `Check-in de ${firstName} — ${propertyName} (${checkInDate})`,
+        content: [{ type: "text/html", value: buildEmailHtml(guestName, propertyName, checkInDate) }],
+        attachments: [{ content: pdfBuffer.toString("base64"), filename, type: "application/pdf", disposition: "attachment" }],
       }),
     });
-
-    if (res.status >= 200 && res.status < 300) {
-      console.log(`[send-pdf] Sent PDF to ${to} for reservation ${guestName}`);
-      return true;
-    }
-
-    const body = await res.text();
-    console.error(`[send-pdf] SendGrid error ${res.status}:`, body);
+    if (res.status >= 200 && res.status < 300) { console.log(`[send-pdf] Sent to ${to}`); return true; }
+    console.error(`[send-pdf] SendGrid ${res.status}:`, await res.text());
     return false;
-  } catch (err) {
-    console.error("[send-pdf] Failed:", err);
-    return false;
-  }
+  } catch (err) { console.error("[send-pdf] Failed:", err); return false; }
 }
 
-// ─── Email HTML template ──────────────────────────────────
 function buildEmailHtml(guestName: string, propertyName: string, checkInDate: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -93,16 +56,15 @@ function buildEmailHtml(guestName: string, propertyName: string, checkInDate: st
     <div class="logo"><div class="logo-text">Air<span>Check</span></div></div>
     <h1>Dados de check-in recebidos ✓</h1>
     <p>O hóspede <strong style="color:#1A1A1A">${guestName}</strong> preencheu o formulário de check-in para <strong style="color:#1A1A1A">${propertyName}</strong> (${checkInDate}).</p>
-    <p style="font-size:13px;color:#737373">📎 O comprovante em PDF está anexo a este email. Você pode encaminhar diretamente para a portaria se necessário.</p>
+    <p style="font-size:13px;color:#737373">📎 O comprovante em PDF está anexo a este email.</p>
     <div class="divider"></div>
     <p style="text-align:center;margin-bottom:0"><a href="https://aircheck.com.br/dashboard" class="btn">Ver no painel →</a></p>
   </div>
-  <div class="footer">AirCheck — Check-in automatizado para anfitriões<br><a href="https://aircheck.com.br" style="color:#3B5FE5;text-decoration:none">aircheck.com.br</a></div>
+  <div class="footer">AirCheck — aircheck.com.br</div>
 </div>
 </body></html>`;
 }
 
-// ─── POST handler ─────────────────────────────────────────
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const userId = await getCurrentUserId();
@@ -111,28 +73,16 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const reservation = await prisma.reservation.findFirst({
       where: { id: params.id, userId },
       include: {
-        property: {
-          include: {
-            condominium: { select: { name: true, address: true } },
-          },
-        },
+        property: { include: { condominium: { select: { name: true, address: true } } } },
         guests: true,
-        user: { select: { email: true, name: true, sendCheckinPdf: true } },
+        user: { select: { email: true, name: true } },
       },
     });
 
-    if (!reservation) {
-      return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
-    }
+    if (!reservation) return NextResponse.json({ error: "Reserva não encontrada" }, { status: 404 });
+    if (reservation.guests.length === 0) return NextResponse.json({ error: "Formulário ainda não foi preenchido" }, { status: 400 });
 
-    if (reservation.guests.length === 0) {
-      return NextResponse.json({ error: "Formulário ainda não foi preenchido" }, { status: 400 });
-    }
-
-    // Generate PDF
     const pdfBuffer = await generateCheckinPdf(reservation);
-
-    // Send email
     const sent = await sendPdfEmail({
       to: reservation.user.email,
       guestName: reservation.guestFullName,
@@ -141,10 +91,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       pdfBuffer,
     });
 
-    if (!sent) {
-      return NextResponse.json({ error: "Erro ao enviar email" }, { status: 500 });
-    }
-
+    if (!sent) return NextResponse.json({ error: "Erro ao enviar email" }, { status: 500 });
     return NextResponse.json({ success: true, sentTo: reservation.user.email });
   } catch (e) {
     console.error("[send-pdf] Error:", e);
