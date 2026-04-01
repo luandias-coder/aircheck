@@ -3,7 +3,7 @@
 // Dependencies: jspdf, ./pdf-fonts
 
 import { jsPDF } from "jspdf";
-import { ROBOTO_REGULAR, ROBOTO_BOLD } from "./pdf-fonts";
+import { ROBOTO_REGULAR, ROBOTO_BOLD, AIRCHECK_LOGO } from "./pdf-fonts";
 
 interface PdfGuest {
   fullName: string;
@@ -87,31 +87,37 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
   }
 
   // ─── HEADER ────────────────────────────────────────────
-  // Logo icon (blue rounded rect with house + checkmark)
-  drawLogoIcon(doc, margin, y - 2, 10);
+  // Full logo image (icon + text)
+  const logoDataUrl = `data:image/png;base64,${AIRCHECK_LOGO}`;
+  // Original image is wide (icon + text). Render at height ~9mm
+  const logoH = 9;
+  const logoW = logoH * 4.2; // approximate aspect ratio of the full logo
+  try {
+    doc.addImage(logoDataUrl, "PNG", margin, y - 1, logoW, logoH);
+  } catch (e) {
+    // Fallback: text-only logo
+    doc.setFont("Roboto", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(...DARK);
+    doc.text("Air", margin, y + 4);
+    const airW = doc.getTextWidth("Air");
+    doc.setTextColor(...BLUE);
+    doc.text("Check", margin + airW, y + 4);
+  }
 
-  // "AirCheck" text
-  doc.setFont("Roboto", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(...DARK);
-  doc.text("Air", margin + 13, y + 4);
-  const airW = doc.getTextWidth("Air");
-  doc.setTextColor(...BLUE);
-  doc.text("Check", margin + 13 + airW, y + 4);
-
-  // Tagline
+  // Tagline (below logo)
   doc.setFont("Roboto", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...LIGHT_GRAY);
-  doc.text("Check-in automatizado para anfitriões", margin + 13, y + 8.5);
+  doc.text("Check-in automatizado para anfitriões", margin, y + 11);
 
-  // Date generated (right)
+  // Date generated (right-aligned, vertically centered with logo)
   const now = new Date();
   const dateStr = `Gerado em ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} às ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   doc.setFontSize(7);
-  doc.text(dateStr, pageWidth - margin, y + 2, { align: "right" });
+  doc.text(dateStr, pageWidth - margin, y + 3, { align: "right" });
 
-  y += 16;
+  y += 17;
 
   // Separator
   doc.setDrawColor(...BORDER);
@@ -324,38 +330,6 @@ export async function generateCheckinPdf(reservation: PdfReservation): Promise<B
 }
 
 // ─── DRAWING HELPERS ─────────────────────────────────────
-
-function drawLogoIcon(doc: jsPDF, x: number, y: number, size: number) {
-  // Blue rounded rectangle
-  doc.setFillColor(...BLUE);
-  doc.roundedRect(x, y, size, size, 2, 2, "F");
-
-  // House roof (triangle)
-  const cx = x + size / 2;
-  const roofTop = y + 1.8;
-  const roofBottom = y + 4.5;
-  const roofHalf = size * 0.38;
-  doc.setDrawColor(...WHITE);
-  doc.setLineWidth(0.6);
-  doc.line(cx, roofTop, cx - roofHalf, roofBottom);
-  doc.line(cx, roofTop, cx + roofHalf, roofBottom);
-
-  // House body
-  const bodyL = cx - roofHalf + 0.8;
-  const bodyR = cx + roofHalf - 0.8;
-  const bodyTop = roofBottom - 0.3;
-  const bodyBottom = y + size - 1.8;
-  doc.line(bodyL, bodyTop, bodyL, bodyBottom);
-  doc.line(bodyR, bodyTop, bodyR, bodyBottom);
-  doc.line(bodyL, bodyBottom, bodyR, bodyBottom);
-
-  // Checkmark
-  const chkX = cx - 1.2;
-  const chkY = y + 5.8;
-  doc.setLineWidth(0.6);
-  doc.line(chkX - 1, chkY, chkX, chkY + 1.2);
-  doc.line(chkX, chkY + 1.2, chkX + 2.2, chkY - 1);
-}
 
 function drawSectionHeader(doc: jsPDF, title: string, x: number, y: number): number {
   doc.setFillColor(...BLUE);
