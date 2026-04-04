@@ -199,17 +199,20 @@ model Reservation {
 }
 
 model Guest {
-  id            String   @id @default(cuid())
-  reservationId String
-  fullName      String
-  birthDate     String
-  cpf           String?
-  rg            String?
-  foreign       Boolean  @default(false)
-  passport      String?
-  rne           String?
-  documentUrl   String?
-  createdAt     DateTime @default(now())
+  id              String    @id @default(cuid())
+  reservationId   String
+  fullName        String
+  birthDate       String
+  cpf             String?
+  rg              String?
+  foreign         Boolean   @default(false)
+  passport        String?
+  rne             String?
+  documentUrl     String?
+  checkedInAt     DateTime? // porteiro confirmou chegada física
+  checkedInById   String?   // CondominiumUser.id que confirmou
+  checkedInByName String?   // nome desnormalizado (sobrevive a desativação do porteiro)
+  createdAt       DateTime  @default(now())
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
