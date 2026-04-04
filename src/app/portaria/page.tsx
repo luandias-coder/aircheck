@@ -6,7 +6,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 
 const B = { primary:"#3B5FE5", g1:"#3B5FE5", g2:"#5E4FE5", light:"#EBF0FF", muted:"#B4C6FC", accent:"#059669" };
 
-interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
+interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null; checkedInAt:string|null; checkedInById:string|null; checkedInByName:string|null }
 interface CheckIn { id:string; guestName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; status:string; confirmationCode:string|null; carPlate:string|null; carModel:string|null; hostName:string; hostPhone:string|null; property:{ id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null }; guests:Guest[] }
 interface PropertyInfo { id:string; name:string; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null }
 interface Stats { today:number; upcoming:number; pending:number; totalProperties:number }
@@ -38,6 +38,7 @@ export default function PortariaDashboard() {
   const [tab, setTab] = useState<"checkins"|"settings">("checkins");
   const [filterUnit, setFilterUnit] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [checkinLoading, setCheckinLoading] = useState<string|null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -61,6 +62,24 @@ export default function PortariaDashboard() {
   useEffect(() => { fetchData() }, [fetchData]);
 
   const logout = async () => { await fetch("/api/portaria/auth/logout", { method: "POST" }); router.push("/portaria/login") };
+
+  const toggleGuestCheckin = async (guestId: string, checked: boolean) => {
+    setCheckinLoading(guestId);
+    try {
+      const res = await fetch(`/api/portaria/checkins/${guestId}/checkin`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checked }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCheckins(prev => prev.map(c => ({
+          ...c,
+          guests: c.guests.map(g => g.id === guestId ? { ...g, checkedInAt: data.guest.checkedInAt, checkedInById: data.guest.checkedInById, checkedInByName: data.guest.checkedInByName } : g),
+        })));
+      }
+    } catch (e) { console.error(e); } finally { setCheckinLoading(null); }
+  };
 
   // Apply filters
   const filtered = checkins.filter(c => {
@@ -294,11 +313,17 @@ export default function PortariaDashboard() {
                               <div>
                                 <div style={{ fontSize:10, fontWeight:600, color:"#A3A3A3", textTransform:"uppercase", marginBottom:8 }}>Hóspedes ({c.guests.length})</div>
                                 <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                                  {c.guests.map(g => (
-                                    <div key={g.id} style={{ background:"#FAFAF9", border:"1px solid #E5E5E5", borderRadius:10, padding:"12px 14px" }}>
-                                      <div>
-                                        <div>
-                                          <div>
+                                  {c.guests.map(g => {
+                                    const isCheckedIn = !!g.checkedInAt;
+                                    const isLoadingThis = checkinLoading === g.id;
+                                    const checkedInDate = g.checkedInAt ? new Date(g.checkedInAt) : null;
+                                    const checkedInLabel = checkedInDate
+                                      ? `${String(checkedInDate.getDate()).padStart(2,"0")}/${String(checkedInDate.getMonth()+1).padStart(2,"0")} às ${String(checkedInDate.getHours()).padStart(2,"0")}:${String(checkedInDate.getMinutes()).padStart(2,"0")}`
+                                      : "";
+                                    return (
+                                      <div key={g.id} style={{ background: isCheckedIn ? "#F0FDF4" : "#FAFAF9", border:`1px solid ${isCheckedIn ? "#BBF7D0" : "#E5E5E5"}`, borderRadius:10, padding:"12px 14px", transition:"background 0.2s, border-color 0.2s" }}>
+                                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                                          <div style={{ flex:1, minWidth:0 }}>
                                             <div style={{ fontSize:14, fontWeight:600, color:"#1A1A1A" }}>{g.fullName} {g.foreign && <span style={{ fontSize:11, color:B.primary }}>🌍</span>}</div>
                                             <div style={{ fontSize:12, color:"#A3A3A3", marginTop:4 }}>
                                               {g.birthDate && <span>Nasc: {g.birthDate}</span>}
@@ -309,9 +334,29 @@ export default function PortariaDashboard() {
                                             </div>
                                           </div>
                                         </div>
+                                        {/* Check-in toggle */}
+                                        <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #E5E5E5" }}>
+                                          <label style={{ display:"flex", alignItems:"center", gap:10, cursor: isLoadingThis ? "wait" : "pointer", userSelect:"none" }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={isCheckedIn}
+                                              disabled={isLoadingThis}
+                                              onChange={() => toggleGuestCheckin(g.id, !isCheckedIn)}
+                                              style={{ width:18, height:18, accentColor:B.accent, cursor: isLoadingThis ? "wait" : "pointer", flexShrink:0 }}
+                                            />
+                                            <span style={{ fontSize:13, fontWeight: isCheckedIn ? 600 : 400, color: isCheckedIn ? "#059669" : "#737373" }}>
+                                              {isLoadingThis
+                                                ? "Salvando..."
+                                                : isCheckedIn
+                                                  ? `Check-in realizado por ${g.checkedInByName} — ${checkedInLabel}`
+                                                  : "Check-in realizado"
+                                              }
+                                            </span>
+                                          </label>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </div>
                             ) : (
