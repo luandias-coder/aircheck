@@ -1,0 +1,27 @@
+{
+  "name": "AirCheck — Painel da Portaria",
+  "short_name": "Portaria",
+  "description": "Painel de check-ins para portarias de condomínios parceiros.",
+  "start_url": "/portaria",
+  "scope": "/portaria",
+  "display": "standalone",
+  "background_color": "#FAFAF9",
+  "theme_color": "#3B5FE5",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check-ins",
+      "short_name": "Check-ins",
+      "url": "/portaria",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
