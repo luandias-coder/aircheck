@@ -33,38 +33,77 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
 
-// ─── PDF DOWNLOAD / SHARE BUTTON ────────────────────────────
+// ─── PDF VIEWER / SHARE ─────────────────────────────────────
 function PdfDownloadButton({reservationId,guestName,checkInDate}:{reservationId:string;guestName:string;checkInDate:string}){
   const[loading,setLoading]=useState(false);
+  const[pdfUrl,setPdfUrl]=useState<string|null>(null);
+  const[pdfBlob,setPdfBlob]=useState<Blob|null>(null);
+  const[sharing,setSharing]=useState(false);
   const safeName=guestName.replace(/[^a-zA-Z0-9 ]/g,"").replace(/\s+/g,"-");
   const filename=`checkin-${safeName}-${checkInDate.replace(/\//g,"-")}.pdf`;
 
-  const handleClick=async()=>{
+  const openPdf=async()=>{
     setLoading(true);
     try{
       const res=await fetch(`/api/reservations/${reservationId}/pdf`);
       if(!res.ok)throw new Error("Erro ao gerar PDF");
       const blob=await res.blob();
-      const file=new File([blob],filename,{type:"application/pdf"});
+      setPdfBlob(blob);
+      setPdfUrl(URL.createObjectURL(blob));
+    }catch(e){console.error("[pdf]",e)}
+    finally{setLoading(false)}
+  };
 
-      // Try native share (mobile/PWA)
+  const closePdf=()=>{
+    if(pdfUrl)URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);setPdfBlob(null);
+  };
+
+  const sharePdf=async()=>{
+    if(!pdfBlob)return;
+    setSharing(true);
+    try{
+      const file=new File([pdfBlob],filename,{type:"application/pdf"});
       if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
         await navigator.share({files:[file],title:`Check-in ${guestName}`});
       }else{
         // Fallback: download
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement("a");
-        a.href=url;a.download=filename;
-        document.body.appendChild(a);a.click();
-        document.body.removeChild(a);
+        const url=URL.createObjectURL(pdfBlob);
+        const a=document.createElement("a");a.href=url;a.download=filename;
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
     }catch(e:any){
       if(e?.name!=="AbortError")console.error("[pdf]",e);
-    }finally{setLoading(false)}
+    }finally{setSharing(false)}
   };
 
-  return<button onClick={handleClick} disabled={loading} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:10,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,opacity:loading?0.6:1}}>{loading?"Gerando...":"📄 PDF"}</button>;
+  const downloadPdf=()=>{
+    if(!pdfBlob)return;
+    const url=URL.createObjectURL(pdfBlob);
+    const a=document.createElement("a");a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return<>
+    <button onClick={openPdf} disabled={loading} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:10,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,opacity:loading?0.6:1}}>{loading?"Gerando...":"📄 PDF"}</button>
+
+    {/* ── Fullscreen PDF Viewer ── */}
+    {pdfUrl&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:9999,background:"#fff",display:"flex",flexDirection:"column"}}>
+      {/* Top bar */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:"1px solid #E5E5E5",background:"#fff",flexShrink:0}}>
+        <button onClick={closePdf} style={{fontFamily:"Outfit",fontSize:13,fontWeight:500,padding:"7px 14px",background:"none",color:"#737373",border:"1px solid #E5E5E5",borderRadius:8,cursor:"pointer"}}>← Voltar</button>
+        <div style={{fontSize:13,fontWeight:600,color:"#1A1A1A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"40%",textAlign:"center"}}>{guestName.split(" ")[0]} · {checkInDate.slice(0,5)}</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={downloadPdf} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"7px 12px",background:"#fff",color:B.primary,border:`1px solid ${B.muted}`,borderRadius:8,cursor:"pointer"}}>⬇ Salvar</button>
+          <button onClick={sharePdf} disabled={sharing} style={{fontFamily:"Outfit",fontSize:12,fontWeight:600,padding:"7px 14px",background:B.primary,color:"#fff",border:"none",borderRadius:8,cursor:"pointer",opacity:sharing?0.6:1}}>Compartilhar</button>
+        </div>
+      </div>
+      {/* PDF iframe */}
+      <iframe src={pdfUrl} style={{flex:1,border:"none",width:"100%"}} title="PDF Check-in"/>
+    </div>}
+  </>;
 }
 
 // ─── PDF SEND BUTTON ────────────────────────────────────────────
