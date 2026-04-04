@@ -14,7 +14,7 @@ interface DoormanPhone { id:string; phone:string; name:string|null; label:string
 interface Guest { id:string; fullName:string; birthDate:string; cpf:string|null; rg:string|null; foreign:boolean; passport:string|null; rne:string|null; documentUrl:string|null }
 interface Property { id:string; name:string; airbnbRoomId:string|null; unitNumber:string|null; parkingSpot:string|null; photoUrl:string|null; internalCode?:string|null; includeDocLinks:boolean; whatsappEnabled:boolean; doormanPhones:DoormanPhone[]; reservationCount:number; condominium:{id:string;name:string;code:string;address:string|null;contactName:string|null;contactPhone:string|null;reportMode:string;doormanWhatsapp:string|null;photoUrl:string|null}|null }
 interface Reservation { id:string; guestFullName:string; guestPhone:string|null; guestPhotoUrl:string|null; checkInDate:string; checkInTime:string; checkOutDate:string; checkOutTime:string; numGuests:number; nights:number|null; confirmationCode:string|null; hostPayment:string|null; bookedAt?:string|null; airbnbThreadId:string|null; airbnbThreadUrl:string|null; formToken:string; status:string; source?:string; carPlate:string|null; carModel:string|null; property:{id:string;name:string;photoUrl?:string|null;internalCode?:string|null;doormanPhones:DoormanPhone[];whatsappEnabled?:boolean;condominiumId?:string|null;condominium?:{reportMode:string;doormanWhatsapp:string|null}|null}; guests:Guest[] }
-interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}>; sendCheckinPdf?:boolean }
+interface User { id:string; email:string; name:string|null; inboundEmails:Array<{id:string;email:string}>; checkinPdfMode?:string }
 
 // ─── LOGO ───────────────────────────────────────────────────────
 function Logo(){return<div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -32,6 +32,40 @@ const STATUS: Record<string,{l:string;c:string;bg:string;dot:string}> = {
 };
 function Badge({status}:{status:string}){const s=STATUS[status]||STATUS.pending_form;return<span style={{display:"inline-flex",alignItems:"center",gap:6,fontFamily:"Outfit",fontSize:11,fontWeight:600,color:s.c,background:s.bg,padding:"4px 10px",borderRadius:20}}><span style={{width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0}}/>{s.l}</span>}
 function daysUntil(d:string):number{if(!d)return 999;const[dd,mm,yy]=d.split("/").map(Number);const t=new Date(yy,mm-1,dd);const n=new Date();n.setHours(0,0,0,0);return Math.round((t.getTime()-n.getTime())/86400000)}
+
+// ─── PDF DOWNLOAD / SHARE BUTTON ────────────────────────────
+function PdfDownloadButton({reservationId,guestName,checkInDate}:{reservationId:string;guestName:string;checkInDate:string}){
+  const[loading,setLoading]=useState(false);
+  const safeName=guestName.replace(/[^a-zA-Z0-9 ]/g,"").replace(/\s+/g,"-");
+  const filename=`checkin-${safeName}-${checkInDate.replace(/\//g,"-")}.pdf`;
+
+  const handleClick=async()=>{
+    setLoading(true);
+    try{
+      const res=await fetch(`/api/reservations/${reservationId}/pdf`);
+      if(!res.ok)throw new Error("Erro ao gerar PDF");
+      const blob=await res.blob();
+      const file=new File([blob],filename,{type:"application/pdf"});
+
+      // Try native share (mobile/PWA)
+      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:`Check-in ${guestName}`});
+      }else{
+        // Fallback: download
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url;a.download=filename;
+        document.body.appendChild(a);a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }catch(e:any){
+      if(e?.name!=="AbortError")console.error("[pdf]",e);
+    }finally{setLoading(false)}
+  };
+
+  return<button onClick={handleClick} disabled={loading} style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:10,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,opacity:loading?0.6:1}}>{loading?"Gerando...":"📄 PDF"}</button>;
+}
 
 // ─── PDF SEND BUTTON ────────────────────────────────────────────
 function PdfSendButton({reservationId}:{reservationId:string}){
@@ -56,52 +90,50 @@ function PdfSendButton({reservationId}:{reservationId:string}){
 
 // ─── PDF EMAIL TOGGLE ───────────────────────────────────────────
 function PdfEmailToggle({user}:{user:User|null}){
-  const[enabled,setEnabled]=useState(user?.sendCheckinPdf||false);
+  const[mode,setMode]=useState(user?.checkinPdfMode||"off");
   const[saving,setSaving]=useState(false);
   const[loaded,setLoaded]=useState(false);
 
   useEffect(()=>{
     fetch("/api/settings/preferences").then(r=>r.json()).then(d=>{
-      setEnabled(d.sendCheckinPdf||false);
+      setMode(d.checkinPdfMode||"off");
       setLoaded(true);
     }).catch(()=>setLoaded(true));
   },[]);
 
-  const toggle=async()=>{
-    const newVal=!enabled;
-    setEnabled(newVal);
+  const changeMode=async(newMode:string)=>{
+    setMode(newMode);
     setSaving(true);
     await fetch("/api/settings/preferences",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sendCheckinPdf:newVal}),
+      body:JSON.stringify({checkinPdfMode:newMode}),
     });
     setSaving(false);
   };
 
   if(!loaded)return null;
 
+  const options=[
+    {id:"off",label:"Desativado",desc:"Não enviar PDF por email automaticamente",icon:"🚫"},
+    {id:"immediate",label:"Ao preencher",desc:"Receber o PDF assim que o hóspede preencher o formulário",icon:"⚡"},
+    {id:"morning",label:"Manhã do check-in",desc:"Receber o PDF às 7h no dia do check-in",icon:"☀️"},
+  ];
+
   return<div style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-    <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Notificações de check-in</div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div>
-        <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>Receber PDF por email</div>
-        <div style={{fontSize:12,color:"#737373",marginTop:3}}>Quando um hóspede preencher o formulário, você receberá um PDF com todos os dados no email <strong>{user?.email}</strong>.</div>
-      </div>
-      <button onClick={toggle} disabled={saving} style={{
-        width:48,height:26,borderRadius:13,border:"none",cursor:"pointer",
-        background:enabled?"#3B5FE5":"#D1D5DB",
-        position:"relative",transition:"background 0.2s",flexShrink:0,marginLeft:16,
-        opacity:saving?0.5:1,
-      }}>
-        <div style={{
-          width:22,height:22,borderRadius:"50%",background:"#fff",
-          position:"absolute",top:2,
-          left:enabled?24:2,
-          transition:"left 0.2s",
-          boxShadow:"0 1px 3px rgba(0,0,0,0.2)",
-        }}/>
-      </button>
+    <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Receber PDF de check-in por email</div>
+    <div style={{fontSize:12,color:"#737373",marginBottom:14}}>Quando ativado, você receberá um PDF com os dados completos do hóspede no email <strong>{user?.email}</strong>.</div>
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {options.map(o=><label key={o.id} onClick={()=>changeMode(o.id)} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:mode===o.id?B.light:"#FAFAF9",border:`1px solid ${mode===o.id?B.primary:"#E5E5E5"}`,borderRadius:10,cursor:"pointer",opacity:saving?0.6:1,transition:"all 0.15s"}}>
+        <input type="radio" checked={mode===o.id} onChange={()=>changeMode(o.id)} style={{marginTop:2,accentColor:B.primary}}/>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:14}}>{o.icon}</span>
+            <span style={{fontSize:13,fontWeight:600,color:mode===o.id?"#1A1A1A":"#525252"}}>{o.label}</span>
+          </div>
+          <div style={{fontSize:11,color:"#A3A3A3",marginTop:2}}>{o.desc}</div>
+        </div>
+      </label>)}
     </div>
   </div>;
 }
@@ -418,11 +450,11 @@ function DetailView({res:r,onBack,onRefresh}:{res:Reservation;onBack:()=>void;on
       <button onClick={async()=>{if(!confirm(`Adicionar mais 1 hóspede? (atual: ${r.numGuests})`))return;await fetch(`/api/reservations/${r.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({numGuests:r.numGuests+1})});onRefresh()}} style={{fontFamily:"Outfit",fontSize:12,fontWeight:500,padding:"8px 14px",background:"none",color:B.primary,border:`1px solid ${B.muted}`,borderRadius:8,cursor:"pointer",marginTop:12}}>👤+ Adicionar hóspede</button>
     </div>}
 
-    {/* ── PDF Download & Send ── */}
+    {/* ── PDF Download / Share & Send ── */}
     {hasGuests&&<div className="fade-up" style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:16,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
       <div style={{fontSize:10,fontWeight:600,color:"#A3A3A3",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Comprovante PDF</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <a href={`/api/reservations/${r.id}/pdf`} download style={{fontFamily:"Outfit",fontSize:13,fontWeight:600,padding:"9px 18px",background:B.primary,color:"#fff",border:"none",borderRadius:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,cursor:"pointer"}}>📄 Baixar PDF</a>
+        <PdfDownloadButton reservationId={r.id} guestName={r.guestFullName} checkInDate={r.checkInDate}/>
         <PdfSendButton reservationId={r.id}/>
       </div>
     </div>}
