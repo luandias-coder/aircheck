@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         property: { select: { id: true, name: true, unitNumber: true, parkingSpot: true, photoUrl: true } },
         user: { select: { name: true, phone: true } },
         guests: {
-          select: { id: true, fullName: true, birthDate: true, cpf: true, rg: true, foreign: true, passport: true, rne: true, documentUrl: true },
+          select: { id: true, fullName: true, birthDate: true, cpf: true, rg: true, foreign: true, passport: true, rne: true, documentUrl: true, checkedInAt: true, checkedInById: true, checkedInByName: true },
         },
       },
       orderBy: { createdAt: "desc" },
